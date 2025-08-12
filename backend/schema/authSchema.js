@@ -12,9 +12,16 @@ const registerUserOpts = {
     },
     body: {
       type: 'object',
-      required: ['name'],
+      required: ['username', 'email', 'password'],
       properties: {
-        name: {type: 'string'}
+        username: {type: 'string', minLength: 3, maxLength: 10},
+        email: {type: 'string', format: 'email'},
+        password: {
+          type: 'string',
+          minLength: 8,
+          maxLength: 64,
+          pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[ !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~]).{8,64}$'
+        }
       }
     }
   },

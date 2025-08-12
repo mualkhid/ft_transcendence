@@ -1,8 +1,8 @@
 const registerUser = (req, reply) => {
-	console.log(req)
-	const {name} = req.body
+	const {username, email, password} = req.body
 
-	reply.send({reply: `${name} is registered`})
+
+	reply.send({reply: `${username}, with email ${email} is registered`})
 }
 
 module.exports = {
