@@ -16,6 +16,7 @@ fastify.register(require('@fastify/swagger-ui'), {
 });
 
 //Transcendence routes
+fastify.register(require('./routes/authRoutes'));
 fastify.register(require('./routes/users'));
 fastify.register(require('./routes/tournament'));
 
