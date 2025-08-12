@@ -1,0 +1,39 @@
+const registerSchema = {
+    body: {
+        type: 'object',
+        required: ['alias'],
+        properties: {
+            alias: { type: 'string', minLength: 3, maxLength: 20 }
+        }
+    },
+    response: {
+        201: {
+            type: 'object',
+            properties: {
+                id: { type : 'number'},
+                alias: { type: 'string'}
+            },
+            required: ['id', 'alias']
+        },
+    }
+};
+
+const getAliasSchema = {
+    response: {
+    200: {
+        type: 'array',
+        items : {
+            type: 'object',
+            properties: {
+                id: { type: 'number'},
+                alias: { type: 'string'}
+            }
+        }
+        }
+    }
+}
+
+module.exports = { 
+    registerSchema,
+    getAliasSchema
+};
