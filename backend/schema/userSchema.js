@@ -1,4 +1,4 @@
-const registerSchema = {
+export const registerSchema = {
     body: {
         type: 'object',
         required: ['alias'],
@@ -18,7 +18,7 @@ const registerSchema = {
     }
 };
 
-const getAliasSchema = {
+export const getAliasSchema = {
     response: {
     200: {
         type: 'array',
@@ -32,8 +32,3 @@ const getAliasSchema = {
         }
     }
 }
-
-module.exports = { 
-    registerSchema,
-    getAliasSchema
-};

@@ -1,5 +1,5 @@
-const { createTournament, getTournamentRequest, joinTournament, nextMatch, resetTournamentRequest } = require('../controller/tournamentController');
-const { createTournamentSchema, getTournamentSchema, joinTournamentSchema, nextMatchSchema, resetTournamentSchema  } = require('../schema/tournamentSchema');
+import { createTournament, getTournamentRequest, joinTournament, nextMatch, resetTournamentRequest } from '../controller/tournamentController.js';
+import { createTournamentSchema, getTournamentSchema, joinTournamentSchema, nextMatchSchema, resetTournamentSchema  } from '../schema/tournamentSchema.js';
 
 
   async function tournamentRoutes(fastify, options)
@@ -16,4 +16,4 @@ const { createTournamentSchema, getTournamentSchema, joinTournamentSchema, nextM
     
   }
   
-  module.exports = tournamentRoutes;
+export default tournamentRoutes;

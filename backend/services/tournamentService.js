@@ -2,7 +2,7 @@ let currentTournament = null;
 
 let tournamentId = 1;
 
-function createNewTournament(name)
+export function createNewTournament(name)
 {
     const id = tournamentId++;
     currentTournament = {
@@ -14,17 +14,12 @@ function createNewTournament(name)
   return currentTournament;
 }
 
-function getTournament() {
+export function getTournament() {
     return currentTournament;
 }
 
-function resetTournament() {
+export function resetTournament() {
     currentTournament = null;
 }
 
-module.exports = {
-    currentTournament,
-    createNewTournament,
-    resetTournament,
-    getTournament
-};
+export { currentTournament };

@@ -1,21 +1,14 @@
-const users = new Map();
-let nextUserId = 1;
+export const users = new Map();
+export let nextUserId = 1;
 
-const matches = new Map();
-let nextMatchId = 1;
+export const matches = new Map();
+export let nextMatchId = 1;
 
-function generateUserId(){
+export function generateUserId(){
     return nextUserId++;
 }
 
-function generateMatchId(){
+export function generateMatchId(){
     return nextMatchId++;
 }
 
-module.exports = {
-    users,
-    matches,
-    generateUserId,
-    generateMatchId,
-    nextMatchId
-};
