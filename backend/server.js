@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 
 
 import usersRoutes from './routes/users.js';
-// import authRoutes from './routes/authRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 import tournamentRoutes from './routes/tournament.js';
 import remoteGameRoutes from './routes/remoteGameRoutes.js';
 
@@ -45,7 +45,7 @@ fastify.register(swaggerUI, {
 fastify.register(usersRoutes);
 fastify.register(tournamentRoutes);
 fastify.register(remoteGameRoutes);
-// fastify.register(authRoutes);
+fastify.register(authRoutes);
 
 // Start server with error handling
 try {

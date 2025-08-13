@@ -1,58 +1,41 @@
+// ESM: no module.exports; use named exports
 
-const dummyUser = {
-		id: "dummyID",
-		username: "dummy",
-		email: "dummy@gmail.com",
-		createdAt: "2025-08-13T04:11:52.079Z",
-		updatedAt: "2025-08-13T04:11:52.079Z"
+export const dummyUser = {
+	id: "dummyID",
+	username: "dummy",
+	email: "dummy@gmail.com",
+	createdAt: "2025-08-13T04:11:52.079Z",
+	updatedAt: "2025-08-13T04:11:52.079Z"
+};
+
+export function registerUser(req, reply) {
+	const { username, email, password } = req.body;
+	const now = new Date().toISOString();
+
+	// TODO: insert into SQLite and read back id/createdAt/updatedAt from DB
+	return reply.status(201).send({
+		user: {
+		id: "randID",
+		username,
+		email,
+		createdAt: now,
+		updatedAt: now
+		}
+	});
 }
 
+export function login(req, reply) {
+	// const { email, password } = req.body;
+	// console.log(req.body);
 
-const registerUser = (req, reply) => {
-	const {username, email, password} = req.body
-	let user = {username, email, password }
-
-	// should return sanitized user
-	// i will be using sqlite id generator and stringify it before sending + createdAt, updatedAt will also be generated from db
-	const now = new Date().toISOString()
-	reply.status(201).send({
-		user: {id: 'randID', username: user.username, email: user.email, createdAt: now, updatedAt: now}})
+	return reply.status(200).send({ user: dummyUser });
 }
 
-const login = (req, reply) => {
-	// const {email, password} = req.body
-	console.log(req.body)
-
-	// should return sanitized user
-	reply.status(200).send({
-		user: dummyUser
-	})
+export function getCurrentUser(req, reply) {
+	// should read user from JWT/session later
+	return reply.status(200).send({ user: dummyUser });
 }
 
-const getCurrentUser = (req, reply) => {
-	console.log(req.body)
-	// should know the user from the JWT token
-
-	reply.status(200).send({
-		user: dummyUser
-	})
-}
-
-const logout = (req, reply) => {
-	// const {email, password} = req.body
-	console.log(req.body)
-
-	reply.status(200).send({
-		message: "logged-out"
-	})
-}
-
-
-
-
-module.exports = {
-	registerUser,
-	login,
-	getCurrentUser,
-	logout,
+export function logout(req, reply) {
+	return reply.status(200).send({ message: "logged-out" });
 }
