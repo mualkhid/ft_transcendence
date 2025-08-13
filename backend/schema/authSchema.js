@@ -82,8 +82,23 @@ const logoutOpts = {
   },
 };
 
+const getCurrentUserOpts = {
+  schema: {
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          user: userOpts,
+        },
+      required: ['user']
+      }
+    }
+  }
+};
+
 module.exports = {
   registerUserOpts,
   loginOpts,
-  logoutOpts 
+  getCurrentUserOpts,
+  logoutOpts,
 }
