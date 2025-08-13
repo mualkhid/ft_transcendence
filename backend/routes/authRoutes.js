@@ -1,18 +1,22 @@
-const {registerUser, login, getCurrentUser, logout, } = require('../controller/authController')
+import {
+  registerUser,
+  login,
+  getCurrentUser,
+  logout
+} from '../controller/authController.js';
 
-const {registerUserOpts, loginOpts, getCurrentUserOpts, logoutOpts,} = require('../schema/authSchema')
+import {
+  registerUserOpts,
+  loginOpts,
+  getCurrentUserOpts,
+  logoutOpts
+} from '../schema/authSchema.js';
 
-// User Schema we should create to be returned in each request that requires it
-function authRoutes(fastify, options)
-{
-  // route | schema | handler function
+// Fastify ESM plugin: default export
+export default function authRoutes(fastify, _opts, done) {
   fastify.post('/auth/registerUser', registerUserOpts, registerUser);
-
-  fastify.post('/auth/login', loginOpts,  login);
-
-  fastify.get('/auth/me', getCurrentUserOpts, getCurrentUser);
-
-  fastify.post('/auth/logout', logoutOpts, logout);
+  fastify.post('/auth/login', loginOpts, login);
+  fastify.get ('/auth/me', getCurrentUserOpts, getCurrentUser);
+  fastify.post('/auth/logout', logoutOpts,  logout);
+  done();
 }
-
-module.exports = authRoutes
