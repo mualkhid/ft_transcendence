@@ -29,21 +29,30 @@ const login = (req, reply) => {
 	})
 }
 
+const getCurrentUser = (req, reply) => {
+	console.log(req.body)
+	// should know the user from the JWT token
+
+	reply.status(200).send({
+		user: dummyUser
+	})
+}
+
 const logout = (req, reply) => {
 	// const {email, password} = req.body
 	console.log(req.body)
 
-	const now = new Date().toISOString()
 	reply.status(200).send({
 		message: "logged-out"
 	})
 }
 
-// reply.code(200).send({ message: 'Logged out' });
+
 
 
 module.exports = {
 	registerUser,
 	login,
-	logout
+	getCurrentUser,
+	logout,
 }

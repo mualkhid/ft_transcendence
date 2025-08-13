@@ -1,8 +1,6 @@
-const {registerUser, login, logout} = require('../controller/authController')
+const {registerUser, login, getCurrentUser, logout, } = require('../controller/authController')
 
-const {registerUserOpts, loginOpts, logoutOpts
-
-} = require('../schema/authSchema')
+const {registerUserOpts, loginOpts, getCurrentUserOpts, logoutOpts,} = require('../schema/authSchema')
 
 // User Schema we should create to be returned in each request that requires it
 function authRoutes(fastify, options)
@@ -12,7 +10,7 @@ function authRoutes(fastify, options)
 
   fastify.post('/auth/login', loginOpts,  login);
 
-  // fastify.get('/auth/me', {schema: getCurrentUserSchema}, getCurrentUser);
+  fastify.get('/auth/me', getCurrentUserOpts, getCurrentUser);
 
   fastify.post('/auth/logout', logoutOpts, logout);
 }
