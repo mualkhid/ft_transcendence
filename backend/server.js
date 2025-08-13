@@ -1,7 +1,33 @@
-const fastify = require('fastify')({ logger: true });
+import Fastify from 'fastify';
+import fastifyWebsocket from '@fastify/websocket';
+import swagger from '@fastify/swagger';
+import swaggerUI from '@fastify/swagger-ui';
+import fastifyStatic from '@fastify/static';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Fastify to acces a UI wbsite to test API
-fastify.register(require('@fastify/swagger'), {
+
+import usersRoutes from './routes/users.js';
+// import authRoutes from './routes/authRoutes.js';
+import tournamentRoutes from './routes/tournament.js';
+import remoteGameRoutes from './routes/remoteGameRoutes.js';
+
+const fastify = Fastify({ logger: true });
+
+// Needed to get __dirname in ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Serve static files from "public" folder
+fastify.register(fastifyStatic, {
+  root: path.join(__dirname, 'public'),
+  prefix: '/', // serve at root URL
+});
+
+//Fatsify UI register
+await fastify.register(fastifyWebsocket);
+
+fastify.register(swagger, {
   swagger: {
     info: {
       title: 'fastify-api',
@@ -10,19 +36,22 @@ fastify.register(require('@fastify/swagger'), {
   },
 });
 
-fastify.register(require('@fastify/swagger-ui'), {
+fastify.register(swaggerUI, {
   routePrefix: '/docs',
   exposeRoute: true,
 });
 
-//Transcendence routes
-fastify.register(require('./routes/authRoutes'));
-fastify.register(require('./routes/users'));
-fastify.register(require('./routes/tournament'));
+// Transcendence routes
+fastify.register(usersRoutes);
+fastify.register(tournamentRoutes);
+fastify.register(remoteGameRoutes);
+// fastify.register(authRoutes);
 
-fastify.listen({ port: 3000 }, function (err, address) {
-  if (err) {
-    fastify.log.error(err)
-    process.exit(1)
-  }
-});
+// Start server with error handling
+try {
+  const address = await fastify.listen({ port: 3000 });
+  console.log(`Server running at ${address}`);
+} catch (err) {
+  fastify.log.error(err);
+  process.exit(1);
+}

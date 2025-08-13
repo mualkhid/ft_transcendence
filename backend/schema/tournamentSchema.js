@@ -1,4 +1,4 @@
-const  createTournamentSchema = {
+export const  createTournamentSchema = {
     response: {
         201: {
             type: 'object',
@@ -12,7 +12,7 @@ const  createTournamentSchema = {
     }
 }
 
-const getTournamentSchema = {
+export const getTournamentSchema = {
     response: {
         200: {
             type: 'object',
@@ -32,7 +32,7 @@ const getTournamentSchema = {
     }
 }
 
-const joinTournamentSchema = {
+export const joinTournamentSchema = {
     body:{
         type: 'object',
         properties: {userId: {type: 'number'}},
@@ -67,7 +67,7 @@ const joinTournamentSchema = {
     }
 }
 
-const nextMatchSchema = {
+export const nextMatchSchema = {
     response: {
         200: {
             type: 'object',
@@ -105,7 +105,7 @@ const nextMatchSchema = {
     }
 }
 
-const resetTournamentSchema = {
+export const resetTournamentSchema = {
     response: {
         200: {
             type: 'object',
@@ -113,12 +113,4 @@ const resetTournamentSchema = {
             required: ['message']
         }
     }
-}
-
-module.exports = {
-    createTournamentSchema,
-    getTournamentSchema,
-    joinTournamentSchema,
-    nextMatchSchema,
-    resetTournamentSchema
 }

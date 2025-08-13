@@ -1,5 +1,5 @@
-const { registerUser, getAliases } = require('../controller/userController');
-const { registerSchema, getAliasSchema } = require('../schema/userSchema');
+import { registerUser, getAliases } from '../controller/userController.js';
+import { registerSchema, getAliasSchema } from '../schema/userSchema.js';
 
 async function userRoutes(fastify, options)
 {
@@ -7,4 +7,4 @@ async function userRoutes(fastify, options)
     fastify.get('/aliases', { schema : getAliasSchema }, getAliases);
 }
 
-module.exports = userRoutes;
+export default userRoutes;

@@ -1,6 +1,6 @@
-const { users, generateUserId } = require('../services/userService');
+import { users, generateUserId } from '../services/userService.js';
 
-async function registerUser(request, reply){
+export async function registerUser(request, reply){
     const {alias} = request.body;
 
     for(const user of users.values()){
@@ -16,13 +16,8 @@ async function registerUser(request, reply){
     return reply.status(201).send(user);
 };
 
-async function getAliases(request, reply)
+export async function getAliases(request, reply)
 {
     const aliasList = Array.from(users.values());
     return reply.send(aliasList);
 }
-
-module.exports= {
-    registerUser,
-    getAliases
-};
