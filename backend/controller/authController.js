@@ -1,4 +1,5 @@
 // ESM: no module.exports; use named exports
+import {prisma} from '../server.js';
 
 export const dummyUser = {
 	id: "dummyID",
@@ -8,26 +9,35 @@ export const dummyUser = {
 	updatedAt: "2025-08-13T04:11:52.079Z"
 };
 
-export function registerUser(req, reply) {
+export async function registerUser(req, reply) {
 	const { username, email, password } = req.body;
-	const now = new Date().toISOString();
 
-	// TODO: insert into SQLite and read back id/createdAt/updatedAt from DB
+	const user = await prisma.user.create({data: {
+		username: username,
+		email: email,
+		passwordHash: password
+	}})
+	console.log(user)
+
 	return reply.status(201).send({
 		user: {
-		id: "randID",
-		username,
-		email,
-		createdAt: now,
-		updatedAt: now
+		id: user.id,
+		username: user.username,
+		email: user.email,
+		createdAt: user.createdAt,
+		updatedAt: user.updatedAt
 		}
 	});
 }
 
 export function login(req, reply) {
-	// const { email, password } = req.body;
+	const { email, password } = req.body;
 	// console.log(req.body);
 
+	// prisma.findFirst()
+	// its a good idea to disconnect from prisma once you
+	// finish writing your code, i dont know if its after every statement or no
+	
 	return reply.status(200).send({ user: dummyUser });
 }
 

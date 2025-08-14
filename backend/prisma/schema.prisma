@@ -1,0 +1,62 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+//
+ 
+// takes all the prisma code and convert it
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int @id @default(autoincrement()) // WE CAN CHANGE TO UUID() FOR SECURITY (dont change from 1 to 2 and get new info)
+  username  String @unique
+  email     String @unique
+  passwordHash  String
+  avatarUrl String? @default("/assets/avatar/default.jpg")
+  // avatar Byte : maybe for storing the images????
+  lastSeen DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isOnline Boolean @default(false)
+  createdTournaments Tournament[] @relation("tournamentsCreated") // we need to add it to add or the sake of the relationships
+  wonTournaments Tournament[] @relation("tournamentsWon")// we need to add it to add or the sake of the relationships
+}
+
+model Tournament {
+  id        Int @id @default(autoincrement())
+  creator User @relation("tournamentsCreated", fields: [userId], references: [id])
+  creatorId Int
+  status Int // 0 1 2
+  winner User @relation("tournamentsWon", fields: [winnerId], references: [id])
+  winnerId Int
+  matchesPlayed Match [] @relation("tournamentMatches")
+  // matchesPlayed Match [] @relation("tournamentMatches")
+}
+
+model Match {
+  id        Int @id @default(autoincrement())
+  // players User[] @
+  isFinished Boolean
+  player1Score Int
+  player2Score Int // still not sure how to store players information!
+  winnerId Int
+  tournament Tournament @relation("tournamentMatches", fields: [tournamentId], references: [id])
+  tournamentId Int @default(-1)
+}
+
+model Friends {
+  id        Int @id @default(autoincrement()) // this should be a one to one relationship with the usermodel
+  acceptedFriend User []
+}
+
+/*
+1. npx prisma migrate dev --name init // ceates tables and generate prisma client (if it doesnot exist)
+2.  npx prisma db pull && npx prisma generate
+3. you can always edit the schema and run npx prisma migrate dev
+*/
