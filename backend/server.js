@@ -5,14 +5,15 @@ import swaggerUI from '@fastify/swagger-ui';
 import fastifyStatic from '@fastify/static';
 import path from 'path';
 import { fileURLToPath } from 'url';
-
+import { PrismaClient } from '@prisma/client';
 
 import usersRoutes from './routes/users.js';
 import authRoutes from './routes/authRoutes.js';
 import tournamentRoutes from './routes/tournament.js';
 import remoteGameRoutes from './routes/remoteGameRoutes.js';
 
-const fastify = Fastify({ logger: true });
+const fastify = Fastify();
+export const prisma = new PrismaClient();
 
 // Needed to get __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -55,3 +56,4 @@ try {
   fastify.log.error(err);
   process.exit(1);
 }
+
