@@ -7,7 +7,7 @@
     "dev": "nodemon server",
     "start": "node server",
     "studio": "prisma studio",
-    "migrate": "prisma migrare dev",
+    "migrate": "prisma migrate dev",
     "generate": "prisma generate"
   },
   "keywords": [],
