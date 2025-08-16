@@ -11,9 +11,10 @@ import usersRoutes from './routes/users.js';
 import authRoutes from './routes/authRoutes.js';
 import tournamentRoutes from './routes/tournament.js';
 import remoteGameRoutes from './routes/remoteGameRoutes.js';
+// import friendsRoutes from './routes/friendsRoute.js'
 
 const fastify = Fastify();
-export const prisma = new PrismaClient();
+export const prisma = new PrismaClient({log: ['query', 'info', 'warn', 'error'] });
 
 // Needed to get __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -47,6 +48,7 @@ fastify.register(usersRoutes);
 fastify.register(tournamentRoutes);
 fastify.register(remoteGameRoutes);
 fastify.register(authRoutes);
+// fastify.register(friendsRoutes);
 
 // Start server with error handling
 try {

@@ -30,9 +30,13 @@ export async function registerUser(req, reply) {
 	});
 }
 
-export function login(req, reply) {
+export async function login(req, reply) {
 	const { email, password } = req.body;
-	// console.log(req.body);
+	// const user = await prisma.user.findUniqueOrThrow({
+	// 	where: {
+	// 		email === email
+	// 	}
+	// })
 
 	// prisma.findFirst()
 	// its a good idea to disconnect from prisma once you
@@ -42,6 +46,9 @@ export function login(req, reply) {
 }
 
 export function getCurrentUser(req, reply) {
+
+
+	// user select from user where name == jwt.name
 	// should read user from JWT/session later
 	return reply.status(200).send({ user: dummyUser });
 }
