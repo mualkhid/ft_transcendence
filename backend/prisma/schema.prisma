@@ -2,7 +2,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 //
- 
+
 // takes all the prisma code and convert it
 generator client {
   provider = "prisma-client-js"
@@ -13,50 +13,146 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        Int @id @default(autoincrement()) // WE CAN CHANGE TO UUID() FOR SECURITY (dont change from 1 to 2 and get new info)
-  username  String @unique
-  email     String @unique
-  passwordHash  String
-  avatarUrl String? @default("/assets/avatar/default.jpg")
-  // avatar Byte : maybe for storing the images????
-  lastSeen DateTime @default(now())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  isOnline Boolean @default(false)
-  createdTournaments Tournament[] @relation("tournamentsCreated") // we need to add it to add or the sake of the relationships
-  wonTournaments Tournament[] @relation("tournamentsWon")// we need to add it to add or the sake of the relationships
+/**
+ * ===== Enums =====
+ */
+
+enum TournamentStatus {
+  NOT_STARTED
+  ONGOING
+  FINISHED
 }
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
+}
+
+enum MatchResult {
+  WIN
+  LOSS
+}
+
+/**
+ * ===== Core User =====
+ */
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  email        String   @unique // store lowercase in app code
+  passwordHash String
+  avatarUrl    String?
+  lastSeen     DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // back-relations
+  wonTournaments       Tournament[]       @relation("tournamentsWon")
+  requestsRequested Friendship[]       @relation("requested")
+  requestsReceived  Friendship[]       @relation("received")
+  matchPlayers         MatchPlayer[]
+  TournamentPlayer     TournamentPlayer[]
+
+  // @@index([email])
+
+  Tournament Tournament[] @relation("tournamentsCreated")
+}
+
+/**
+ * ===== Friendships (edge table) =====
+ */
+
+model Friendship {
+  // id        Int              @id @default(autoincrement())
+  requester Int
+  addressee Int
+  status    FriendshipStatus @default(PENDING)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  
+  requesterUser User @relation("requested", fields: [requester], references: [id], onDelete: Cascade)
+  addresseeUser User @relation("received", fields: [addressee], references: [id], onDelete: Cascade)
+
+  @@id([requester, addressee])
+  @@index([addressee, status]) // “incoming pending requests”
+}
+
+/**
+ * ===== Tournaments =====
+ */
 
 model Tournament {
-  id        Int @id @default(autoincrement())
-  creator User @relation("tournamentsCreated", fields: [userId], references: [id])
-  creatorId Int
-  status Int // 0 1 2
-  winner User @relation("tournamentsWon", fields: [winnerId], references: [id])
-  winnerId Int
-  matchesPlayed Match [] @relation("tournamentMatches")
-  // matchesPlayed Match [] @relation("tournamentMatches")
+  id     Int              @id @default(autoincrement())
+  name   String
+  status TournamentStatus @default(NOT_STARTED)
+
+  creatorId Int?
+
+  winnerId Int?
+
+  // Back-relation to matches via Match.tournament
+  matches Match[]
+
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  TournamentPlayer TournamentPlayer[]
+
+  // Back-relations
+  winner   User? @relation("tournamentsWon", fields: [winnerId], references: [id], onDelete: SetNull)
+  creator   User? @relation("tournamentsCreated", fields: [creatorId], references: [id], onDelete: SetNull)
+
+  // @@index([status])
+  // @@index([creatorId])
+  // @@index([winnerId])
 }
+
+/**
+ * ===== Preregistration / membership =====
+ */
+
+model TournamentPlayer {
+  tournamentId Int
+  userId       Int
+  joinedAt     DateTime @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // If aliases must be unique within a tournament:
+  // @@unique([tournamentId, displayName])
+
+  @@id([tournamentId, userId])
+  @@index([userId])
+}
+
+/**
+ * ===== Matches =====
+ */
 
 model Match {
-  id        Int @id @default(autoincrement())
-  // players User[] @
-  isFinished Boolean
-  player1Score Int
-  player2Score Int // still not sure how to store players information!
-  winnerId Int
-  tournament Tournament @relation("tournamentMatches", fields: [tournamentId], references: [id])
-  tournamentId Int @default(-1)
+  id           Int       @id @default(autoincrement())
+  tournamentId Int? // null => casual match
+  startedAt    DateTime  @default(now())
+  finishedAt   DateTime?
+
+  tournament Tournament?   @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  players    MatchPlayer[] // this is not a relation, it just says that it has multiple players
+
+  @@index([tournamentId])
+  @@index([startedAt])
 }
 
-model Friends {
-  id        Int @id @default(autoincrement()) // this should be a one to one relationship with the usermodel
-  acceptedFriend User []
-}
+model MatchPlayer {
+  matchId Int
+  userId  Int
+  score   Int          @default(0)
+  result  MatchResult?
 
-/*
-1. npx prisma migrate dev --name init // ceates tables and generate prisma client (if it doesnot exist)
-2.  npx prisma db pull && npx prisma generate
-3. you can always edit the schema and run npx prisma migrate dev
-*/
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([matchId, userId])
+  @@index([userId])
+}
