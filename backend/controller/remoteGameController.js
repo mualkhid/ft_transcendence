@@ -1,4 +1,4 @@
-import { addPlayerToMatch, removePlayerFromMatch, getMatch} from '../services/matchStateService.js';
+import { addPlayerToMatch, removePlayerFromMatch, getMatch, handlePlayerInput} from '../services/matchStateService.js';
 
 export function handleRemoteGame(socket, matchId){
     console.log(`Player attempting to join match ${matchId}`);
@@ -53,15 +53,54 @@ export function handleRemoteGame(socket, matchId){
         socket.on('message', (message) => {
             try {
                 const data = JSON.parse(message);
-                console.log(`Recieved message from player ${playerNumber}: `, data);
+                
+                if(data.type === 'input')
+                {
+                    if(!['keydown', 'keyup'].includes(data.inputType))
+                    {
+                        socket.send(JSON.stringify({
+                        type: 'error',
+                        message: 'Invalid inputType. Use "keydown" or "keyup".'
+                        }));
+                        return;
+                    }
+                    if(!['down', 'up'].includes(data.key))
+                    {
+                        socket.send(JSON.stringify({
+                        type: 'error',
+                        message: 'Invalid inputType. Use "up" or "down".'
+                        }));
+                        return;
+                    }
+                    const inputResult = handlePlayerInput(
+                        parseInt(matchId),
+                        playerNumber,
+                        data.inputType,
+                        data.key
+                    );
+                    if(inputResult) {
+                        const inputMessage = JSON.stringify({
+                            type: 'input-update',
+                            playerNumber: inputResult.playerNumber,
+                            inputType: inputResult.inputType,
+                            key: inputResult.inputState,
+                            inputStates: inputResult.currentKeys,
+                        });
+                    }
+                    const currentMatch = getMatch(parseInt(matchId));
 
-                socket.send(JSON.stringify({
-                    type: 'echo',
-                    originalMessage: data
-                }));
+                    if(currentMatch)
+                    {
+                        if(currentMatch.player1)
+                            currentMatch.player1.send(message);
+                        if(currentMatch.player2)
+                            currentMatch.player2.send(message);
+                    }
+
+                }
             }
             catch(error) {
-                console.error('Invald message format:', error);
+                console.error('Invald format:', error);
             }
         });
 }

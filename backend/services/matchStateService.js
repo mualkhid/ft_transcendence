@@ -7,7 +7,15 @@ export function createMatchState(matchId){
             player2: null,
             state: {
                 status: 'waiting',
-                connectedPlayers: 0
+                connectedPlayers: 0,
+                player1Keys: {
+                    up: false,
+                    down: false
+                },
+                player2Keys: {
+                    up: false,
+                    down: false
+                }
             }
         });
     }
@@ -58,4 +66,49 @@ export function getMatch(matchId)
     if(activeMatches.get(matchId))
         return(activeMatches.get(matchId));
     return (null);
+}
+
+export function handlePlayerInput(matchId, playerNumber, inputType, inputState)
+{
+    const match = getMatch(matchId);
+    if(!match)
+        return (null);
+
+    const playerKey = playerNumber === 1 ? 'player1Keys' : 'player2Keys';
+    
+    if(inputType === "keydown")
+    {
+        if(inputState === 'up')
+            match.state[playerKey].up = true;
+        if(inputState === 'down')
+            match.state[playerKey].down = true;
+    }
+     
+    if(inputType === "keyup")
+    {
+        if(inputState === 'up')
+            match.state[playerKey].up = false;
+        if(inputState === 'down')
+            match.state[playerKey].down = false;
+    }
+    return {
+        playerNumber,
+        inputType,
+        inputState,
+        currentKeys: {
+            player1Keys: match.state.player1Keys,
+            player2Keys: match.state.player2Keys
+        }
+    };
+}
+
+export function getInputStates(matchId)
+{
+    const match = getMatch(matchId);
+    if(!match)
+            return (null);
+    return {
+        player1Keys: match.state.player1Keys,
+        player2Keys: match.state.player2Keys
+    }
 }
