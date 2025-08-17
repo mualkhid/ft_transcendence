@@ -1,18 +1,15 @@
-version: '3.8'
+# version: '3.8'
 
 services:
   # Nginx with SSL termination and WAF
   nginx:
-    image: nginx:alpine
+    image: nginx:latest
     ports:
-      - "80:80"
       - "443:443"
+      - "80:80"
     volumes:
-      - ./security/ssl:/etc/ssl/certs
-      - ./security/nginx.conf:/etc/nginx/nginx.conf
-    depends_on:
-      - backend
-      - frontend
+      - ./security/ssl/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./security/ssl:/etc/nginx/ssl:ro
 
   # Backend service
   backend:
@@ -40,7 +37,7 @@ services:
 
   # HashiCorp Vault
   vault:
-    image: vault:latest
+    image: hashicorp/vault:1.15.2
     cap_add:
       - IPC_LOCK
     environment:
