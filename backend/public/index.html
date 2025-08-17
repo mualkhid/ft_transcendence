@@ -3,315 +3,548 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebSocket Game Test</title>
+    <title>Pong Remote Players Test</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f0f0f0;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: white;
+        }
+        
         .container {
-            background: white;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .game-canvas {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            background: #000;
+            margin: 20px 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        
+        .player-controls {
+            background: rgba(255, 255, 255, 0.1);
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
-        .controls {
+        
+        .player-controls h3 {
+            margin-bottom: 15px;
+            color: #FFD700;
+            text-align: center;
+        }
+        
+        .connection-panel {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .input-group {
+            margin: 10px 0;
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
             align-items: center;
+            gap: 10px;
         }
-        input[type="number"] {
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            width: 100px;
+        
+        .input-group label {
+            min-width: 80px;
         }
+        
+        .input-group input {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            placeholder-color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .input-group input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
         button {
-            padding: 8px 16px;
-            background-color: #007bff;
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
             color: white;
             border: none;
-            border-radius: 4px;
+            padding: 12px 24px;
+            border-radius: 25px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            margin: 5px;
         }
+        
         button:hover {
-            background-color: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
         }
+        
         button:disabled {
-            background-color: #6c757d;
+            background: rgba(128, 128, 128, 0.5);
             cursor: not-allowed;
+            transform: none;
         }
-        .disconnect {
-            background-color: #dc3545;
-        }
-        .disconnect:hover {
-            background-color: #c82333;
-        }
+        
         .status {
+            margin: 10px 0;
             padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 10px;
+            border-radius: 5px;
             font-weight: bold;
         }
+        
         .status.connected {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid #4CAF50;
+            color: #4CAF50;
         }
+        
         .status.disconnected {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: rgba(244, 67, 54, 0.3);
+            border: 1px solid #F44336;
+            color: #F44336;
         }
+        
         .status.waiting {
-            background-color: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
+            background: rgba(255, 193, 7, 0.3);
+            border: 1px solid #FFC107;
+            color: #FFC107;
         }
+        
         .messages {
-            height: 300px;
+            max-height: 150px;
             overflow-y: auto;
-            border: 1px solid #ddd;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
             padding: 10px;
-            background-color: #f8f9fa;
-            border-radius: 4px;
+            margin: 10px 0;
+            text-align: left;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
         }
-        .message {
-            margin-bottom: 8px;
-            padding: 5px;
-            border-radius: 3px;
+        
+        .key-indicator {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            margin: 5px;
+            text-align: center;
+            line-height: 26px;
+            font-weight: bold;
+            transition: all 0.2s ease;
         }
-        .message.success {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .message.error {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        .message.ready {
-            background-color: #d1ecf1;
-            color: #0c5460;
-        }
-        .message.disconnect {
-            background-color: #fff3cd;
-            color: #856404;
-        }
-        .message.echo {
-            background-color: #e2e3e5;
-            color: #383d41;
-        }
-        .test-controls {
-            margin-top: 20px;
-        }
-        .test-message {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        .test-message input {
-            flex: 1;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+        
+        .key-indicator.active {
+            background: #4CAF50;
+            border-color: #4CAF50;
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>WebSocket Game Connection Test</h1>
+        <h1>🏓 Pong Remote Players Test</h1>
+        
+        <div class="connection-panel">
+            <h3>Connection Settings</h3>
+            <div class="input-group">
+                <label>Server:</label>
+                <input type="text" id="serverUrl" value="ws://localhost:3000" placeholder="WebSocket server URL">
+            </div>
+            <div class="input-group">
+                <label>Match ID:</label>
+                <input type="number" id="matchId" value="1" placeholder="Match ID">
+            </div>
+            <button id="connectBtn">Connect to Match</button>
+            <button id="disconnectBtn" disabled>Disconnect</button>
+            
+            <div id="connectionStatus" class="status disconnected">Disconnected</div>
+        </div>
+        
+        <canvas id="gameCanvas" class="game-canvas" width="800" height="400"></canvas>
         
         <div class="controls">
-            <label for="matchId">Match ID:</label>
-            <input type="number" id="matchId" value="1" min="1">
-            <button id="connectBtn" onclick="connect()">Connect to Match</button>
-            <button id="disconnectBtn" onclick="disconnect()" disabled class="disconnect">Disconnect</button>
-        </div>
-
-        <div id="status" class="status disconnected">
-            Disconnected
-        </div>
-
-        <div class="container">
-            <h3>Messages</h3>
-            <div id="messages" class="messages"></div>
-            <button onclick="clearMessages()">Clear Messages</button>
-        </div>
-
-        <div class="container test-controls">
-            <h3>Test Message Sending</h3>
-            <div class="test-message">
-                <input type="text" id="testMessage" placeholder="Enter test message" value='{"action": "test", "data": "hello"}'>
-                <button onclick="sendTestMessage()" id="sendBtn" disabled>Send Message</button>
+            <div class="player-controls">
+                <h3>Player 1 (W/S)</h3>
+                <p>W: Move Up</p>
+                <p>S: Move Down</p>
+                <div>
+                    <span class="key-indicator" id="p1-up">W</span>
+                    <span class="key-indicator" id="p1-down">S</span>
+                </div>
             </div>
-            <p><small>Try sending JSON messages to test the echo functionality</small></p>
+            
+            <div class="player-controls">
+                <h3>Player 2 (↑/↓)</h3>
+                <p>↑: Move Up</p>
+                <p>↓: Move Down</p>
+                <div>
+                    <span class="key-indicator" id="p2-up">↑</span>
+                    <span class="key-indicator" id="p2-down">↓</span>
+                </div>
+            </div>
         </div>
-    </div>
-
-    <div class="container">
-        <h3>Instructions</h3>
-        <ol>
-            <li>Make sure your server is running on port 3000</li>
-            <li>Enter a match ID (e.g., 1, 2, 3)</li>
-            <li>Click "Connect to Match" to join as a player</li>
-            <li>Open this page in another tab/window with the same match ID to simulate a second player</li>
-            <li>Watch the messages to see the connection flow</li>
-            <li>Try sending test messages to see the echo response</li>
-        </ol>
+        
+        <div class="messages" id="messages">
+            <div>Ready to connect...</div>
+        </div>
     </div>
 
     <script>
-        let ws = null;
-        let currentMatchId = null;
-        let playerNumber = null;
-
-        function connect() {
-            const matchId = document.getElementById('matchId').value;
-            if (!matchId) {
-                addMessage('error', 'Please enter a match ID');
-                return;
+        class PongRemoteTest {
+            constructor() {
+                this.socket = null;
+                this.playerNumber = null;
+                this.isConnected = false;
+                
+                // Game state
+                this.gameState = {
+                    player1: { y: 150, score: 0 },
+                    player2: { y: 150, score: 0 },
+                    ball: { x: 400, y: 200, speedX: 5, speedY: 3 }
+                };
+                
+                // Input state tracking
+                this.inputStates = {
+                    player1Keys: { up: false, down: false },
+                    player2Keys: { up: false, down: false }
+                };
+                
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                
+                this.setupEventListeners();
+                this.gameLoop();
             }
-
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                addMessage('error', 'Already connected. Disconnect first.');
-                return;
-            }
-
-            currentMatchId = matchId;
-            const wsUrl = `ws://localhost:3000/ws/game/${matchId}`;
             
-            addMessage('info', `Attempting to connect to match ${matchId}...`);
-            updateStatus('connecting', 'Connecting...');
-
-            ws = new WebSocket(wsUrl);
-
-            ws.onopen = function(event) {
-                addMessage('info', 'WebSocket connection established');
-                document.getElementById('connectBtn').disabled = true;
-                document.getElementById('disconnectBtn').disabled = false;
-                document.getElementById('sendBtn').disabled = false;
-            };
-
-            ws.onmessage = function(event) {
+            setupEventListeners() {
+                const connectBtn = document.getElementById('connectBtn');
+                const disconnectBtn = document.getElementById('disconnectBtn');
+                const serverUrl = document.getElementById('serverUrl');
+                const matchId = document.getElementById('matchId');
+                
+                connectBtn.addEventListener('click', () => {
+                    this.connect(serverUrl.value, parseInt(matchId.value));
+                });
+                
+                disconnectBtn.addEventListener('click', () => {
+                    this.disconnect();
+                });
+                
+                // Keyboard event listeners
+                document.addEventListener('keydown', (e) => {
+                    this.handleKeyInput(e, 'keydown');
+                });
+                
+                document.addEventListener('keyup', (e) => {
+                    this.handleKeyInput(e, 'keyup');
+                });
+            }
+            
+            connect(serverUrl, matchId) {
                 try {
-                    const data = JSON.parse(event.data);
-                    handleMessage(data);
+                    const wsUrl = `${serverUrl}/remote-game/${matchId}`;
+                    this.socket = new WebSocket(wsUrl);
+                    
+                    this.socket.onopen = () => {
+                        this.updateStatus('connected', 'Connected! Waiting for match assignment...');
+                        this.log('WebSocket connection established');
+                        document.getElementById('connectBtn').disabled = true;
+                        document.getElementById('disconnectBtn').disabled = false;
+                    };
+                    
+                    this.socket.onmessage = (event) => {
+                        this.handleMessage(JSON.parse(event.data));
+                    };
+                    
+                    this.socket.onclose = () => {
+                        this.updateStatus('disconnected', 'Disconnected');
+                        this.log('WebSocket connection closed');
+                        this.isConnected = false;
+                        document.getElementById('connectBtn').disabled = false;
+                        document.getElementById('disconnectBtn').disabled = true;
+                    };
+                    
+                    this.socket.onerror = (error) => {
+                        this.log(`WebSocket error: ${error.message || 'Connection failed'}`);
+                        this.updateStatus('disconnected', 'Connection Error');
+                    };
+                    
                 } catch (error) {
-                    addMessage('error', `Failed to parse message: ${event.data}`);
+                    this.log(`Connection error: ${error.message}`);
+                    this.updateStatus('disconnected', 'Connection Error');
                 }
-            };
-
-            ws.onclose = function(event) {
-                addMessage('info', `Connection closed. Code: ${event.code}, Reason: ${event.reason}`);
-                updateStatus('disconnected', 'Disconnected');
-                document.getElementById('connectBtn').disabled = false;
-                document.getElementById('disconnectBtn').disabled = true;
-                document.getElementById('sendBtn').disabled = true;
-                ws = null;
-                playerNumber = null;
-            };
-
-            ws.onerror = function(error) {
-                addMessage('error', `WebSocket error: ${error}`);
-                updateStatus('disconnected', 'Connection Error');
-            };
-        }
-
-        function disconnect() {
-            if (ws) {
-                ws.close();
+            }
+            
+            disconnect() {
+                if (this.socket) {
+                    this.socket.close();
+                }
+            }
+            
+            handleMessage(data) {
+                this.log(`Received: ${JSON.stringify(data)}`);
+                
+                switch (data.type) {
+                    case 'success':
+                        this.playerNumber = data.playerNumber;
+                        this.isConnected = true;
+                        this.updateStatus('waiting', `Connected as Player ${data.playerNumber}. ${data.message}`);
+                        break;
+                        
+                    case 'ready':
+                        this.updateStatus('connected', `Match Ready! ${data.message}`);
+                        break;
+                        
+                    case 'disconnect':
+                        this.log(`Player disconnected: ${data.message}`);
+                        break;
+                        
+                    case 'error':
+                        this.log(`Error: ${data.message}`);
+                        break;
+                        
+                    case 'input-update':
+                        this.handleInputUpdate(data);
+                        break;
+                        
+                    case 'input':
+                        // Handle input messages from other players
+                        this.handleRemoteInput(data);
+                        break;
+                }
+            }
+            
+            handleInputUpdate(data) {
+                if (data.inputStates) {
+                    this.inputStates = data.inputStates;
+                    this.updateKeyIndicators();
+                }
+            }
+            
+            handleRemoteInput(data) {
+                // Update local input states based on remote input
+                this.log(`Remote input: Player ${data.playerNumber} - ${data.inputType} ${data.key}`);
+            }
+            
+            handleKeyInput(event, inputType) {
+                if (!this.isConnected) return;
+                
+                let key = null;
+                
+                // Map keyboard inputs to game controls
+                switch (event.code) {
+                    case 'KeyW':
+                        key = 'up';
+                        break;
+                    case 'KeyS':
+                        key = 'down';
+                        break;
+                    case 'ArrowUp':
+                        key = 'up';
+                        break;
+                    case 'ArrowDown':
+                        key = 'down';
+                        break;
+                    default:
+                        return; // Ignore other keys
+                }
+                
+                // Prevent default behavior for game keys
+                event.preventDefault();
+                
+                // Send input to server
+                this.sendInput(inputType, key);
+                
+                // Update local visual feedback immediately
+                this.updateLocalInputState(inputType, key);
+            }
+            
+            sendInput(inputType, key) {
+                if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+                    const inputData = {
+                        type: 'input',
+                        inputType: inputType,
+                        key: key
+                    };
+                    
+                    this.socket.send(JSON.stringify(inputData));
+                    this.log(`Sent: ${JSON.stringify(inputData)}`);
+                }
+            }
+            
+            updateLocalInputState(inputType, key) {
+                if (!this.playerNumber) return;
+                
+                const playerKey = this.playerNumber === 1 ? 'player1Keys' : 'player2Keys';
+                const isPressed = inputType === 'keydown';
+                
+                if (key === 'up') {
+                    this.inputStates[playerKey].up = isPressed;
+                } else if (key === 'down') {
+                    this.inputStates[playerKey].down = isPressed;
+                }
+                
+                this.updateKeyIndicators();
+            }
+            
+            updateKeyIndicators() {
+                // Player 1 indicators
+                const p1Up = document.getElementById('p1-up');
+                const p1Down = document.getElementById('p1-down');
+                p1Up.classList.toggle('active', this.inputStates.player1Keys.up);
+                p1Down.classList.toggle('active', this.inputStates.player1Keys.down);
+                
+                // Player 2 indicators
+                const p2Up = document.getElementById('p2-up');
+                const p2Down = document.getElementById('p2-down');
+                p2Up.classList.toggle('active', this.inputStates.player2Keys.up);
+                p2Down.classList.toggle('active', this.inputStates.player2Keys.down);
+            }
+            
+            updateStatus(status, message) {
+                const statusEl = document.getElementById('connectionStatus');
+                statusEl.className = `status ${status}`;
+                statusEl.textContent = message;
+            }
+            
+            log(message) {
+                const messagesEl = document.getElementById('messages');
+                const time = new Date().toLocaleTimeString();
+                messagesEl.innerHTML += `<div>[${time}] ${message}</div>`;
+                messagesEl.scrollTop = messagesEl.scrollHeight;
+            }
+            
+            // Simple game loop for visual feedback
+            gameLoop() {
+                this.updateGameState();
+                this.render();
+                requestAnimationFrame(() => this.gameLoop());
+            }
+            
+            updateGameState() {
+                // Update paddle positions based on input states
+                if (this.inputStates.player1Keys.up && this.gameState.player1.y > 0) {
+                    this.gameState.player1.y -= 5;
+                }
+                if (this.inputStates.player1Keys.down && this.gameState.player1.y < this.canvas.height - 100) {
+                    this.gameState.player1.y += 5;
+                }
+                
+                if (this.inputStates.player2Keys.up && this.gameState.player2.y > 0) {
+                    this.gameState.player2.y -= 5;
+                }
+                if (this.inputStates.player2Keys.down && this.gameState.player2.y < this.canvas.height - 100) {
+                    this.gameState.player2.y += 5;
+                }
+                
+                // Simple ball movement for visual effect
+                this.gameState.ball.x += this.gameState.ball.speedX;
+                this.gameState.ball.y += this.gameState.ball.speedY;
+                
+                // Ball collision with top/bottom
+                if (this.gameState.ball.y <= 10 || this.gameState.ball.y >= this.canvas.height - 10) {
+                    this.gameState.ball.speedY *= -1;
+                }
+                
+                // Reset ball if it goes out of bounds
+                if (this.gameState.ball.x < 0 || this.gameState.ball.x > this.canvas.width) {
+                    this.gameState.ball.x = this.canvas.width / 2;
+                    this.gameState.ball.y = this.canvas.height / 2;
+                    this.gameState.ball.speedX *= -1;
+                }
+            }
+            
+            render() {
+                // Clear canvas
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Draw center line
+                this.ctx.strokeStyle = '#fff';
+                this.ctx.setLineDash([5, 5]);
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.canvas.width / 2, 0);
+                this.ctx.lineTo(this.canvas.width / 2, this.canvas.height);
+                this.ctx.stroke();
+                this.ctx.setLineDash([]);
+                
+                // Draw paddles
+                this.ctx.fillStyle = this.playerNumber === 1 ? '#FF69B4' : '#fff';
+                this.ctx.fillRect(50, this.gameState.player1.y, 15, 100);
+                
+                this.ctx.fillStyle = this.playerNumber === 2 ? '#87CEEB' : '#fff';
+                this.ctx.fillRect(this.canvas.width - 65, this.gameState.player2.y, 15, 100);
+                
+                // Draw ball
+                this.ctx.fillStyle = '#fff';
+                this.ctx.beginPath();
+                this.ctx.arc(this.gameState.ball.x, this.gameState.ball.y, 10, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                // Draw scores
+                this.ctx.fillStyle = '#fff';
+                this.ctx.font = '48px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText(this.gameState.player1.score, this.canvas.width / 4, 60);
+                this.ctx.fillText(this.gameState.player2.score, (3 * this.canvas.width) / 4, 60);
+                
+                // Draw player number indicator
+                if (this.playerNumber) {
+                    this.ctx.fillStyle = '#FFD700';
+                    this.ctx.font = '24px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText(`You are Player ${this.playerNumber}`, this.canvas.width / 2, this.canvas.height - 20);
+                }
             }
         }
-
-        function handleMessage(data) {
-            switch(data.type) {
-                case 'success':
-                    playerNumber = data.playerNumber;
-                    addMessage('success', `${data.message} (Player ${data.playerNumber})`);
-                    updateStatus('connected', `Connected as Player ${data.playerNumber}`);
-                    break;
-                case 'error':
-                    addMessage('error', data.message);
-                    updateStatus('disconnected', 'Connection Failed');
-                    break;
-                case 'ready':
-                    addMessage('ready', data.message);
-                    updateStatus('ready', 'Match Ready - Both Players Connected!');
-                    break;
-                case 'disconnect':
-                    addMessage('disconnect', data.message);
-                    updateStatus('waiting', 'Waiting for other player...');
-                    break;
-                case 'echo':
-                    addMessage('echo', `Echo response: ${JSON.stringify(data.originalMessage)}`);
-                    break;
-                default:
-                    addMessage('info', `Unknown message type: ${JSON.stringify(data)}`);
-            }
-        }
-
-        function sendTestMessage() {
-            if (!ws || ws.readyState !== WebSocket.OPEN) {
-                addMessage('error', 'Not connected to server');
-                return;
-            }
-
-            const message = document.getElementById('testMessage').value;
-            if (!message) {
-                addMessage('error', 'Enter a message to send');
-                return;
-            }
-
-            try {
-                // Try to parse as JSON to validate
-                JSON.parse(message);
-                ws.send(message);
-                addMessage('info', `Sent: ${message}`);
-            } catch (error) {
-                // If not valid JSON, wrap it
-                const wrappedMessage = JSON.stringify({ message: message });
-                ws.send(wrappedMessage);
-                addMessage('info', `Sent (auto-wrapped): ${wrappedMessage}`);
-            }
-        }
-
-        function addMessage(type, message) {
-            const messages = document.getElementById('messages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${type}`;
-            messageDiv.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
-            messages.appendChild(messageDiv);
-            messages.scrollTop = messages.scrollHeight;
-        }
-
-        function updateStatus(statusClass, statusText) {
-            const statusDiv = document.getElementById('status');
-            statusDiv.className = `status ${statusClass}`;
-            statusDiv.textContent = statusText;
-        }
-
-        function clearMessages() {
-            document.getElementById('messages').innerHTML = '';
-        }
-
-        // Allow Enter key to send test message
-        document.getElementById('testMessage').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                sendTestMessage();
-            }
-        });
-
-        // Allow Enter key to connect
-        document.getElementById('matchId').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && !document.getElementById('connectBtn').disabled) {
-                connect();
-            }
+        
+        // Initialize the test application
+        document.addEventListener('DOMContentLoaded', () => {
+            new PongRemoteTest();
         });
     </script>
 </body>
