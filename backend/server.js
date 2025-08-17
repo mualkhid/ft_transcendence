@@ -55,7 +55,6 @@ try {
   const address = await fastify.listen({ port: 3000 });
   console.log(`Server running at ${address}`);
 } catch (err) {
-  fastify.log.error(err);
+  fastify.log.error("catched in server => ", err);
   process.exit(1);
 }
-

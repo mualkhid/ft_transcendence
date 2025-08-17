@@ -1,56 +1,66 @@
 // ESM: no module.exports; use named exports
 import {prisma} from '../server.js';
 
-export const dummyUser = {
-	id: "dummyID",
-	username: "dummy",
-	email: "dummy@gmail.com",
-	createdAt: "2025-08-13T04:11:52.079Z",
-	updatedAt: "2025-08-13T04:11:52.079Z"
-};
+const sanitizedUserSelect = { id: true, username: true, email: true, createdAt: true, updatedAt: true }
 
 export async function registerUser(req, reply) {
 	const { username, email, password } = req.body;
+	const passwordHash = password // call the function instead
 
 	const user = await prisma.user.create({data: {
 		username: username,
 		email: email,
-		passwordHash: password
+		passwordHash: passwordHash
 	}})
 	console.log(user)
 
+	// generate new token
 	return reply.status(201).send({
 		user: {
 		id: user.id,
-		username: user.username,
-		email: user.email,
+		username: user.username.toLowerCase(),
+		email: user.emailtoLowerCase(),
+		passwordHash: password,
 		createdAt: user.createdAt,
 		updatedAt: user.updatedAt
 		}
 	});
 }
-
+// i am thinking of a way to retrieve and update in one database query -> transactions
 export async function login(req, reply) {
 	const { email, password } = req.body;
-	// const user = await prisma.user.findUniqueOrThrow({
-	// 	where: {
-	// 		email === email
-	// 	}
-	// })
-
-	// prisma.findFirst()
-	// its a good idea to disconnect from prisma once you
-	// finish writing your code, i dont know if its after every statement or no
 	
-	return reply.status(200).send({ user: dummyUser });
+	await prisma.$transaction (async (tx) => {
+
+		const user = await tx.user.findUnique({
+			where: { email: email.toLowerCase() },
+		});
+	
+		if (!user || user.passwordHash !== password)
+			return reply.code(401).send({ error: 'Incorrect credentials' });
+			
+		const loggedInUser = await tx.user.update ({
+			where: { id: user.id },
+			data: { lastSeen: new Date() },
+			select: sanitizedUserSelect,
+		})
+		return reply.status(200).send({ user: loggedInUser });	
+	});
 }
 
-export function getCurrentUser(req, reply) {
+export async function getCurrentUser(req, reply) {
+	
+	const id = req.query.id
+	
+	const user = await prisma.user.findUnique({
+		where: {id: Number(id)},
+		select : sanitizedUserSelect,
+	})
 
+	if (!user)
+		return reply.code(401).send({ error: 'Incorrect credentials' });
 
-	// user select from user where name == jwt.name
-	// should read user from JWT/session later
-	return reply.status(200).send({ user: dummyUser });
+	return reply.status(200).send({ user: user });
 }
 
 export function logout(req, reply) {
