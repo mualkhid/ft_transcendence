@@ -1,5 +1,5 @@
 // user schema object
-const userOpts = {
+export const userOpts = {
   type: 'object',
   properties: {
     id: { type: 'string' },
