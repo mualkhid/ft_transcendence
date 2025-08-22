@@ -1,5 +1,7 @@
 // ESM: no module.exports; use named exports
-import {prisma} from '../server.js';
+// import {prisma} from '../server.js';
+import {prisma} from '../prisma/prisma_lib.js'
+
 
 const sanitizedUserSelect = { id: true, username: true, email: true, createdAt: true, updatedAt: true }
 
