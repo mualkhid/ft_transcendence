@@ -25,10 +25,7 @@ services:
     build: ./frontend
     expose:
       - "8080"
-
-  # SQLite database (if using database module)
-
-
+  
   # HashiCorp Vault
   vault:
     image: vault:latest
