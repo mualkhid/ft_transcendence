@@ -17,13 +17,8 @@ services:
   # Backend service
   backend:
     build: ./backend
-    environment:
-      - NODE_ENV=production
-    expose:
-      - "3000"
-    depends_on:
-      - database
-      - vault
+    ports:
+      - "3000:3000"
 
   # Frontend service  
   frontend:
@@ -32,11 +27,7 @@ services:
       - "8080"
 
   # SQLite database (if using database module)
-  database:
-    image: alpine:latest
-    volumes:
-      - ./data:/data
-    command: tail -f /dev/null
+
 
   # HashiCorp Vault
   vault:
