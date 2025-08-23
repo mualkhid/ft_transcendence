@@ -1,0 +1,34 @@
+### Get current user
+GET http://localhost:3000/profile/me?id=2
+Content-Type: application/json
+
+
+### Update username
+PATCH http://localhost:3000/profile/username
+Content-Type: application/json
+
+{
+  "newUsername": "newname"
+}
+
+
+### Update password
+PATCH http://localhost:3000/profile/password
+Content-Type: application/json
+
+{
+  "currentPassword": "Newpassword@123",
+  "newPassword": "ppppppppp1#P"
+}
+
+
+### Update avatar
+PATCH http://localhost:3000/profile/avatar
+Content-Type: multipart/form-data; boundary=MyBoundary
+
+--MyBoundary
+Content-Disposition: form-data; name="avatar"; filename="hourglass.png"
+Content-Type: image/png
+
+< /Users/mafaisal/Desktop/hourglass.png
+--MyBoundary--
