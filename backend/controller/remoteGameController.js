@@ -1,4 +1,4 @@
-import { addPlayerToMatch, removePlayerFromMatch, getMatch, handlePlayerInput} from '../services/matchStateService.js';
+import { addPlayerToMatch, removePlayerFromMatch, getMatch, handlePlayerInput, updateBall} from '../services/matchStateService.js';
 
 export function handleRemoteGame(socket, matchId){
     console.log(`Player attempting to join match ${matchId}`);
@@ -32,6 +32,8 @@ export function handleRemoteGame(socket, matchId){
             if(match.player2)
                 match.player2.send(readyMessage);
             console.log(`Match ${matchId} is ready - both players connected`);
+            match.state.gameLoopInterval = setInterval(()  => updateBall(parseInt(matchId)), 16);
+
         }
 
         socket.on('close', () => {
@@ -64,40 +66,39 @@ export function handleRemoteGame(socket, matchId){
                         }));
                         return;
                     }
-                    if(!['down', 'up'].includes(data.key))
-                    {
-                        socket.send(JSON.stringify({
-                        type: 'error',
-                        message: 'Invalid inputType. Use "up" or "down".'
-                        }));
-                        return;
+                        if(!['down', 'up'].includes(data.key))
+                        {
+                            socket.send(JSON.stringify({
+                            type: 'error',
+                            message: 'Invalid key. Use "up" or "down".'
+                            }));
+                            return;
+                        }
+                        const inputResult = handlePlayerInput(
+                            parseInt(matchId),
+                            playerNumber,
+                            data.inputType,
+                            data.key
+                        );
+                        if(inputResult) {
+                            const inputMessage = JSON.stringify({
+                                type: 'input-update',
+                                playerNumber: inputResult.playerNumber,
+                                inputType: inputResult.inputType,
+                                key: inputResult.inputState,
+                                inputStates: inputResult.currentKeys,
+                            });
+                            const currentMatch = getMatch(parseInt(matchId));
+        
+                            if(currentMatch)
+                            {
+                                if(currentMatch.player1)
+                                    currentMatch.player1.send(inputMessage);
+                                if(currentMatch.player2)
+                                    currentMatch.player2.send(inputMessage);
+                            }
+                        }
                     }
-                    const inputResult = handlePlayerInput(
-                        parseInt(matchId),
-                        playerNumber,
-                        data.inputType,
-                        data.key
-                    );
-                    if(inputResult) {
-                        const inputMessage = JSON.stringify({
-                            type: 'input-update',
-                            playerNumber: inputResult.playerNumber,
-                            inputType: inputResult.inputType,
-                            key: inputResult.inputState,
-                            inputStates: inputResult.currentKeys,
-                        });
-                    }
-                    const currentMatch = getMatch(parseInt(matchId));
-
-                    if(currentMatch)
-                    {
-                        if(currentMatch.player1)
-                            currentMatch.player1.send(message);
-                        if(currentMatch.player2)
-                            currentMatch.player2.send(message);
-                    }
-
-                }
             }
             catch(error) {
                 console.error('Invald format:', error);

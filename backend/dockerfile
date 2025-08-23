@@ -1,0 +1,22 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Create user early
+RUN adduser -D -s /bin/sh appuser
+
+COPY package*.json ./
+COPY prisma ./prisma/
+
+RUN npm install
+RUN npx prisma generate
+
+COPY . .
+
+# Create data directory and fix permissions
+RUN mkdir -p /app/data && chown -R appuser:appuser /app
+
+USER appuser
+
+CMD ["node", "server.js"]
+
