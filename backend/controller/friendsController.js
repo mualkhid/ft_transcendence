@@ -14,10 +14,15 @@ export async function getFriends(req, reply) {
 			OR: [{ requesterId: id }, {addresseeId: id}],
 		},
 		include: {
-			requesterUser: true,
-			addresseeUser: true
+			requesterUser: { 
+				omit: {passwordHash: true}
+			},
+			addresseeUser: {
+				omit: {passwordHash: true}
+			},
 		}
 	});
+	console.log('Any friendships for user 2:', friendship);
 	return reply.status(200).send({
 		friends: friendship.map (f => f.requesterId === id ? f.addresseeUser : f.requesterUser )
 	})
@@ -104,8 +109,23 @@ export async function blockFriend(req, reply) {
 	reply.status(200).send({message: "friend blocked successfully"})
 }
 
-// export async function searchUser(req, reply) {
-// 	prisma.user.findMany({
-		
-// 	})
-// }
+export async function searchUser(req, reply) {
+	const {q: searchTerm, page = 1} = req.query
+	const limit = 10
+	const skip = (page - 1) * limit
+
+
+
+	const users = await prisma.user.findMany({
+		where: {
+			OR: [
+					{email: { startsWith: searchTerm}},
+					{username: {startsWith: searchTerm}}
+			],
+		},
+		omit: {passwordHash: true},
+		take: limit,
+		skip: skip
+	})
+	reply.status(200).send({users: users})
+}

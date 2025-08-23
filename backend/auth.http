@@ -24,5 +24,4 @@ Content-Type: application/json
 
 {}
 
-### GET CURRENT USER
-GET http://localhost:3000/auth/me?id=2 HTTP/1.1
+### RESET PASSWORD

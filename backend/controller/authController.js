@@ -50,21 +50,6 @@ export async function login(req, reply) {
 	});
 }
 
-export async function getCurrentUser(req, reply) {
-	
-	const id = req.query.id
-	
-	const user = await prisma.user.findUnique({
-		where: {id: Number(id)},
-		select : sanitizedUserSelect,
-	})
-
-	if (!user)
-		return reply.code(401).send({ error: 'Incorrect credentials' });
-
-	return reply.status(200).send({ user: user });
-}
-
 export function logout(req, reply) {
 	return reply.status(200).send({ message: "logged-out" });
 }

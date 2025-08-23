@@ -78,17 +78,3 @@ export const logoutOpts = {
     }
   }
 };
-
-export const getCurrentUserOpts = {
-  schema: {
-    response: {
-      200: {
-        type: 'object',
-        properties: {
-          user: userOpts
-        },
-        required: ['user']
-      }
-    }
-  }
-};

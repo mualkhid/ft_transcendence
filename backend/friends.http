@@ -44,8 +44,8 @@ Content-Type: application/json
 	"userId": 2
 }
 
-### SEARCH FRIEND
-GET  http://localhost:3000/friends/searchUser?q=maha HTTP/1.1
+### SEARCH USERS
+GET  http://localhost:3000/friends/searchUser?q=maha&page=1 HTTP/1.1
 Content-Type: application/json
 
 {}
