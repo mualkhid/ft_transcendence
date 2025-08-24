@@ -1,55 +1,53 @@
-// ESM: no module.exports; use named exports
-// import {prisma} from '../server.js';
 import {prisma} from '../prisma/prisma_lib.js'
-
+import { AuthenticationError} from '../utils/errors.js';
 
 const sanitizedUserSelect = { id: true, username: true, email: true, createdAt: true, updatedAt: true }
-
 export async function registerUser(req, reply) {
 	const { username, email, password } = req.body;
-	const passwordHash = password // call the function instead
-
-	const user = await prisma.user.create({data: {
-		username: username,
-		email: email,
-		passwordHash: passwordHash
-	}})
-	console.log(user)
-
-	// generate new token
-	return reply.status(201).send({
-		user: {
-		id: user.id,
-		username: user.username.toLowerCase(),
-		email: user.emailtoLowerCase(),
-		passwordHash: password,
-		createdAt: user.createdAt,
-		updatedAt: user.updatedAt
+	const passwordHash = password // Hash the password properly
+ 
+	const user = await prisma.user.create({
+		data: {
+			username: username,
+			email: email,
+			passwordHash: passwordHash
 		}
 	});
-}
-// i am thinking of a way to retrieve and update in one database query -> transactions
-export async function login(req, reply) {
+ 
+	// generate new token and save it to the header
+	return reply.status(201).send({
+		user: {
+			id: user.id,
+			username: user.username.toLowerCase(),
+			email: user.email.toLowerCase(),
+			createdAt: user.createdAt,
+			updatedAt: user.updatedAt
+		}
+	});
+ }
+ 
+ export async function login(req, reply) {
 	const { email, password } = req.body;
 	
-	await prisma.$transaction (async (tx) => {
-
-		const user = await tx.user.findUnique({
-			where: { email: email.toLowerCase() },
-		});
-	
-		if (!user || user.passwordHash !== password)
-			return reply.code(401).send({ error: 'Incorrect credentials' });
-			
-		const loggedInUser = await tx.user.update ({
-			where: { id: user.id },
-			data: { lastSeen: new Date() },
-			select: sanitizedUserSelect,
-		})
-		return reply.status(200).send({ user: loggedInUser });	
+	const user = await prisma.user.findUnique({
+		where: { email: email.toLowerCase() },
 	});
-}
-
-export function logout(req, reply) {
+ 
+	// compare with bcrypt instead
+	if (!user || user.passwordHash !== password) {
+		throw new AuthenticationError('Invalid email or password');
+	}
+		
+	const loggedInUser = await prisma.user.update({
+		where: { id: user.id },
+		data: { lastSeen: new Date() },
+		select: sanitizedUserSelect,
+	});
+ 
+	return reply.status(200).send({ user: loggedInUser });
+ }
+ 
+ export function logout(req, reply) {
+	// token removal should be from client side (should be deleted from local storage)
 	return reply.status(200).send({ message: "logged-out" });
-}
+ }

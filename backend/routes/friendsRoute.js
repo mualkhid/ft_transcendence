@@ -1,4 +1,4 @@
-import {getFriendsOpts, requestOpts} from '../schema/friendsSchema.js';
+import {requestOpts} from '../schema/friendsSchema.js';
 
 import {getFriends, sendRequest, acceptRequest, declineRequest, removeFriend, blockFriend, searchUser} from '../controller/friendsController.js'
 
