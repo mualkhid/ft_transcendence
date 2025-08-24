@@ -1,10 +1,11 @@
 import {prisma} from '../prisma/prisma_lib.js'
 
-import fs from 'fs/promises'
 import path from 'path'
 import {pipeline} from 'stream'
 import { promisify } from 'util'
 const pump = promisify(pipeline)
+
+import {ValidationError, AuthenticationError, notFoundError } from '../utils/errors.js'
 
 const sanitizedUserSelect = { id: true, username: true, email: true, createdAt: true, updatedAt: true }
 
@@ -13,12 +14,12 @@ export async function getCurrentUser(req, reply) {
 	const id = 2 // from jwt token
 	
 	const user = await prisma.user.findUnique({
-		where: {id: Number(id)},
+		where: {id: id},
 		select : sanitizedUserSelect,
 	})
 
 	if (!user)
-		return reply.code(401).send({ error: 'Incorrect credentials' });
+		throw new notFoundError('user not found')
 
 	return reply.status(200).send({ user: user });
 }
@@ -59,10 +60,11 @@ export async function updatePassword (req, reply)
 		}
 	})
 	if (!user)
-		return reply.status(404).send({message: 'user not found'})
+		throw new notFoundError('user not found')
 
 	if (currentPassword != user.passwordHash)
-		return reply.status(400).send({message: 'current password is incorrect'})
+		throw new AuthenticationError('password Incorrect');
+		
 
 	await prisma.user.update ({
 		where: {id: id},
@@ -77,7 +79,7 @@ export async function updateAvatar(req, reply)
 	const id = 2 // to be replaced by jwt
 	const file = await req.file()
 	if (!file)
-		return reply.status(404).send({message: 'No file uploaded'})
+		throw new notFoundError('No file uploaded')
 
 	const allowed = new Set(['image/jpeg', 'image/png', 'image/webp'])
 	if (!allowed.has(file.mimetype))

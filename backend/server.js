@@ -14,9 +14,10 @@ import remoteGameRoutes from './routes/remoteGameRoutes.js';
 import friendsRoutes from './routes/friendsRoute.js';
 import profileRoutes from './routes/profileRoutes.js';
 
-// import prisma from './prisma/prisma_lib.js'
+import { globalErrorHandler } from './utils/errorHandler.js';
 
 const fastify = Fastify();
+fastify.setErrorHandler(globalErrorHandler)
 
 // Needed to get __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -55,12 +56,12 @@ fastify.register(swaggerUI, {
 
 
 // Transcendence routes
-fastify.register(usersRoutes);
-fastify.register(tournamentRoutes);
-fastify.register(remoteGameRoutes);
-fastify.register(authRoutes);
-fastify.register(friendsRoutes);
-fastify.register(profileRoutes);
+fastify.register(usersRoutes)
+fastify.register(tournamentRoutes); // maybe we should add api prefix
+fastify.register(remoteGameRoutes); // maybe we should add api prefix
+fastify.register(authRoutes)
+fastify.register(friendsRoutes)
+fastify.register(profileRoutes)
 
 // Start server with error handling
 try {

@@ -8,3 +8,4 @@ export default function profileRoutes(fastify, _opts, done) {
 	fastify.patch('/profile/avatar', updateAvatar),
 	done ()
 }
+
