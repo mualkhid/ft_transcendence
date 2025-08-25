@@ -75,7 +75,6 @@ export async function updatePassword (req, reply)
 
 export async function updateAvatar(req, reply)
 {
-	console.log("entered")
 	const id = 2 // to be replaced by jwt
 	const file = await req.file()
 	if (!file)

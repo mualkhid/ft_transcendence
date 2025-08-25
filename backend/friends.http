@@ -1,11 +1,11 @@
 ### QUERY USER'S FRIENDS
-GET http://localhost:3000/friends HTTP/1.1
+GET http://localhost:3000/api/friends HTTP/1.1
 Content-Type: application/json
 
 {}
 
 ### SEND REQUEST
-POST http://localhost:3000/friends/sendRequest HTTP/1.1
+POST http://localhost:3000/api/friends/sendRequest HTTP/1.1
 Content-Type: application/json
 
 {
@@ -13,7 +13,7 @@ Content-Type: application/json
 }
 
 ### ACCEPT REQUEST
-POST http://localhost:3000/friends/acceptRequest HTTP/1.1
+POST http://localhost:3000/api/friends/acceptRequest HTTP/1.1
 Content-Type: application/json
 
 {
@@ -21,7 +21,7 @@ Content-Type: application/json
 }
 
 ### DECLINE REQUEST
-POST http://localhost:3000/friends/declineRequest HTTP/1.1
+POST http://localhost:3000/api/friends/declineRequest HTTP/1.1
 Content-Type: application/json
 
 {
@@ -29,7 +29,7 @@ Content-Type: application/json
 }
 
 ### REMOVE FRIEND
-POST http://localhost:3000/friends/removeFriend HTTP/1.1
+POST http://localhost:3000/api/friends/removeFriend HTTP/1.1
 Content-Type: application/json
 
 {
@@ -37,7 +37,7 @@ Content-Type: application/json
 }
 
 ### BLOCK FRIEND
-POST http://localhost:3000/friends/blockFriend HTTP/1.1
+POST http://localhost:3000/api/friends/blockFriend HTTP/1.1
 Content-Type: application/json
 
 {
@@ -45,7 +45,7 @@ Content-Type: application/json
 }
 
 ### SEARCH USERS
-GET  http://localhost:3000/friends/searchUser?q=maha&page=1 HTTP/1.1
+GET  http://localhost:3000/api/friends/searchUser?q=maha&page=1 HTTP/1.1
 Content-Type: application/json
 
 {}

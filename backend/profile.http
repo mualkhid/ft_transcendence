@@ -1,10 +1,10 @@
 ### Get current user
-GET http://localhost:3000/profile/me?id=2
+GET http://localhost:3000/api/profile/me?id=2
 Content-Type: application/json
 
 
 ### Update username
-PATCH http://localhost:3000/profile/username
+PATCH http://localhost:3000/api/profile/username
 Content-Type: application/json
 
 {
@@ -13,7 +13,7 @@ Content-Type: application/json
 
 
 ### Update password
-PATCH http://localhost:3000/profile/password
+PATCH http://localhost:3000/api/profile/password
 Content-Type: application/json
 
 {
@@ -23,7 +23,7 @@ Content-Type: application/json
 
 
 ### Update avatar
-PATCH http://localhost:3000/profile/avatar
+PATCH http://localhost:3000/api/profile/avatar
 Content-Type: multipart/form-data; boundary=MyBoundary
 
 --MyBoundary
