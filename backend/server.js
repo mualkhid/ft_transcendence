@@ -7,7 +7,6 @@ import fastifyStatic from '@fastify/static';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-import usersRoutes from './routes/users.js';
 import authRoutes from './routes/authRoutes.js';
 import tournamentRoutes from './routes/tournament.js';
 import remoteGameRoutes from './routes/remoteGameRoutes.js';
@@ -56,7 +55,6 @@ fastify.register(swaggerUI, {
 
 
 // Transcendence routes
-fastify.register(usersRoutes)
 fastify.register(tournamentRoutes); // maybe we should add api prefix
 fastify.register(remoteGameRoutes); // maybe we should add api prefix
 fastify.register(authRoutes)
