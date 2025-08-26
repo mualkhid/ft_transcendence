@@ -6,12 +6,19 @@ import fastifyStatic from '@fastify/static';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
+import rateLimit from '@fastify/rate-limit';
+import dotenv from 'dotenv';
+import helmet from '@fastify/helmet';
 
 import usersRoutes from './routes/users.js';
 import authRoutes from './routes/authRoutes.js';
 import tournamentRoutes from './routes/tournament.js';
 import remoteGameRoutes from './routes/remoteGameRoutes.js';
 // import friendsRoutes from './routes/friendsRoute.js'
+
+import { getSecrets } from './services/vaultService.js';
+
+dotenv.config();
 
 const fastify = Fastify();
 export const prisma = new PrismaClient({log: ['query', 'info', 'warn', 'error'] });
@@ -43,6 +50,16 @@ fastify.register(swaggerUI, {
   exposeRoute: true,
 });
 
+// Register rate limiting
+fastify.register(rateLimit, {
+  max: 20, // max requests per timeWindow
+  timeWindow: '1 minute', // per minute
+  allowList: ['127.0.0.1'] // allow localhost unlimited
+});
+
+// Register helmet for security
+await fastify.register(helmet);
+
 // Transcendence routes
 fastify.register(usersRoutes);
 fastify.register(tournamentRoutes);
@@ -58,4 +75,8 @@ try {
   fastify.log.error(err);
   process.exit(1);
 }
+
+const secrets = await getSecrets();
+const jwtSecret = secrets.JWT_SECRET;
+const dbPassword = secrets.DB_PASSWORD;
 

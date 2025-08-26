@@ -6,10 +6,15 @@ import {
 } from '../services/tournamentService.js';
 
 import { users, matches, generateMatchId } from '../services/userService.js';
+import sanitizeHtml from 'sanitize-html';
 
 export async function createTournament(request, reply)
 {
-  const tournament = createNewTournament("Tournament");
+  let name = "Tournament";
+  if (request.body && request.body.name) {
+    name = sanitizeHtml(request.body.name);
+  }
+  const tournament = createNewTournament(name);
 
   return reply.status(201).send({
     ...tournament,

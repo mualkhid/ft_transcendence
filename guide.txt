@@ -1,0 +1,127 @@
+Here’s a step-by-step guide tailored for your workspace and the cybersecurity requirements of your ft_transcendence project:
+
+1. Understand the Requirements
+Mandatory:
+HTTPS for all connections
+Input validation (server-side)
+Protection against SQL Injection/XSS
+Passwords must be hashed
+Secrets (API keys, credentials) in .env and ignored by git
+Cybersecurity Module:
+WAF/ModSecurity with hardened config
+HashiCorp Vault for secrets management
+GDPR compliance (anonymization, account deletion, etc.)
+2FA and JWT (if you choose this module)
+
+
+2. Enable HTTPS Everywhere
+You already have SSL cert generation in conf.sh.
+Ensure Nginx is configured to force HTTPS and proxy requests to backend.
+Check your Nginx config (security/nginx.conf) for proper SSL setup.
+
+3. Input Validation
+Validate all user inputs in backend controllers (userController.js, backend/controller/tournamentController.js).
+Use JSON schema validation (already partially used in your Fastify routes).
+Add extra checks for any new endpoints.
+
+4. Password Hashing
+If you store passwords, use a strong hashing algorithm (e.g., bcrypt).
+Store only hashes, never plaintext passwords.
+Add bcrypt to your backend dependencies:
+Example usage:
+const bcrypt = require('bcrypt');
+const hash = await bcrypt.hash(password, 12);
+
+
+5. Secrets Management
+Store secrets in .env (add .env to .gitignore).
+Use HashiCorp Vault for production secrets (already in docker-compose.yml).
+Integrate Vault with your backend to fetch secrets at runtime.
+
+6. WAF/ModSecurity
+Harden Nginx config to enable ModSecurity (see ModSecurity docs).
+Add recommended security headers (CSP, X-Frame-Options, etc.) in Nginx.
+
+7. GDPR Compliance
+Implement endpoints for:
+Data anonymization (replace user data with random values)
+Account deletion (remove all user data)
+Document these endpoints for users.
+
+8. 2FA and JWT (Optional)
+Use libraries like jsonwebtoken for JWT.
+For 2FA, use TOTP (e.g., speakeasy npm package).
+Add endpoints for enabling/disabling 2FA and verifying codes.
+
+9. Test Your Security
+Use tools like curl, nmap, and browser dev tools to test HTTPS, headers, and endpoints.
+Try common XSS/SQLi payloads to ensure they’re blocked.
+
+10. Document Everything
+Write clear documentation for all security features and endpoints.
+Make sure your .env and secrets are not in git.
+
+11. Commit and Push
+Double-check .gitignore for sensitive files.
+Commit only safe code and configs.
+Tip:
+Work incrementally—finish HTTPS and input validation first, then passwords, then secrets, then WAF, then GDPR, then 2FA/JWT if needed.
+
+If you need help with a specific step, ask for code examples or config templates!
+
+
+# Security Checklist
+
+- [✓] HTTPS for all connections
+- [✓] Input validation (server-side)
+- [✓] Protection against SQL Injection/XSS
+- [✓] Passwords must be hashed
+- [✓] Secrets in .env and ignored by git
+- [✓] WAF/ModSecurity with hardened config
+- [ ] HashiCorp Vault for secrets management
+- [✓] GDPR compliance (anonymization, account deletion)
+- [✓] 2FA and JWT 
+
+
+
+
+const jwtSecret = process.env.JWT_SECRET;
+const dbPassword = process.env.DB_PASSWORD;
+
+npx prisma migrate dev --name password_hash
+npm install bcrypt
+npm install jsonwebtoken
+npm install sanitize-html
+npm install speakeasy qrcode
+npx prisma migrate dev --name add_2fa_fields
+sudo apt update
+sudo apt install libnginx-mod-security
+sudo systemctl restart nginx
+docker run --cap-add=IPC_LOCK -d --name=dev-vault -p 8200:8200 vault
+npm install node-vault
+npx prisma migrate dev --name add_backup_codes
+
+
+
+
+
+
+export VAULT_ADDR='http://127.0.0.1:8200'
+vault operator init
+vault operator unseal
+vault login <root_token>
+
+What else should you add for a functional 2FA flow?
+Frontend support:
+
+Show the QR code returned by /auth/setup-2fa so users can scan it with their app.
+Prompt for the 2FA code on login if isTwoFactorEnabled is true.
+User feedback:
+
+After enabling 2FA, inform the user that 2FA is now required for future logins.
+Error handling:
+
+Make sure your login endpoint returns clear errors if the 2FA code is missing or invalid.
+(Optional but recommended) Backup codes:
+
+Offer backup codes for account recovery if the user loses access to their authenticator app.

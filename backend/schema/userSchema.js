@@ -31,4 +31,20 @@ export const getAliasSchema = {
         }
         }
     }
-}
+};
+
+export const anonymizeAccountSchema = {
+  body: {
+    type: 'object',
+    properties: {}, // No body expected, but you can add fields if needed
+    additionalProperties: false
+  }
+};
+
+export const deleteAccountSchema = {
+  body: {
+    type: 'object',
+    properties: {}, // No body expected, but you can add fields if needed
+    additionalProperties: false
+  }
+};

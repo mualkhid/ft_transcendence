@@ -12,22 +12,28 @@ const userOpts = {
   required: ['id', 'username', 'email', 'createdAt', 'updatedAt']
 };
 
+export const registerSchema = {
+  body: {
+    type: 'object',
+    required: ['username', 'email', 'password'],
+    properties: {
+      username: { type: 'string', minLength: 3, maxLength: 32 },
+      email: { type: 'string', format: 'email' },
+      password: { type: 'string', minLength: 8 }
+    }
+  }
+};
+
 export const registerUserOpts = {
   schema: {
     body: {
       type: 'object',
       required: ['username', 'email', 'password'],
       properties: {
-        username: { type: 'string', minLength: 3, maxLength: 10 },
+        username: { type: 'string', minLength: 3, maxLength: 32 },
         email: { type: 'string', format: 'email' },
-        password: {
-          type: 'string',
-          minLength: 8,
-          maxLength: 64,
-          pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[ !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~]).{8,64}$'
-        }
-      },
-      additionalProperties: false
+        password: { type: 'string', minLength: 8 }
+      }
     },
     response: {
       201: {
