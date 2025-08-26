@@ -39,14 +39,15 @@ enum MatchResult {
  */
 
 model User {
-  id           Int      @id @default(autoincrement())
-  username     String   @unique
-  email        String   @unique // store lowercase in app code
-  passwordHash String
-  avatarUrl    String?
-  lastSeen     DateTime @default(now())
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                Int      @id @default(autoincrement())
+  username          String   @unique
+  email             String   @unique
+  passwordHash      String
+  twoFactorSecret   String?
+  isTwoFactorEnabled Boolean  @default(false)
+  backupCodes       String? // Add this line
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   // back-relations
   wonTournaments       Tournament[]       @relation("tournamentsWon")

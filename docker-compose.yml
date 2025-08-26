@@ -3,22 +3,29 @@ version: '3.8'
 services:
   # Nginx with SSL termination and WAF
   nginx:
-    image: nginx:alpine
+    image: owasp/modsecurity:nginx
     ports:
-      - "80:80"
       - "443:443"
+      - "80:80"
     volumes:
-      - ./security/ssl:/etc/ssl/certs
-      - ./security/nginx.conf:/etc/nginx/nginx.conf
-    depends_on:
-      - backend
-      - frontend
+      - ./security/ssl/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./security/ssl:/etc/nginx/ssl:ro
+      - ./security/modsecurity/modsecurity.conf:/etc/nginx/modsec/modsecurity.conf:ro
+      - ./security/modsecurity/crs-setup.conf:/etc/nginx/modsec/crs-setup.conf:ro
+      - ./security/modsecurity/rules:/etc/nginx/modsec/rules:ro
+    environment:
+      - MODSECURITY_CONFIG=/etc/nginx/modsec/modsecurity.conf
 
   # Backend service
   backend:
     build: ./backend
-    ports:
-      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    expose:
+      - "3000"
+    depends_on:
+      - database
+      # - vault
 
   # Frontend service  
   frontend:
