@@ -16,9 +16,21 @@ import profileRoutes from './routes/profileRoutes.js';
 import { globalErrorHandler } from './utils/errorHandler.js';
 import { trackUserActivity } from './services/lastSeenService.js';
 
+import rateLimit from '@fastify/rate-limit';
+import dotenv from 'dotenv';
+import helmet from '@fastify/helmet';
+
 const fastify = Fastify();
 fastify.setErrorHandler(globalErrorHandler)
 fastify.addHook('preHandler', trackUserActivity)
+
+// import friendsRoutes from './routes/friendsRoute.js'
+
+import { getSecrets } from './services/vaultService.js';
+
+dotenv.config();
+
+export const prisma = new PrismaClient({log: ['query', 'info', 'warn', 'error'] });
 
 // Needed to get __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -74,3 +86,19 @@ try {
   fastify.log.error("catched in server => ", err);
   process.exit(1);
 }
+// Register rate limiting
+fastify.register(rateLimit, {
+  max: 20, // max requests per timeWindow
+  timeWindow: '1 minute', // per minute
+  allowList: ['127.0.0.1'] // allow localhost unlimited
+});
+
+// Register helmet for security
+await fastify.register(helmet);
+
+// fastify.register(friendsRoutes);
+
+const secrets = await getSecrets();
+const jwtSecret = secrets.JWT_SECRET;
+const dbPassword = secrets.DB_PASSWORD;
+
