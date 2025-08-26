@@ -1,10 +1,19 @@
+import { 
+    createCasualMatch, 
+    startMatch, 
+    completeMatch 
+} from './matchDatabaseService.js';
+
 const activeMatches = new Map();
 
-export function createMatchState(matchId){
-    if(!activeMatches.has(matchId)){
-        activeMatches.set(matchId, {
+export async function createMatchState(matchId, player1Alias = 'Player1', player2Alias = 'Player2'){
+    const numericMatchId = parseInt(matchId);
+    if(!activeMatches.has(numericMatchId)){
+        const dbMatch = await createCasualMatch(player1Alias, player2Alias, numericMatchId);
+        activeMatches.set(numericMatchId, {
             player1: null,
             player2: null,
+            matchId: dbMatch ? dbMatch.id : null,
             state: {
                 status: 'waiting',
                 connectedPlayers: 0,
@@ -32,16 +41,22 @@ export function createMatchState(matchId){
                 scorePlayer1: 0,
                 scorePlayer2: 0,
                 maxScore: 5,
-                gameLoopInterval: null
+                gameLoopInterval: null,
+                matchStarted: false,
+                player1Alias,
+                player2Alias
             }
         });
     }
-    return activeMatches.get(matchId);
+    return activeMatches.get(numericMatchId);
 }
 
-export function addPlayerToMatch(matchId, websocket){
-    const match = createMatchState(matchId);
+export async function addPlayerToMatch(matchId, websocket)
+{
+    const match = await createMatchState(matchId);
 
+    if(!match)
+        return (null);
     if(!match.player1)
     {
         match.player1 = websocket;
@@ -74,8 +89,11 @@ export function removePlayerFromMatch(matchId, websocket)
     }
     if(match.state.connectedPlayers === 0)
     {
-        clearInterval(match.state.gameLoopInterval);
-        match.state.gameLoopInterval = null;
+        if (match.state.gameLoopInterval)
+        {
+            clearInterval(match.state.gameLoopInterval);
+            match.state.gameLoopInterval = null;
+        }
         activeMatches.delete(matchId);
     }
 }
@@ -157,11 +175,25 @@ function updatePaddlePosition(match)
     }
 }
 
-export function updateBall(matchId)
+export async function updateBall(matchId)
 {
     const match = getMatch(matchId);
     if(!match)
         return (null);
+
+    if (!match.state.matchStarted && match.state.connectedPlayers === 2)
+    {
+        try {
+            if (match.matchId) {
+                await startMatch(match.matchId);
+                match.state.matchStarted = true;
+            }
+        }
+        catch (error)
+        {
+            console.error(`Failed to start match in DB: ${error.message}`);
+        }
+    }
     updatePaddlePosition(match);
     match.state.ballPositionX += match.state.speedX;
     match.state.ballPositionY += match.state.speedY;
@@ -174,7 +206,7 @@ export function updateBall(matchId)
         match.state.scorePlayer2++;
         if(match.state.scorePlayer2 >= match.state.maxScore)
         {
-            broadcastGameOver(match, 2, matchId);
+            await broadcastGameOver(match, 2, matchId);
             return ;
         }
         resetBall(match);
@@ -184,7 +216,7 @@ export function updateBall(matchId)
         match.state.scorePlayer1++;
         if(match.state.scorePlayer1 >= match.state.maxScore)
         {
-            broadcastGameOver(match, 1, matchId);
+            await broadcastGameOver(match, 1, matchId);
             return ;
         }
         resetBall(match);
@@ -231,7 +263,7 @@ function broadcastGameState(match)
         match.player2.send(gameUpdate);
 }
 
-function broadcastGameOver(match, winner, matchId)
+async function broadcastGameOver(match, winner, matchId)
 {
     const gameOver = JSON.stringify({
         type: 'game-over',
@@ -243,8 +275,30 @@ function broadcastGameOver(match, winner, matchId)
         match.player1.send(gameOver);
     if(match.player2)
         match.player2.send(gameOver);
-    clearInterval(match.state.gameLoopInterval);
-    match.state.gameLoopInterval = null;
+
+    try
+    {
+        if (match.matchId) {
+            const winnerAlias = winner === 1 ? match.state.player1Alias : match.state.player2Alias;
+            await completeMatch(
+                match.matchId, 
+                winnerAlias, 
+                match.state.scorePlayer1, 
+                match.state.scorePlayer2
+            );
+            console.log(`Match ${match.matchId} completed and saved to database. Winner: ${winnerAlias}`);
+        }
+    }
+    catch (error)
+    {
+        console.error(`Failed to save match results to DB: ${error.message}`);
+    }
+
+    if (match.state.gameLoopInterval)
+    {
+        clearInterval(match.state.gameLoopInterval);
+        match.state.gameLoopInterval = null;
+    }
     activeMatches.delete(matchId);
 }
 
