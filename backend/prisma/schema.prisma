@@ -23,6 +23,12 @@ enum TournamentStatus {
   FINISHED
 }
 
+enum MatchStatus {
+  PENDING
+  ONGOING
+  FINISHED
+}
+
 enum FriendshipStatus {
   PENDING
   ACCEPTED
@@ -97,14 +103,11 @@ model Tournament {
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 
-  creator   User?
-  winner    User?
   players       TournamentPlayer[]
   matches Match[]
 
 
   // Back-relations
-  winner   User? @relation("tournamentsWon", fields: [winnerId], references: [id], onDelete: SetNull)
   creator   User? @relation("tournamentsCreated", fields: [creatorId], references: [id], onDelete: SetNull)
 
   // @@index([status])
