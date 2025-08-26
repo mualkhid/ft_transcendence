@@ -197,7 +197,7 @@ export async function completeMatch(matchId, winnerAlias) {
             const updatedMatch = await tx.match.update({
                 where: { id: matchId },
                 data: {
-                    status: 'COMPLETED',
+                    status: 'FINISHED',
                     winnerAlias,
                     finishedAt: new Date()
                 }
@@ -251,7 +251,7 @@ async function advanceToNextRound(tx, tournamentId, completedRound)
         where: {
             tournamentId,
             roundNumber: completedRound,
-            status: 'COMPLETED'
+            status: 'FINISHED'
         },
         select: { winnerAlias: true },
         orderBy: { matchNumber: 'asc' }
