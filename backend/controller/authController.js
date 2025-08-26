@@ -1,7 +1,7 @@
 import {prisma} from '../prisma/prisma_lib.js'
 import { AuthenticationError} from '../utils/errors.js';
 
-const sanitizedUserSelect = { id: true, username: true, email: true, createdAt: true, updatedAt: true }
+const sanitizedUserSelect = { id: true, username: true, email: true, createdAt: true, lastSeen: true, updatedAt: true }
 export async function registerUser(req, reply) {
 	const { username, email, password } = req.body;
 	const passwordHash = password // Hash the password properly
@@ -21,6 +21,7 @@ export async function registerUser(req, reply) {
 			username: user.username.toLowerCase(),
 			email: user.email.toLowerCase(),
 			createdAt: user.createdAt,
+			lastSeen: user.lastSeen,
 			updatedAt: user.updatedAt
 		}
 	});

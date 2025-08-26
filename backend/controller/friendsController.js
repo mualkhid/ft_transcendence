@@ -70,6 +70,7 @@ export async function declineRequest(req, reply) {
 			},
 		},
 	  })
+	// convention is to send an empty message for deletion
 	reply.status(204).send()
 }
 

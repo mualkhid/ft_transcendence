@@ -14,9 +14,11 @@ import friendsRoutes from './routes/friendsRoute.js';
 import profileRoutes from './routes/profileRoutes.js';
 
 import { globalErrorHandler } from './utils/errorHandler.js';
+import { trackUserActivity } from './services/lastSeenService.js';
 
 const fastify = Fastify();
 fastify.setErrorHandler(globalErrorHandler)
+fastify.addHook('preHandler', trackUserActivity)
 
 // Needed to get __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -41,7 +43,7 @@ fastify.register(swagger, {
 });
 
 // used for uploading files
-await fastify.register(fastifyMultipart, {
+fastify.register(fastifyMultipart, {
   limits: {
     file: 1,
     filesize: 5 * 1024 * 1024
