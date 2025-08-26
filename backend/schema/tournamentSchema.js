@@ -1,116 +1,26 @@
 export const  createTournamentSchema = {
-    response: {
-        201: {
+    body: {
             type: 'object',
             properties: {
-                id: { type: 'number' },
-                name: { type: 'string' },
-                message: { type: 'string' },
+                name: { type: 'string', minLength: 3 },
+                maxPlayers: { type: 'number', enum: [4, 8] },
+                aliases: { type: 'array',
+                        items: {type: 'string', minLength: 1 },
+                        minItems: 4,
+                        maxItems: 8
+                 }
             },
-            required: ['id', 'name', 'message']
+            required: ['alaises'],
         }
-    }
-}
+};
 
-export const getTournamentSchema = {
-    response: {
-        200: {
-            type: 'object',
-            properties: {
-                id: { type: 'number'},
-                name: { type: 'string'}
-            },
-            required: ['id', 'name']
-        },
-        404: {
-            type: 'object',
-            properties: {
-                error: {type: 'string'}
-            },
-            required: ['error']
-        }
-    }
-}
-
-export const joinTournamentSchema = {
-    body:{
+export const completeMatchSchema = {
+    body: {
         type: 'object',
-        properties: {userId: {type: 'number'}},
-        required: ['userId'],
-    },
-    response: {
-        200: {
-            type: 'object',
-            properties: { message: {type: 'string'}},
-            required: ['message']
+        properties: {
+            matchId: { type: 'number' },
+            winner: { type: 'string', minLength: 1 }
         },
-        400: {
-            type: 'object',
-            properties: { error: {type: 'string'}},
-            required: ['error']
-        },
-        403: {
-            type: 'object',
-            properties: { error: {type: 'string'}},
-            required: ['error']
-        },
-        404: {
-            type: 'object',
-            properties: { error: {type: 'string'}},
-            required: ['error']
-        },
-        409: {
-            type: 'object',
-            properties: { error: {type: 'string'}},
-            required: ['error']
-        }
+        required: ['matchId', 'winner'],
     }
-}
-
-export const nextMatchSchema = {
-    response: {
-        200: {
-            type: 'object',
-            properties: {
-              matchId: { type: 'number' },
-              player1: {
-                type: 'object',
-                properties: {
-                  id: { type: 'number' },
-                  alias: { type: 'string' }
-                },
-                required: ['id', 'alias']
-              },
-              player2: {
-                type: 'object',
-                properties: {
-                  id: { type: 'number' },
-                  alias: { type: 'string' }
-                },
-                required: ['id', 'alias']
-              }
-            },
-            required: ['matchId', 'player1', 'player2']
-          },
-        400: {
-            type: 'object',
-            properties: { error: {type: 'string'}},
-            required: ['error']
-        },
-        404: {
-            type: 'object',
-            properties: { error: {type: 'string'}},
-            required: ['error']
-        }
-    }
-}
-
-export const resetTournamentSchema = {
-    response: {
-        200: {
-            type: 'object',
-            properties: { message: {type: 'string'}},
-            required: ['message']
-        }
-    }
-}
+};
