@@ -1,5 +1,6 @@
 // ESM: no module.exports; use named exports
-import { prisma } from '../server.js';
+import { prisma } from '../prisma/prisma_lib.js';
+
 import bcrypt from 'bcrypt';
 import { generateToken } from '../services/jwtService.js';
 import sanitizeHtml from 'sanitize-html';

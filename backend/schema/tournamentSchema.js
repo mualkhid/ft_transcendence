@@ -3,17 +3,15 @@ export const  createTournamentSchema = {
             type: 'object',
             properties: {
                 name: { type: 'string', minLength: 3 },
-                maxPlayers: { type: 'number', enum: [4, 8] },
                 aliases: { type: 'array',
                         items: {type: 'string', minLength: 1 },
                         minItems: 4,
                         maxItems: 8
                  }
             },
-            required: ['alaises'],
+            required: ['aliases'],
         }
 };
-
 export const completeMatchSchema = {
     body: {
         type: 'object',
