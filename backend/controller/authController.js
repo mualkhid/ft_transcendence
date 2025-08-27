@@ -123,7 +123,7 @@ export async function login(req, reply) {
         return reply.status(200).send({ message: 'Login successful', token });
     } catch (err) {
         console.error("Login error:", err);
-        return reply.status(500).send({ error: "Internal server error." });
+        return reply.status(500).send({ error: err.message });
     }
 }
 

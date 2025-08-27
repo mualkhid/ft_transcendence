@@ -2,13 +2,12 @@
 GET http://localhost:3000/api/profile/me?id=2
 Content-Type: application/json
 
-
 ### Update username
 PATCH http://localhost:3000/api/profile/username
 Content-Type: application/json
 
 {
-  "newUsername": "newname"
+  "newUsername": "old"
 }
 
 
