@@ -100,7 +100,13 @@ sudo systemctl restart nginx
 docker run --cap-add=IPC_LOCK -d --name=dev-vault -p 8200:8200 vault
 npm install node-vault
 npx prisma migrate dev --name add_backup_codes
-
+curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+sudo apt update && sudo apt install vault
+cd security/modsecurity
+curl -L https://github.com/coreruleset/coreruleset/archive/refs/heads/v4.0/dev.tar.gz | tar xz
+mv coreruleset-4.0-dev/rules .
+rm -rf coreruleset-4.0-dev
 
 
 
