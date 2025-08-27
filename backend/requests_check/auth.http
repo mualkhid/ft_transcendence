@@ -3,8 +3,8 @@ POST http://localhost:3000/api/auth/registerUser HTTP/1.1
 Content-Type: application/json
 
 {
-	"username": "sumaya",
-	"email": "sumaya@gmail.com",
+	"username": "dina",
+	"email": "dina@gmail.com",
 	"password": "ppppppppp1#P"
 }
 
@@ -20,6 +20,6 @@ Content-Type: application/json
 ### LOGOUT USER
 POST http://localhost:3000/api/auth/logout HTTP/1.1
 Content-Type: application/json
+Cookie: token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiaWF0IjoxNzU2Mjg2ODk4LCJleHAiOjE3NTYyOTA0OTh9.iZ41eNdxOtzpAP4iaAOJeHkX2NByqJGWEQKe_i2zvhQ
 
 {}
-# eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzU2MjczNjk2LCJleHAiOjE3NTYyNzcyOTZ9.GvLyxDLflYs99wP6PhOKSJoGAEUfndpJCrVNj0yT7Ws

@@ -1,11 +1,14 @@
 import { getCurrentUserOpts, updateUsernameOpts, updatePasswordOpts, updateAvatarOpts} from "../schema/profileSchema.js";
 import { getCurrentUser, updateUsername, updatePassword, updateAvatar} from "../controller/profileController.js";
 
+import { authenticate } from '../services/jwtService.js';
+import { trackUserActivity } from '../services/lastSeenService.js';
+
 export default function profileRoutes(fastify, _opts, done) {
-	fastify.get ('/profile/me', getCurrentUserOpts, getCurrentUser);
-	fastify.patch('/profile/username', updateUsernameOpts, updateUsername),
-	fastify.patch('/profile/password', updatePasswordOpts, updatePassword),
-	fastify.patch('/profile/avatar', updateAvatar),
+	fastify.get ('/profile/me', {getCurrentUserOpts, preHandler: [authenticate, trackUserActivity]}, getCurrentUser);
+	fastify.patch('/profile/username', {updateUsernameOpts, preHandler: [authenticate, trackUserActivity]}, updateUsername),
+	fastify.patch('/profile/password', {updatePasswordOpts, preHandler: [authenticate, trackUserActivity]}, updatePassword),
+	fastify.patch('/profile/avatar', {preHandler: [authenticate, trackUserActivity]}, updateAvatar),
 	done ()
 }
 
