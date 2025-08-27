@@ -1,8 +1,9 @@
 import { addPlayerToMatch, removePlayerFromMatch, getMatch, handlePlayerInput, updateBall} from '../services/matchStateService.js';
 
-export function handleRemoteGame(socket, matchId){
+export async function handleRemoteGame(socket, matchId)
+{
     console.log(`Player attempting to join match ${matchId}`);
-    const playerNumber = addPlayerToMatch(parseInt(matchId), socket);
+    const playerNumber = await addPlayerToMatch(parseInt(matchId), socket);
         if(playerNumber === null)
         {
             socket.send(JSON.stringify({
@@ -36,8 +37,8 @@ export function handleRemoteGame(socket, matchId){
 
         }
 
-        socket.on('close', () => {
-            removePlayerFromMatch(parseInt(matchId), socket);
+        socket.on('close', async () => {
+            await removePlayerFromMatch(parseInt(matchId), socket);
             const remainingMatch = getMatch(parseInt(matchId));
             if(remainingMatch)
             {
