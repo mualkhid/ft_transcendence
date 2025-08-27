@@ -1,24 +1,42 @@
 export const  createTournamentSchema = {
     body: {
-            type: 'object',
-            properties: {
-                name: { type: 'string', minLength: 3 },
-                aliases: { type: 'array',
-                        items: {type: 'string', minLength: 1 },
-                        minItems: 4,
-                        maxItems: 8
-                 }
+        type: 'object',
+        properties: {
+            name: { 
+                type: 'string', 
+                minLength: 1,
+                maxLength: 100 
             },
-            required: ['aliases'],
-        }
+            aliases: { 
+                type: 'array',
+                items: { 
+                    type: 'string', 
+                    minLength: 1,
+                    maxLength: 50
+                },
+                minItems: 4,
+                maxItems: 8
+            }
+        },
+        required: ['aliases'],
+        additionalProperties: false
+    }
 };
 export const completeMatchSchema = {
     body: {
         type: 'object',
         properties: {
-            matchId: { type: 'number' },
-            winner: { type: 'string', minLength: 1 }
+            matchId: { 
+                type: 'number',
+                minimum: 1
+            },
+            winner: { 
+                type: 'string', 
+                minLength: 1,
+                maxLength: 50
+            }
         },
         required: ['matchId', 'winner'],
+        additionalProperties: false
     }
 };
