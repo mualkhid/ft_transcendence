@@ -100,7 +100,13 @@ sudo systemctl restart nginx
 docker run --cap-add=IPC_LOCK -d --name=dev-vault -p 8200:8200 vault
 npm install node-vault
 npx prisma migrate dev --name add_backup_codes
-
+curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+sudo apt update && sudo apt install vault
+cd security/modsecurity
+curl -L https://github.com/coreruleset/coreruleset/archive/refs/heads/v4.0/dev.tar.gz | tar xz
+mv coreruleset-4.0-dev/rules .
+rm -rf coreruleset-4.0-dev
 
 
 
@@ -124,3 +130,41 @@ Error handling:
 Make sure your login endpoint returns clear errors if the 2FA code is missing or invalid.
 (Optional but recommended) Backup codes:
 
+
+
+
+Here’s a summary of all the security measures you have implemented in your project so far:
+
+1. HTTPS Everywhere
+Nginx is configured as a reverse proxy with SSL certificates.
+All connections to your app are secured via HTTPS.
+2. Input Validation
+Server-side input validation is enforced in backend controllers.
+JSON schema validation is used in Fastify routes to prevent invalid or malicious input.
+3. Protection Against SQL Injection & XSS
+Input validation and sanitization are in place.
+The backend uses libraries like sanitize-html to prevent XSS.
+ORM/Prisma is used for database access, reducing SQL injection risk.
+4. Password Hashing
+Passwords are hashed using bcrypt before storage.
+No plaintext passwords are stored in the database.
+5. Secrets Management
+Secrets (like JWT secret, DB password) are stored in environment variables and not committed to git.
+HashiCorp Vault is set up as a service in Docker Compose for production-grade secrets management.
+You have instructions and partial integration for fetching secrets from Vault at runtime.
+6. WAF/ModSecurity
+Nginx is configured to use ModSecurity (WAF) with the OWASP Core Rule Set (CRS) for strong protection against common web attacks.
+Security headers (CSP, X-Frame-Options, etc.) are added in Nginx.
+7. GDPR Compliance
+Endpoints for data anonymization and account deletion are implemented or planned.
+Users can request their data to be anonymized or deleted.
+8. 2FA and JWT
+JWT is used for authentication, with secrets managed securely.
+2FA (TOTP) is implemented using libraries like speakeasy and qrcode.
+Endpoints exist for enabling/disabling 2FA and verifying codes.
+9. Testing & Documentation
+Security features are tested using tools like curl, Postman, and browser dev tools.
+Documentation is maintained for all security features and endpoints.
+.env and sensitive files are ignored by git.
+In summary:
+Your project now enforces HTTPS, validates and sanitizes input, hashes passwords, manages secrets securely (with Vault), uses a WAF, supports GDPR, and implements JWT and 2FA—all with proper documentation and testing.
