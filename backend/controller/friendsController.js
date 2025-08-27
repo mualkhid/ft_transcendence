@@ -2,7 +2,8 @@ import {prisma} from '../prisma/prisma_lib.js'
 
 
 export async function getFriends(req, reply) {
-	 const id = 2; // later will strap from jwt token
+	 const id = req.user.id
+	 console.log(id)
 
 	const friendship = await prisma.friendship.findMany ({
 		where: {
@@ -26,13 +27,16 @@ export async function getFriends(req, reply) {
 
 
 export async function sendRequest(req, reply) {
-	const id = 2; // later will strap from jwt token
+	const id = req.user.id
+	const userId = req.body.userId
 
+	if (id === userId)
+		throw validationError("cant friend self")
 	// if it failed to create it, it means that there is already a request / user is blocked.
 	await prisma.friendship.create({data: {
 
 		requesterId: id,
-		addresseeId: req.body.userId
+		addresseeId: userId
 	}})
 
 	// if request is pending then it should not allow it to send from the frontend
@@ -42,7 +46,7 @@ export async function sendRequest(req, reply) {
 
 // 200 accepted, 404 if not pending
 export async function acceptRequest(req, reply) {
-	const id = 3;
+	 const id = req.user.id
 
 	await prisma.friendship.update({
 		where: {
@@ -59,7 +63,7 @@ export async function acceptRequest(req, reply) {
 }
 
 export async function declineRequest(req, reply) {
-	const id = 3;
+	const id = req.user.id
 
 	await prisma.friendship.delete({
 		where: {
@@ -75,7 +79,7 @@ export async function declineRequest(req, reply) {
 }
 
 export async function removeFriend(req, reply) {
-	const id = 3;
+	const id = req.user.id
 
 	await prisma.friendship.deleteMany({
 		where: {
@@ -91,7 +95,7 @@ export async function removeFriend(req, reply) {
 }
 
 export async function blockFriend(req, reply) {
-	const id = 3;
+	const id = req.user.id
 
 	await prisma.friendship.updateMany({
 		where: {

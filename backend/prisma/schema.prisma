@@ -55,15 +55,15 @@ model User {
  */
 model Friendship {
   // id        Int              @id @default(autoincrement())
-  requester Int
-  addressee Int
+  requesterId Int
+  addresseeId Int
   status    FriendshipStatus @default(PENDING)
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
-  requesterUser User @relation("requested", fields: [requester], references: [id], onDelete: Cascade)
-  addresseeUser User @relation("received", fields: [addressee], references: [id], onDelete: Cascade)
-  @@id([requester, addressee])
-  @@index([addressee, status]) // “incoming pending requests”
+  requesterUser User @relation("requested", fields: [requesterId], references: [id], onDelete: Cascade)
+  addresseeUser User @relation("received", fields: [addresseeId], references: [id], onDelete: Cascade)
+  @@id([requesterId, addresseeId])
+  @@index([addresseeId, status]) // “incoming pending requests”
 }
 /**
  * ===== Tournaments =====

@@ -15,8 +15,8 @@ import { authenticate } from '../services/jwtService.js';
 // Fastify ESM plugin: default export
 export default function authRoutes(fastify, _opts, done) {
   fastify.post('/auth/registerUser', registerUserOpts, registerUser);
-  fastify.post('/auth/login', loginOpts, login);
-  fastify.post('/auth/logout', logoutOpts, logout);
+  fastify.post('/auth/login', loginOpts, login); // we will update lastSeen manually here
+  fastify.post('/auth/logout', {logoutOpts, preHandler: authenticate}, logout);
   fastify.post('/auth/setup-2fa', { preHandler: authenticate }, setup2FA);
   done();
 }
