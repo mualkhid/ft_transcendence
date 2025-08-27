@@ -55,7 +55,8 @@ export async function registerUser(req, reply) {
                 username: user.username,
                 email: user.email,
                 createdAt: user.createdAt,
-                updatedAt: user.updatedAt
+                updatedAt: user.updatedAt,
+                lastSeen: user.lastSeen
             }
         });
     } catch (err) {
@@ -120,6 +121,10 @@ export async function login(req, reply) {
             path: '/',
             maxAge: 3600
         });
+        // await prisma.user.update({
+        //     where: { id: user.id },
+        //     data: { lastSeen: new Date(now) }
+        // });
         return reply.status(200).send({ message: 'Login successful', token });
     } catch (err) {
         console.error("Login error:", err);
@@ -137,7 +142,8 @@ export async function getCurrentUser(req, reply) {
             username: user.username,
             email: user.email,
             createdAt: user.createdAt,
-            updatedAt: user.updatedAt
+            updatedAt: user.updatedAt,
+            lastSeen: user.lastSeen
         }
     });
 }
