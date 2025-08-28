@@ -8,6 +8,7 @@ module.exports = {
         'powerpuff-blue': '#87CEEB',
         'powerpuff-green': '#98FB98',
         'powerpuff-purple': '#DDA0DD',
+        'powerpuff-red': '#FF6B6B',
         'townsville-sky': '#87CEEB',
         'mojo-jojo': '#4A4A4A'
       },

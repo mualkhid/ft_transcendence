@@ -33,6 +33,9 @@
         </div>
         <ul class="flex space-x-6 text-lg font-bold">
             <li><a href="#" id="navHome" class="hover:text-powerpuff-pink">Home</a></li>
+            <li><a href="#" id="navAuth" class="hover:text-powerpuff-pink">Auth</a></li>
+            <li><a href="#" id="navFriends" class="hover:text-powerpuff-blue">Friends</a></li>
+            <li><a href="#" id="navTournaments" class="hover:text-powerpuff-green">Tournaments</a></li>
             <li><a href="#" id="navRegister" class="hover:text-powerpuff-blue">Play</a></li>
             <li><a href="#" id="navProfile" class="hover:text-powerpuff-green">Profile</a></li>
             <li><a href="#" id="navInvite" class="hover:text-powerpuff-purple">Invite</a></li>
@@ -52,6 +55,166 @@
                 <h1 class="text-6xl font-logo text-white mb-4 animate-bounce-slow">Welcome to Powerpuff Pong!</h1>
                 <p class="text-2xl text-white mb-4">Sugar, Spice, and Everything Pong!</p>
                 <button id="playBtn" class="bg-powerpuff-pink hover:bg-powerpuff-purple text-white font-bold py-3 px-8 rounded-full text-2xl transition-colors">Play</button>
+            </div>
+        </div>
+
+        <!-- Authentication Section -->
+        <div id="authSection" class="hidden">
+            <div class="max-w-md mx-auto bg-white bg-opacity-10 rounded-lg p-6 backdrop-blur-sm">
+                <h2 class="text-4xl font-logo text-powerpuff-pink mb-6 text-center">Authentication</h2>
+                
+                <!-- Login Form -->
+                <div id="loginForm" class="mb-6">
+                    <h3 class="text-2xl font-bold text-white mb-4 text-center">Login</h3>
+                    <form id="loginFormElement" class="space-y-4">
+                        <div>
+                            <input type="email" id="loginEmail" placeholder="Email" required 
+                                   class="w-full px-3 py-2 rounded border-2 border-powerpuff-pink bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:border-powerpuff-purple">
+                        </div>
+                        <div>
+                            <input type="password" id="loginPassword" placeholder="Password" required 
+                                   class="w-full px-3 py-2 rounded border-2 border-powerpuff-pink bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:border-powerpuff-purple">
+                        </div>
+                        <button type="submit" class="w-full bg-powerpuff-pink hover:bg-powerpuff-purple text-white font-bold py-2 px-4 rounded transition-colors">
+                            Login
+                        </button>
+                    </form>
+                    <p class="text-white text-center mt-4">
+                        Don't have an account? 
+                        <button id="showRegisterForm" class="text-powerpuff-blue hover:text-powerpuff-purple underline">Register here</button>
+                    </p>
+                </div>
+
+                <!-- Register Form -->
+                <div id="registerForm" class="hidden">
+                    <h3 class="text-2xl font-bold text-white mb-4 text-center">Register</h3>
+                    <form id="registerFormElement" class="space-y-4">
+                        <div>
+                            <input type="text" id="registerUsername" placeholder="Username" required 
+                                   class="w-full px-3 py-2 rounded border-2 border-powerpuff-blue bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:border-powerpuff-purple">
+                        </div>
+                        <div>
+                            <input type="email" id="registerEmail" placeholder="Email" required 
+                                   class="w-full px-3 py-2 rounded border-2 border-powerpuff-blue bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:border-powerpuff-purple">
+                        </div>
+                        <div>
+                            <input type="password" id="registerPassword" placeholder="Password" required 
+                                   class="w-full px-3 py-2 rounded border-2 border-powerpuff-blue bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:border-powerpuff-purple">
+                        </div>
+                        <button type="submit" class="w-full bg-powerpuff-blue hover:bg-powerpuff-purple text-white font-bold py-2 px-4 rounded transition-colors">
+                            Register
+                        </button>
+                    </form>
+                    <p class="text-white text-center mt-4">
+                        Already have an account? 
+                        <button id="showLoginForm" class="text-powerpuff-pink hover:text-powerpuff-purple underline">Login here</button>
+                    </p>
+                </div>
+
+                <!-- User Info (shown when logged in) -->
+                <div id="userInfo" class="hidden">
+                    <div class="text-center text-white">
+                        <h3 class="text-2xl font-bold mb-4">Welcome, <span id="userDisplayName">User</span>!</h3>
+                        <p class="mb-4">Email: <span id="userDisplayEmail">user@example.com</span></p>
+                        <button id="logoutBtn" class="bg-powerpuff-red hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors">
+                            Logout
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Status Messages -->
+                <div id="authStatus" class="mt-4 text-center hidden"></div>
+            </div>
+        </div>
+
+        <!-- Friends Section -->
+        <div id="friendsSection" class="hidden">
+            <div class="max-w-4xl mx-auto bg-white bg-opacity-10 rounded-lg p-6 backdrop-blur-sm">
+                <h2 class="text-4xl font-logo text-powerpuff-blue mb-6 text-center">Friends</h2>
+                
+                <!-- Add Friend Form -->
+                <div class="mb-6 p-4 bg-white bg-opacity-20 rounded-lg">
+                    <h3 class="text-xl font-bold text-white mb-4">Add Friend</h3>
+                    <form id="addFriendForm" class="flex gap-2">
+                        <input type="text" id="friendUsername" placeholder="Enter username" required 
+                               class="flex-1 px-3 py-2 rounded border-2 border-powerpuff-blue bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:border-powerpuff-purple">
+                        <button type="submit" class="bg-powerpuff-blue hover:bg-powerpuff-purple text-white font-bold py-2 px-4 rounded transition-colors">
+                            Send Request
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Friends Lists -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Current Friends -->
+                    <div class="bg-white bg-opacity-20 rounded-lg p-4">
+                        <h3 class="text-xl font-bold text-white mb-4">My Friends</h3>
+                        <div id="friendsList" class="space-y-2">
+                            <p class="text-white text-center">No friends yet</p>
+                        </div>
+                    </div>
+
+                    <!-- Friend Requests -->
+                    <div class="bg-white bg-opacity-20 rounded-lg p-4">
+                        <h3 class="text-xl font-bold text-white mb-4">Friend Requests</h3>
+                        <div id="friendRequests" class="space-y-2">
+                            <p class="text-white text-center">No pending requests</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status Messages -->
+                <div id="friendsStatus" class="mt-4 text-center hidden"></div>
+            </div>
+        </div>
+
+        <!-- Tournaments Section -->
+        <div id="tournamentsSection" class="hidden">
+            <div class="max-w-4xl mx-auto bg-white bg-opacity-10 rounded-lg p-6 backdrop-blur-sm">
+                <h2 class="text-4xl font-logo text-powerpuff-green mb-6 text-center">Tournaments</h2>
+                
+                <!-- Create Tournament -->
+                <div class="mb-6 p-4 bg-white bg-opacity-20 rounded-lg">
+                    <h3 class="text-xl font-bold text-white mb-4">Create Tournament</h3>
+                    <form id="createTournamentForm" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <input type="text" id="tournamentName" placeholder="Tournament Name" required 
+                                       class="w-full px-3 py-2 rounded border-2 border-powerpuff-green bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:border-powerpuff-purple">
+                            </div>
+                            <div>
+                                <input type="number" id="maxPlayers" placeholder="Max Players" min="2" max="16" value="8" required 
+                                       class="w-full px-3 py-2 rounded border-2 border-powerpuff-green bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:border-powerpuff-purple">
+                            </div>
+                        </div>
+                        <button type="submit" class="bg-powerpuff-green hover:bg-powerpuff-purple text-white font-bold py-2 px-4 rounded transition-colors">
+                            Create Tournament
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Active Tournaments -->
+                <div class="mb-6">
+                    <h3 class="text-xl font-bold text-white mb-4">Active Tournaments</h3>
+                    <div id="activeTournaments" class="space-y-4">
+                        <p class="text-white text-center">No active tournaments</p>
+                    </div>
+                </div>
+
+                <!-- Join Tournament -->
+                <div class="mb-6 p-4 bg-white bg-opacity-20 rounded-lg">
+                    <h3 class="text-xl font-bold text-white mb-4">Join Tournament</h3>
+                    <form id="joinTournamentForm" class="flex gap-2">
+                        <input type="text" id="tournamentId" placeholder="Enter Tournament ID" required 
+                               class="flex-1 px-3 py-2 rounded border-2 border-powerpuff-green bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:border-powerpuff-purple">
+                        <button type="submit" class="bg-powerpuff-green hover:bg-powerpuff-purple text-white font-bold py-2 px-4 rounded transition-colors">
+                            Join
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Status Messages -->
+                <div id="tournamentsStatus" class="mt-4 text-center hidden"></div>
             </div>
         </div>
 
@@ -158,6 +321,6 @@
         </div>
     </div>
 
-    <script type="module" src="./dist/main.js"></script>
+    <script src="./dist/main.js"></script>
 </body>
 </html> 
