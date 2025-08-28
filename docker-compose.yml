@@ -1,7 +1,8 @@
-version: '3.8'
+
+
 
 services:
-  # Nginx with SSL termination and WAF
+  # Nginx with SSL termination and WAF (ModSecurity)
   nginx:
     build: ./security
     ports:
@@ -9,6 +10,9 @@ services:
       - "80:80"
     environment:
       - MODSECURITY_CONFIG=/etc/nginx/modsec/modsecurity.conf
+    depends_on:
+      - backend
+
 
   # Backend service
   backend:
@@ -21,32 +25,24 @@ services:
       - database
       - vault
 
-  # Frontend service  
-  frontend:
-    build: ./frontend
-    ports:
-      - "8080:8080"
 
-  # SQLite database (if using database module)
+  # (Optional) Frontend service
+  # Uncomment and configure if/when frontend is ready
+  # frontend:
+  #   build: ./frontend
+  #   ports:
+  #     - "8080:8080"
+
+
+  # SQLite database (dummy container for persistence)
   database:
     image: alpine:latest
     volumes:
       - ./data:/data
     command: tail -f /dev/null
 
-  # # HashiCorp Vault
-  # vault:
-  #   image: hashicorp/vault:1.15.2
-  #   cap_add:
-  #     - IPC_LOCK
-  #   environment:
-  #     VAULT_DEV_ROOT_TOKEN_ID: myroot
-  #     VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
-  #   ports:
-  #     - "8200:8200"
-  #   volumes:
-  #     - ./security/vault:/vault
 
+  # HashiCorp Vault for secrets management
   vault:
     image: hashicorp/vault:1.15.2
     cap_add:
