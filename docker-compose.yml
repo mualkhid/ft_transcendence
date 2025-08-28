@@ -52,4 +52,4 @@ services:
       - ./security/vault/config:/vault/config
       - ./security/vault/data:/vault/data
     ports:
-      - "8200:8200"
+      - "8201:8201"
