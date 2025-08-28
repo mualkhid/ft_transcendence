@@ -8,13 +8,12 @@ WORKDIR /app
 # Create non-root user for security
 RUN adduser -D -s /bin/sh appuser
 
-
 # Copy only package files and prisma schema for dependency install and codegen
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install dependencies (including node-vault) and generate Prisma client
-RUN npm install node-vault && npm install --production && npx prisma generate
+# Install dependencies and generate Prisma client
+RUN npm install --production && npx prisma generate
 
 # Copy rest of the application code (excluding node_modules)
 COPY . .
