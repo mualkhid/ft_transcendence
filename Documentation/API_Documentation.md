@@ -1,313 +1,237 @@
 ﷽
+# API Documentation
 
-
-# Backend API Documentation
-
-**Base URL:**  
-`http://localhost:3000/`
+This document describes all available API endpoints for the application, with notes on how the frontend should use them.
 
 ---
 
-## Auth Routes (`authRoutes.js`)
+## Authentication
+
+### Register User
+- **POST** `/api/auth/registerUser`
+- **Description:** Creates a new user account.  
+- **Frontend Use:** Call this when a new user signs up. On success, redirect them to the login page.
+- **Body:**
+```json
+{
+  "username": "string (3–10 chars, letters/numbers/underscore)",
+  "email": "string (valid email)",
+  "password": "string (8–64 chars, must include uppercase, number, and special character)"
+}
+```
+- **Responses:**
+  - `201 Created`: returns created user object  
+  - `400 Bad Request`: invalid input  
+  - `409 Conflict`: email already registered  
+  - `500 Internal Server Error`
 
 ### Login
-
-- **Description:** Authenticates a user and returns a JWT token.
-- **Frontend Use:** Store the token (e.g., in localStorage) and use it for authenticated requests.
-
-- **POST** `/auth/login`
-
+- **POST** `/api/auth/login`
+- **Description:** Authenticates a user and returns a JWT token (also set in cookies).  
+- **Frontend Use:** Store the returned token (cookies or localStorage). Use this token for all authenticated requests.
 - **Body:**
-  ```json
-  {
-    "alias": "string",
-    "password": "string"
-  }
-  ```
-- **Response:**
-  - `200 OK`
-    ```json
-    { "token": "jwt-token" }
-    ```
-  - `401 Unauthorized`
-    ```json
-    { "error": "Invalid credentials" }
-    ```
+```json
+{
+  "email": "string",
+  "password": "string"
+}
+```
+- **Responses:**
+  - `200 OK`: `{ "message": "Login successful", "token": "jwt-token" }`  
+  - `401 Unauthorized`: invalid credentials or 2FA failure  
+  - `500 Internal Server Error`
 
 ### Logout
+- **POST** `/api/auth/logout`
+- **Description:** Logs out the user by clearing the authentication cookie.  
+- **Frontend Use:** Call this when the user clicks “Logout” and clear any local auth state.
+- **Responses:**
+  - `200 OK`: `{ "message": "logged-out" }`
 
-
-- **Description:** Logs out the user (may invalidate token server-side).
-- **Frontend Use:** Clear the token and redirect to login or home page.
-
-- **POST** `/auth/logout`
-- **Headers:**  
-  `Authorization: Bearer <token>`
-
-- **Response:**
-  - `200 OK`
-    ```json
-    { "message": "Logged out successfully" }
-    ```
+### Setup 2FA
+- **POST** `/api/auth/setup-2fa`
+- **Description:** Enables two-factor authentication (2FA) for the logged-in user and returns QR code + backup codes.  
+- **Frontend Use:** Prompt user to scan QR code with authenticator app and securely display backup codes once.
+- **Responses:**
+  - `200 OK`: `{ "qr": "...", "secret": "base32secret", "backupCodes": ["code1", "code2"] }`
 
 ---
 
-## Friends Routes (`friendsRoute.js`)
+## Profile
 
-### Get Friends List
+### Get Current User
+- **GET** `/api/profile/me`
+- **Description:** Returns details of the currently authenticated user.  
+- **Frontend Use:** Call this on app load to fetch user info for dashboards or headers.
+- **Responses:**
+  - `200 OK`: user object  
+  - `404 Not Found`: if user doesn’t exist
 
-
-- **Description:** Returns the current user's friends list.
-- **Frontend Use:** Display the user's friends (e.g., in a sidebar or friends page).
-
-- **GET** `/friends`
-- **Headers:**  
-  `Authorization: Bearer <token>`
-
-- **Response:**
-  - `200 OK`
-    ```json
-    [
-      { "id": 2, "alias": "Bob" }
-    ]
-    ```
-
-### Add Friend
-
-
-- **Description:** Adds a user as a friend by alias.
-- **Frontend Use:** Show a success message and update the friends list UI.
-
-- **POST** `/friends/add`
-- **Headers:**  
-  `Authorization: Bearer <token>`
-
+### Update Username
+- **PATCH** `/api/profile/username`
+- **Description:** Updates the username of the logged-in user.  
+- **Frontend Use:** Provide a form where users can change their username.
 - **Body:**
-  ```json
-  {
-    "friendAlias": "string"
-  }
-  ```
-- **Response:**
-  - `200 OK`
-    ```json
-    { "message": "Friend added" }
-    ```
-  - `404 Not Found`
-    ```json
-    { "error": "User not found" }
-    ```
+```json
+{ "newUsername": "string" }
+```
+- **Responses:**
+  - `200 OK`: `{ "message": "username updated successfully" }`
+
+### Update Password
+- **PATCH** `/api/profile/password`
+- **Description:** Updates the account password after verifying the current one.  
+- **Frontend Use:** Place inside a password change form. Validate that new password differs from current one.
+- **Body:**
+```json
+{
+  "currentPassword": "string",
+  "newPassword": "string"
+}
+```
+- **Responses:**
+  - `200 OK`: `{ "message": "password updated successfully" }`  
+  - `400 Bad Request`: current password equals new password  
+  - `401 Unauthorized`: incorrect password  
+
+### Update Avatar
+- **PATCH** `/api/profile/avatar`
+- **Description:** Uploads and updates the user’s avatar image (JPEG, PNG, WebP).  
+- **Frontend Use:** Use in profile settings with a file upload form. Show returned avatar URL as preview.
+- **Responses:**
+  - `200 OK`: `{ "avatarUrl": "/avatars/2.png" }`  
+  - `413 Payload Too Large`  
+  - `415 Unsupported Media Type`
+
+---
+
+## Friends
+
+### Get Friends
+- **GET** `/api/friends`
+- **Description:** Retrieves the user’s friend list.  
+- **Frontend Use:** Display user’s friend list in a friends page or sidebar.
+
+### Send Friend Request
+- **POST** `/api/friends/sendRequest`
+- **Description:** Sends a friend request to another user.  
+- **Frontend Use:** Trigger when user clicks “Add Friend.”  
+- **Body:**
+```json
+{ "userId": 123 }
+```
+- **Response:** `201 Created` → `{ "message": "request sent successfully" }`
+
+### Accept Friend Request
+- **POST** `/api/friends/acceptRequest`
+- **Description:** Accepts a pending friend request.  
+- **Frontend Use:** Show accept button in requests list.  
+- **Body:**
+```json
+{ "userId": 123 }
+```
+- **Response:** `200 OK` → `{ "message": "request accepted successfully" }`
+
+### Decline Friend Request
+- **POST** `/api/friends/declineRequest`
+- **Description:** Declines a pending friend request.  
+- **Frontend Use:** Show decline button in requests list.  
+- **Body:**
+```json
+{ "userId": 123 }
+```
+- **Response:** `204 No Content`
 
 ### Remove Friend
-
-
-- **Description:** Removes a user from the friend list.
-- **Frontend Use:** Show a success message and update the friends list UI.
-
-- **POST** `/friends/remove`
-- **Headers:**  
-  `Authorization: Bearer <token>`
-
+- **POST** `/api/friends/removeFriend`
+- **Description:** Removes an existing friend.  
+- **Frontend Use:** Add option in friend list UI to remove a friend.  
 - **Body:**
-  ```json
-  {
-    "friendAlias": "string"
-  }
-  ```
-- **Response:**
-  - `200 OK`
-    ```json
-    { "message": "Friend removed" }
-    ```
+```json
+{ "userId": 123 }
+```
+- **Response:** `200 OK` → `{ "message": "friend removed successfully" }`
+
+### Block Friend
+- **POST** `/api/friends/blockFriend`
+- **Description:** Blocks an existing friend (stops future interactions).  
+- **Frontend Use:** Add block button in friend list UI.  
+- **Body:**
+```json
+{ "userId": 123 }
+```
+- **Response:** `200 OK` → `{ "message": "friend blocked successfully" }`
+
+### Search User
+- **GET** `/api/friends/searchUser?q=term&page=1`
+- **Description:** Searches users by email or username.  
+- **Frontend Use:** Power search box for adding new friends.  
+- **Response:** `200 OK` → `{ "users": [ ... ] }`
 
 ---
 
-## Profile Routes (`profileRoutes.js`)
-
-### Get Profile
-
-
-- **Description:** Returns the current user's profile info (alias, avatar, stats).
-- **Frontend Use:** Display user profile (profile page, header, avatar, stats).
-
-- **GET** `/profile`
-- **Headers:**  
-  `Authorization: Bearer <token>`
-
-- **Response:**
-  - `200 OK`
-    ```json
-    {
-      "id": 1,
-      "alias": "Alice",
-      "avatar": "url",
-      "stats": { "wins": 10, "losses": 5 }
-    }
-    ```
-
-### Update Profile
-
-
-- **Description:** Updates the user's profile (e.g., avatar).
-- **Frontend Use:** Show a success message and update displayed profile info.
-
-- **POST** `/profile/update`
-- **Headers:**  
-  `Authorization: Bearer <token>`
-- **Body:**
-  ```json
-  {
-    "avatar": "url"
-  }
-  ```
-- **Response:**
-  - `200 OK`
-    ```json
-    { "message": "Profile updated" }
-    ```
-
----
-
-## Remote Game Routes (`remoteGameRoutes.js`)
-
-### Create Remote Game
-
-
-- **Description:** Creates a new remote game with a specified opponent.
-- **Frontend Use:** Redirect to the game room or show game invitation status.
-
-- **POST** `/remote-game/create`
-- **Headers:**  
-  `Authorization: Bearer <token>`
-
-- **Body:**
-  ```json
-  {
-    "opponentAlias": "string"
-  }
-  ```
-- **Response:**
-  - `201 Created`
-    ```json
-    { "gameId": 1, "status": "pending" }
-    ```
-
-### Get Remote Game State
-
-
-- **Description:** Gets the current state of a remote game.
-- **Frontend Use:** Render the game board and player info.
-
-- **GET** `/remote-game/:gameId`
-- **Headers:**  
-  `Authorization: Bearer <token>`
-  
-- **Response:**
-  - `200 OK`
-    ```json
-    {
-      "gameId": 1,
-      "players": ["Alice", "Bob"],
-      "state": { ... }
-    }
-    ```
-
-### Make Move
-
-- **Description:** Submits a move for the current game.
-- **Frontend Use:** Update the game board and state in real time.
-
-- **POST** `/remote-game/:gameId/move`
-- **Headers:**  
-  `Authorization: Bearer <token>`
-- **Body:**
-  ```json
-  {
-    "move": { ... }
-  }
-  ```
-- **Response:**
-  - `200 OK`
-    ```json
-    { "message": "Move accepted", "state": { ... } }
-    ```
-
----
-
-## Tournament Routes (`tournament.js`)
+## Tournament
 
 ### Create Tournament
-
-- **Description:** Creates a new tournament.
-- **Frontend Use:** Show tournament lobby or registration page.
-
-- **POST** `/tournament/create`
-- **Headers:**  
-  `Authorization: Bearer <token>`
-- **Response:**
-  - `201 Created`
-    ```json
-    { "id": 1, "status": "registration", "message": "Tournament created successfully!" }
-    ```
-
-### Join Tournament
-
-- **Description:** Joins the current tournament.
-- **Frontend Use:** Show confirmation and update tournament participant list.
-
-- **POST** `/tournament/join`
-- **Headers:**  
-  `Authorization: Bearer <token>`
+- **POST** `/api/tournament/create`
+- **Description:** Creates a new tournament with 4 or 8 players.  
+- **Frontend Use:** Call from a “Create Tournament” form.  
 - **Body:**
-  ```json
-  {
-    "userId": 1
-  }
-  ```
-- **Response:**
-  - `200 OK`
-    ```json
-    { "message": "User joined tournament" }
-    ```
+```json
+{
+  "name": "Tournament Name",
+  "aliases": ["Player1", "Player2", "Player3", "Player4"]
+}
+```
+- **Response:** `201 Created` → tournament details
 
-### Get Tournament
+### Get Current Match
+- **GET** `/api/tournament/current-match?tournamentId=1`
+- **Description:** Retrieves the current match of the tournament.  
+- **Frontend Use:** Poll or call this endpoint to display ongoing match details.  
+- **Response:** current match details or tournament status
 
-- **Description:** Gets the current tournament details.
-- **Frontend Use:** Display tournament info, participants, and status.
+### Complete Match
+- **POST** `/api/tournament/complete-match`
+- **Description:** Marks a match as completed and assigns a winner.  
+- **Frontend Use:** Call after game ends to update tournament state.  
+- **Body:**
+```json
+{
+  "matchId": 1,
+  "winner": "Player1"
+}
+```
+- **Response:** `200 OK` → match + tournament status
 
-- **GET** `/tournament`
-- **Headers:**  
-  `Authorization: Bearer <token>`
-- **Response:**
-  - `200 OK`
-    ```json
-    { "id": 1, "status": "registration", "participantIds": [1,2] }
-    ```
-
-### Get Next Match
-
-- **Description:** Gets info about the next scheduled match.
-- **Frontend Use:** Show upcoming match details to participants.
-
-- **GET** `/tournament/next-match`
-- **Headers:**  
-  `Authorization: Bearer <token>`
-- **Response:**
-  - `200 OK`
-    ```json
-    { "matchId": 1, "player1": {...}, "player2": {...} }
-    ```
+### Get Tournament Bracket
+- **GET** `/api/tournament/bracket?tournamentId=1`
+- **Description:** Returns the tournament bracket.  
+- **Frontend Use:** Render bracket UI in the frontend.  
+- **Response:** bracket data
 
 ### Reset Tournament
+- **POST** `/api/tournament/reset`
+- **Description:** Resets a tournament (or all if no ID provided).  
+- **Frontend Use:** Admin action to reset tournaments.  
+- **Body:**
+```json
+{ "tournamentId": 1 }
+```
+- **Response:** `200 OK` → reset confirmation
 
-- **Description:** Resets the tournament and clears matches.
-- **Frontend Use:** Show confirmation and refresh tournament state.
+---
 
-- **POST** `/tournament/reset`
-- **Headers:**  
-  `Authorization: Bearer <token>`
-- **Response:**
-  - `200 OK`
-    ```json
-    { "message": "Tournament and matches reset successfully." }
-    ```
+## Remote Game
+
+### Connect to Remote Game
+- **GET (WebSocket)** `/api/remote-game/:matchId`
+- **Description:** Connects a player to a remote game session.  
+- **Frontend Use:** The game client uses this to establish a WebSocket connection. Send input events, receive state updates.
+- **Flow:**
+  - On connect: server assigns `playerNumber`  
+  - If two players connected: sends `{ "type": "ready" }`  
+  - On message: handles player input (`keydown` / `keyup`, `up` / `down`)  
+  - On disconnect: notifies the other player  
+
+---
