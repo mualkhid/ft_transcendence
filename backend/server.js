@@ -25,7 +25,6 @@ dotenv.config();
 
 const fastify = Fastify();
 fastify.setErrorHandler(globalErrorHandler);
-fastify.addHook('preHandler', trackUserActivity);
 
 // Needed to get __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);

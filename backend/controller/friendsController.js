@@ -1,9 +1,10 @@
 import {prisma} from '../prisma/prisma_lib.js'
+import { notFoundError, ValidationError } from '../utils/errors.js';
 
+const sanitizedUserSelect = { id: true, username: true, email: true, createdAt: true, lastSeen: true, updatedAt: true }
 
 export async function getFriends(req, reply) {
-	 const id = req.user.id
-	 console.log(id)
+	const id = req.user.id
 
 	const friendship = await prisma.friendship.findMany ({
 		where: {
@@ -12,10 +13,10 @@ export async function getFriends(req, reply) {
 		},
 		include: {
 			requesterUser: { 
-				omit: {passwordHash: true}
+				select: sanitizedUserSelect
 			},
 			addresseeUser: {
-				omit: {passwordHash: true}
+				select: sanitizedUserSelect
 			},
 		}
 	});
@@ -31,8 +32,8 @@ export async function sendRequest(req, reply) {
 	const userId = req.body.userId
 
 	if (id === userId)
-		throw validationError("cant friend self")
-	// if it failed to create it, it means that there is already a request / user is blocked.
+		throw new ValidationError("Cannot be friends with self")
+	
 	await prisma.friendship.create({data: {
 
 		requesterId: id,
@@ -81,7 +82,7 @@ export async function declineRequest(req, reply) {
 export async function removeFriend(req, reply) {
 	const id = req.user.id
 
-	await prisma.friendship.deleteMany({
+	const result = await prisma.friendship.deleteMany({
 		where: {
 			status: 'ACCEPTED',
 			OR: [
@@ -90,6 +91,9 @@ export async function removeFriend(req, reply) {
 			]
 		}
 	});
+
+	if (result.count === 0)
+		throw new notFoundError("No accepted friendship found")
 	
 	reply.status(200).send({message: "friend removed successfully"});
 }
@@ -97,7 +101,7 @@ export async function removeFriend(req, reply) {
 export async function blockFriend(req, reply) {
 	const id = req.user.id
 
-	await prisma.friendship.updateMany({
+	const result = await prisma.friendship.updateMany({
 		where: {
 			status: 'ACCEPTED',
 			OR : [
@@ -106,7 +110,11 @@ export async function blockFriend(req, reply) {
 			]
 		},
 		data: { status: 'BLOCKED'}
-	  })
+	})
+
+	if (result.count === 0)
+		throw new notFoundError("No accepted friendship found")
+
 	reply.status(200).send({message: "friend blocked successfully"})
 }
 
@@ -116,8 +124,6 @@ export async function searchUser(req, reply) {
 	const limit = 10
 	const skip = (pageNum - 1) * limit
 
-
-
 	const users = await prisma.user.findMany({
 		where: {
 			OR: [
@@ -125,7 +131,7 @@ export async function searchUser(req, reply) {
 					{username: {startsWith: searchTerm}}
 			],
 		},
-		omit: {passwordHash: true},
+		select: sanitizedUserSelect,
 		take: limit,
 		skip: skip
 	})
