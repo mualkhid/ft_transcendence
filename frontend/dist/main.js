@@ -367,54 +367,73 @@ class PowerpuffPong {
 }
 // --- Navigation and App State ---
 class AppNavigation {
-    constructor(profileManager) {
+    constructor(profileManager, authService) {
         this.sections = {};
         this.navLinks = {};
         this.currentSection = 'homeSection';
         this.gameInstance = null;
         this.profileManager = profileManager;
+        this.authService = authService;
+        console.log('AppNavigation constructor - looking for DOM elements...');
         this.sections = {
             homeSection: document.getElementById('homeSection'),
+            authSection: document.getElementById('authSection'),
+            friendsSection: document.getElementById('friendsSection'),
+            tournamentsSection: document.getElementById('tournamentsSection'),
             profileSection: document.getElementById('profileSection'),
             inviteSection: document.getElementById('inviteSection'),
             gameSection: document.getElementById('gameSection'),
         };
         this.navLinks = {
             navHome: document.getElementById('navHome'),
+            navAuth: document.getElementById('navAuth'),
+            navFriends: document.getElementById('navFriends'),
+            navTournaments: document.getElementById('navTournaments'),
             navRegister: document.getElementById('navRegister'),
             navProfile: document.getElementById('navProfile'),
             navInvite: document.getElementById('navInvite'),
         };
+        console.log('Sections found:', Object.keys(this.sections));
+        console.log('Nav links found:', Object.keys(this.navLinks));
         this.setupNavEvents();
-        this.showSection('homeSection');
+        // Start with auth section if not registered, home if registered
+        if (this.isRegistered()) {
+            this.showSection('homeSection');
+        }
+        else {
+            this.showSection('authSection');
+        }
+        this.updateNavigationVisibility();
     }
     isRegistered() {
-        return true; // No registration required anymore
+        return this.authService && this.authService.isAuthenticated ? this.authService.isAuthenticated() : false;
     }
     setupNavEvents() {
-        this.navLinks.navHome.addEventListener('click', (e) => { e.preventDefault(); this.showSection('homeSection'); });
+        console.log('Setting up navigation events');
+        console.log('Navigation links:', this.navLinks);
+        this.navLinks.navHome.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('Home clicked');
+            this.showSection('homeSection');
+        });
+        this.navLinks.navAuth.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('Auth clicked');
+            this.showSection('authSection');
+        });
+        this.navLinks.navFriends.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('Friends clicked');
+            this.showSection('friendsSection');
+        });
+        this.navLinks.navTournaments.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('Tournaments clicked');
+            this.showSection('tournamentsSection');
+        });
         this.navLinks.navRegister.addEventListener('click', (e) => {
             e.preventDefault();
-            this.showSection('gameSection');
-            // Initialize the game when shown
-            if (!this.gameInstance) {
-                this.gameInstance = new PowerpuffPong();
-                // Show the welcome overlay
-                this.gameInstance.showWelcomeScreen();
-            }
-        });
-        this.navLinks.navProfile.addEventListener('click', (e) => {
-            e.preventDefault();
-            this.showSection('profileSection');
-        });
-        this.navLinks.navInvite.addEventListener('click', (e) => {
-            e.preventDefault();
-            this.showSection('inviteSection');
-        });
-        // Play button on home
-        const playBtn = document.getElementById('playBtn');
-        if (playBtn)
-            playBtn.addEventListener('click', () => {
+            if (this.isRegistered()) {
                 this.showSection('gameSection');
                 // Initialize the game when shown
                 if (!this.gameInstance) {
@@ -422,12 +441,82 @@ class AppNavigation {
                     // Show the welcome overlay
                     this.gameInstance.showWelcomeScreen();
                 }
+            }
+            else {
+                this.showSection('authSection');
+            }
+        });
+        this.navLinks.navProfile.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (this.isRegistered()) {
+                this.showSection('profileSection');
+            }
+            else {
+                this.showSection('authSection');
+            }
+        });
+        this.navLinks.navInvite.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (this.isRegistered()) {
+                this.showSection('inviteSection');
+            }
+            else {
+                this.showSection('authSection');
+            }
+        });
+        // Play button on home
+        const playBtn = document.getElementById('playBtn');
+        if (playBtn)
+            playBtn.addEventListener('click', () => {
+                if (this.isRegistered()) {
+                    this.showSection('gameSection');
+                    // Initialize the game when shown
+                    if (!this.gameInstance) {
+                        this.gameInstance = new PowerpuffPong();
+                        // Show the welcome overlay
+                        this.gameInstance.showWelcomeScreen();
+                    }
+                }
+                else {
+                    this.showSection('authSection');
+                }
             });
+        // Also redirect home section to auth if not registered
+        if (!this.isRegistered()) {
+            this.showSection('authSection');
+        }
+    }
+    updateNavigationVisibility() {
+        const isAuthenticated = this.isRegistered();
+        // Show/hide navigation items based on authentication
+        if (this.navLinks.navAuth) {
+            this.navLinks.navAuth.style.display = isAuthenticated ? 'none' : 'inline';
+        }
+        if (this.navLinks.navFriends) {
+            this.navLinks.navFriends.style.display = isAuthenticated ? 'inline' : 'none';
+        }
+        if (this.navLinks.navTournaments) {
+            this.navLinks.navTournaments.style.display = isAuthenticated ? 'inline' : 'none';
+        }
+        if (this.navLinks.navProfile) {
+            this.navLinks.navProfile.style.display = isAuthenticated ? 'inline' : 'none';
+        }
+        if (this.navLinks.navInvite) {
+            this.navLinks.navInvite.style.display = isAuthenticated ? 'inline' : 'none';
+        }
     }
     showSection(sectionId) {
+        console.log('Showing section:', sectionId);
+        console.log('Available sections:', Object.keys(this.sections));
         Object.values(this.sections).forEach(sec => sec.classList.add('hidden'));
-        this.sections[sectionId].classList.remove('hidden');
-        this.currentSection = sectionId;
+        if (this.sections[sectionId]) {
+            this.sections[sectionId].classList.remove('hidden');
+            this.currentSection = sectionId;
+            console.log('Section shown successfully');
+        }
+        else {
+            console.error('Section not found:', sectionId);
+        }
     }
 }
 // --- Profile and Registration ---
@@ -438,8 +527,21 @@ class ProfileManager {
         this.avatar = 'avatars/Blossom.jpg';
         this.games = 0;
         this.wins = 0;
-        this.loadProfile();
-        this.updateProfileUI();
+        try {
+            this.loadProfile();
+            // Only update UI if DOM is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    this.updateProfileUI();
+                });
+            }
+            else {
+                this.updateProfileUI();
+            }
+        }
+        catch (error) {
+            console.warn('ProfileManager initialization failed:', error);
+        }
     }
     loadProfile() {
         const data = localStorage.getItem('ppg_profile');
@@ -462,21 +564,26 @@ class ProfileManager {
         }));
     }
     updateProfileUI() {
-        const nameEl = document.getElementById('profileName');
-        const emailEl = document.getElementById('profileEmail');
-        const avatarEl = document.getElementById('profileAvatar');
-        const gamesEl = document.getElementById('profileGames');
-        const winsEl = document.getElementById('profileWins');
-        if (nameEl)
-            nameEl.textContent = this.name;
-        if (emailEl)
-            emailEl.textContent = this.email;
-        if (avatarEl)
-            avatarEl.src = this.avatar || 'avatars/Blossom.jpg';
-        if (gamesEl)
-            gamesEl.textContent = this.games.toString();
-        if (winsEl)
-            winsEl.textContent = this.wins.toString();
+        try {
+            const nameEl = document.getElementById('profileName');
+            const emailEl = document.getElementById('profileEmail');
+            const avatarEl = document.getElementById('profileAvatar');
+            const gamesEl = document.getElementById('profileGames');
+            const winsEl = document.getElementById('profileWins');
+            if (nameEl)
+                nameEl.textContent = this.name;
+            if (emailEl)
+                emailEl.textContent = this.email;
+            if (avatarEl)
+                avatarEl.src = this.avatar || 'avatars/Blossom.jpg';
+            if (gamesEl)
+                gamesEl.textContent = this.games.toString();
+            if (winsEl)
+                winsEl.textContent = this.wins.toString();
+        }
+        catch (error) {
+            console.warn('Profile UI update failed:', error);
+        }
     }
     addGame(win) {
         this.games++;
@@ -487,6 +594,449 @@ class ProfileManager {
     }
     getName() { return this.name; }
     getAvatar() { return this.avatar; }
+}
+// --- API Service Classes ---
+class AuthService {
+    constructor() {
+        this.baseUrl = 'http://localhost:3000';
+        this.token = null;
+        this.onAuthChange = null;
+        this.token = localStorage.getItem('auth_token');
+    }
+    async makeRequest(endpoint, options = {}) {
+        const url = `${this.baseUrl}${endpoint}`;
+        const headers = {
+            'Content-Type': 'application/json',
+            ...(options.headers || {})
+        };
+        if (this.token) {
+            headers['Authorization'] = `Bearer ${this.token}`;
+        }
+        try {
+            const response = await fetch(url, {
+                ...options,
+                headers
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return await response.json();
+        }
+        catch (error) {
+            console.error('API request failed:', error);
+            throw error;
+        }
+    }
+    async register(username, email, password) {
+        return this.makeRequest('/auth/registerUser', {
+            method: 'POST',
+            body: JSON.stringify({ username, email, password })
+        });
+    }
+    async login(email, password) {
+        const response = await this.makeRequest('/auth/login', {
+            method: 'POST',
+            body: JSON.stringify({ email, password })
+        });
+        if (response.token) {
+            this.token = response.token;
+            localStorage.setItem('auth_token', response.token);
+            if (this.onAuthChange)
+                this.onAuthChange();
+        }
+        return response;
+    }
+    async getCurrentUser() {
+        return this.makeRequest('/auth/me');
+    }
+    async logout() {
+        try {
+            await this.makeRequest('/auth/logout', { method: 'POST' });
+        }
+        finally {
+            this.token = null;
+            localStorage.removeItem('auth_token');
+            if (this.onAuthChange)
+                this.onAuthChange();
+        }
+    }
+    isAuthenticated() {
+        return !!this.token;
+    }
+    getToken() {
+        return this.token;
+    }
+}
+class FriendsService {
+    constructor(authService) {
+        this.baseUrl = 'http://localhost:3000';
+        this.authService = authService;
+    }
+    async makeRequest(endpoint, options = {}) {
+        const url = `${this.baseUrl}${endpoint}`;
+        const token = this.authService.getToken();
+        if (!token) {
+            throw new Error('Authentication required');
+        }
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            ...options.headers
+        };
+        try {
+            const response = await fetch(url, {
+                ...options,
+                headers
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return await response.json();
+        }
+        catch (error) {
+            console.error('Friends API request failed:', error);
+            throw error;
+        }
+    }
+    async getFriends() {
+        return this.makeRequest('/friends');
+    }
+    async sendFriendRequest(username) {
+        return this.makeRequest('/friends/sendRequest', {
+            method: 'POST',
+            body: JSON.stringify({ username })
+        });
+    }
+    async acceptFriendRequest(username) {
+        return this.makeRequest('/friends/acceptRequest', {
+            method: 'POST',
+            body: JSON.stringify({ username })
+        });
+    }
+    async declineFriendRequest(username) {
+        return this.makeRequest('/friends/declineRequest', {
+            method: 'POST',
+            body: JSON.stringify({ username })
+        });
+    }
+    async removeFriend(username) {
+        return this.makeRequest('/friends/removeFriend', {
+            method: 'POST',
+            body: JSON.stringify({ username })
+        });
+    }
+    async blockFriend(username) {
+        return this.makeRequest('/friends/blockFriend', {
+            method: 'POST',
+            body: JSON.stringify({ username })
+        });
+    }
+}
+class TournamentService {
+    constructor(authService) {
+        this.baseUrl = 'http://localhost:3000';
+        this.authService = authService;
+    }
+    async makeRequest(endpoint, options = {}) {
+        const url = `${this.baseUrl}${endpoint}`;
+        const token = this.authService.getToken();
+        if (!token) {
+            throw new Error('Authentication required');
+        }
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            ...options.headers
+        };
+        try {
+            const response = await fetch(url, {
+                ...options,
+                headers
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return await response.json();
+        }
+        catch (error) {
+            console.error('Tournament API request failed:', error);
+            throw error;
+        }
+    }
+    async createTournament(name, maxPlayers) {
+        return this.makeRequest('/tournament/create', {
+            method: 'POST',
+            body: JSON.stringify({ name, maxPlayers })
+        });
+    }
+    async getTournaments() {
+        return this.makeRequest('/tournament');
+    }
+    async joinTournament(tournamentId) {
+        return this.makeRequest('/tournament/join', {
+            method: 'POST',
+            body: JSON.stringify({ tournamentId })
+        });
+    }
+    async getNextMatch() {
+        return this.makeRequest('/tournament/next-match');
+    }
+    async resetTournament() {
+        return this.makeRequest('/tournament/reset', {
+            method: 'POST'
+        });
+    }
+}
+// --- UI Management Classes ---
+class AuthUI {
+    constructor(authService) {
+        this.authService = authService;
+        this.loginForm = document.getElementById('loginForm');
+        this.registerForm = document.getElementById('registerForm');
+        this.userInfo = document.getElementById('userInfo');
+        this.statusElement = document.getElementById('authStatus');
+        this.setupEventListeners();
+        this.checkAuthStatus();
+    }
+    setupEventListeners() {
+        // Show/hide form toggles
+        document.getElementById('showRegisterForm')?.addEventListener('click', () => {
+            this.loginForm.classList.add('hidden');
+            this.registerForm.classList.remove('hidden');
+        });
+        document.getElementById('showLoginForm')?.addEventListener('click', () => {
+            this.registerForm.classList.add('hidden');
+            this.loginForm.classList.remove('hidden');
+        });
+        // Form submissions
+        document.getElementById('loginFormElement')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleLogin();
+        });
+        document.getElementById('registerFormElement')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleRegister();
+        });
+        // Logout
+        document.getElementById('logoutBtn')?.addEventListener('click', () => {
+            this.handleLogout();
+        });
+    }
+    async handleLogin() {
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        try {
+            await this.authService.login(email, password);
+            this.showStatus('Login successful!', 'success');
+            this.checkAuthStatus();
+        }
+        catch (error) {
+            this.showStatus('Login failed: ' + error.message, 'error');
+        }
+    }
+    async handleRegister() {
+        const username = document.getElementById('registerUsername').value;
+        const email = document.getElementById('registerEmail').value;
+        const password = document.getElementById('registerPassword').value;
+        try {
+            await this.authService.register(username, email, password);
+            this.showStatus('Registration successful! Please login.', 'success');
+            // Switch to login form
+            this.registerForm.classList.add('hidden');
+            this.loginForm.classList.remove('hidden');
+        }
+        catch (error) {
+            this.showStatus('Registration failed: ' + error.message, 'error');
+        }
+    }
+    async handleLogout() {
+        try {
+            await this.authService.logout();
+            this.showStatus('Logout successful!', 'success');
+            this.checkAuthStatus();
+        }
+        catch (error) {
+            this.showStatus('Logout failed: ' + error.message, 'error');
+        }
+    }
+    async checkAuthStatus() {
+        if (this.authService.isAuthenticated()) {
+            try {
+                const user = await this.authService.getCurrentUser();
+                this.showUserInfo(user);
+            }
+            catch (error) {
+                // Token might be invalid, clear it
+                this.authService.logout();
+                this.showLoginForm();
+            }
+        }
+        else {
+            this.showLoginForm();
+        }
+    }
+    showUserInfo(user) {
+        this.loginForm.classList.add('hidden');
+        this.registerForm.classList.add('hidden');
+        this.userInfo.classList.remove('hidden');
+        const nameElement = document.getElementById('userDisplayName');
+        const emailElement = document.getElementById('userDisplayEmail');
+        if (nameElement)
+            nameElement.textContent = user.username || user.name || 'User';
+        if (emailElement)
+            emailElement.textContent = user.email || 'user@example.com';
+    }
+    showLoginForm() {
+        this.userInfo.classList.add('hidden');
+        this.registerForm.classList.add('hidden');
+        this.loginForm.classList.remove('hidden');
+    }
+    showStatus(message, type) {
+        this.statusElement.textContent = message;
+        this.statusElement.className = `mt-4 text-center p-2 rounded ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white`;
+        this.statusElement.classList.remove('hidden');
+        setTimeout(() => {
+            this.statusElement.classList.add('hidden');
+        }, 5000);
+    }
+}
+class FriendsUI {
+    constructor(friendsService) {
+        this.friendsService = friendsService;
+        this.friendsList = document.getElementById('friendsList');
+        this.friendRequests = document.getElementById('friendRequests');
+        this.statusElement = document.getElementById('friendsStatus');
+        this.setupEventListeners();
+        this.loadFriends();
+    }
+    setupEventListeners() {
+        document.getElementById('addFriendForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleAddFriend();
+        });
+    }
+    async handleAddFriend() {
+        const username = document.getElementById('friendUsername').value;
+        try {
+            await this.friendsService.sendFriendRequest(username);
+            this.showStatus('Friend request sent!', 'success');
+            document.getElementById('friendUsername').value = '';
+            this.loadFriends();
+        }
+        catch (error) {
+            this.showStatus('Failed to send friend request: ' + error.message, 'error');
+        }
+    }
+    async loadFriends() {
+        try {
+            const friends = await this.friendsService.getFriends();
+            this.renderFriends(friends);
+        }
+        catch (error) {
+            this.showStatus('Failed to load friends: ' + error.message, 'error');
+        }
+    }
+    renderFriends(friends) {
+        // This is a simplified render - you might want to enhance this based on your backend response structure
+        if (friends && friends.length > 0) {
+            this.friendsList.innerHTML = friends.map((friend) => `
+                <div class="flex items-center justify-between p-2 bg-white bg-opacity-20 rounded">
+                    <span class="text-white">${friend.username || friend.name}</span>
+                    <button onclick="removeFriend('${friend.username || friend.name}')" 
+                            class="bg-red-500 hover:bg-red-700 text-white px-2 py-1 rounded text-sm">
+                        Remove
+                    </button>
+                </div>
+            `).join('');
+        }
+        else {
+            this.friendsList.innerHTML = '<p class="text-white text-center">No friends yet</p>';
+        }
+    }
+    showStatus(message, type) {
+        this.statusElement.textContent = message;
+        this.statusElement.className = `mt-4 text-center p-2 rounded ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white`;
+        this.statusElement.classList.remove('hidden');
+        setTimeout(() => {
+            this.statusElement.classList.add('hidden');
+        }, 5000);
+    }
+}
+class TournamentUI {
+    constructor(tournamentService) {
+        this.tournamentService = tournamentService;
+        this.activeTournaments = document.getElementById('activeTournaments');
+        this.statusElement = document.getElementById('tournamentsStatus');
+        this.setupEventListeners();
+        this.loadTournaments();
+    }
+    setupEventListeners() {
+        document.getElementById('createTournamentForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleCreateTournament();
+        });
+        document.getElementById('joinTournamentForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleJoinTournament();
+        });
+    }
+    async handleCreateTournament() {
+        const name = document.getElementById('tournamentName').value;
+        const maxPlayers = parseInt(document.getElementById('maxPlayers').value);
+        try {
+            await this.tournamentService.createTournament(name, maxPlayers);
+            this.showStatus('Tournament created successfully!', 'success');
+            document.getElementById('tournamentName').value = '';
+            this.loadTournaments();
+        }
+        catch (error) {
+            this.showStatus('Failed to create tournament: ' + error.message, 'error');
+        }
+    }
+    async handleJoinTournament() {
+        const tournamentId = document.getElementById('tournamentId').value;
+        try {
+            await this.tournamentService.joinTournament(tournamentId);
+            this.showStatus('Joined tournament successfully!', 'success');
+            document.getElementById('tournamentId').value = '';
+            this.loadTournaments();
+        }
+        catch (error) {
+            this.showStatus('Failed to join tournament: ' + error.message, 'error');
+        }
+    }
+    async loadTournaments() {
+        try {
+            const tournaments = await this.tournamentService.getTournaments();
+            this.renderTournaments(tournaments);
+        }
+        catch (error) {
+            this.showStatus('Failed to load tournaments: ' + error.message, 'error');
+        }
+    }
+    renderTournaments(tournaments) {
+        // This is a simplified render - you might want to enhance this based on your backend response structure
+        if (tournaments && tournaments.length > 0) {
+            this.activeTournaments.innerHTML = tournaments.map((tournament) => `
+                <div class="bg-white bg-opacity-20 rounded-lg p-4">
+                    <h4 class="text-lg font-bold text-white mb-2">${tournament.name || 'Tournament'}</h4>
+                    <p class="text-white text-sm">Players: ${tournament.currentPlayers || 0}/${tournament.maxPlayers || 8}</p>
+                    <p class="text-white text-sm">Status: ${tournament.status || 'Active'}</p>
+                </div>
+            `).join('');
+        }
+        else {
+            this.activeTournaments.innerHTML = '<p class="text-white text-center">No active tournaments</p>';
+        }
+    }
+    showStatus(message, type) {
+        this.statusElement.textContent = message;
+        this.statusElement.className = `mt-4 text-center p-2 rounded ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white`;
+        this.statusElement.classList.remove('hidden');
+        setTimeout(() => {
+            this.statusElement.classList.add('hidden');
+        }, 5000);
+    }
 }
 // --- Invite Logic ---
 function setupInvite() {
@@ -502,10 +1052,48 @@ function setupInvite() {
         });
     }
 }
+// Global function for removing friends (called from inline onclick)
+function removeFriend(username) {
+    // This will be implemented when we have access to the FriendsService instance
+    console.log('Remove friend:', username);
+    // You might want to implement this differently or pass the service instance
+}
+// Make it available globally
+window.removeFriend = removeFriend;
 // --- App Initialization ---
+console.log('Script loaded - waiting for DOM');
 document.addEventListener('DOMContentLoaded', () => {
-    const profile = new ProfileManager();
-    setupInvite();
-    new AppNavigation(profile);
-    // Do NOT initialize PowerpuffPong here; only do it when gameSection is shown
+    console.log('DOM Content Loaded - Starting app initialization');
+    alert('JavaScript is running!');
+    try {
+        const profile = new ProfileManager();
+        console.log('ProfileManager created');
+        const authService = new AuthService();
+        console.log('AuthService created');
+        const friendsService = new FriendsService(authService);
+        console.log('FriendsService created');
+        const tournamentService = new TournamentService(authService);
+        console.log('TournamentService created');
+        // Initialize UI managers
+        const authUI = new AuthUI(authService);
+        console.log('AuthUI created');
+        const friendsUI = new FriendsUI(friendsService);
+        console.log('FriendsUI created');
+        const tournamentUI = new TournamentUI(tournamentService);
+        console.log('TournamentUI created');
+        setupInvite();
+        console.log('Invite setup complete');
+        const appNavigation = new AppNavigation(profile, authService);
+        console.log('AppNavigation created');
+        // Update navigation when auth status changes
+        authService.onAuthChange = () => {
+            appNavigation.updateNavigationVisibility();
+        };
+        console.log('App initialization complete');
+        // Do NOT initialize PowerpuffPong here; only do it when gameSection is shown
+    }
+    catch (error) {
+        console.error('Error during app initialization:', error);
+        alert('Error: ' + error.message);
+    }
 });
