@@ -11,13 +11,12 @@ export async function createMatchState(matchId, player1Alias = 'Player1', player
     const numericMatchId = parseInt(matchId);
     
     if(!activeMatches.has(numericMatchId)){
-        let dbMatch = null;
-        dbMatch = await createCasualMatch(player1Alias, player2Alias, numericMatchId);
+       let dbMatch = await createCasualMatch(player1Alias, player2Alias, numericMatchId);
         
         const matchState = {
             player1: null,
             player2: null,
-            matchId: dbMatch ? dbMatch.id : null,
+            matchId: dbMatch.id,
             state: {
                 status: 'waiting',
                 connectedPlayers: 0,

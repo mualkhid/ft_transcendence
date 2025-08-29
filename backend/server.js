@@ -60,7 +60,12 @@ fastify.register(swaggerUI, {
   exposeRoute: true,
 });
 
-// fastify.register(helmet);
+await fastify.register(helmet, {
+  contentSecurityPolicy: false, // Completely disable CSP
+  crossOriginEmbedderPolicy: false,
+  crossOriginOpenerPolicy: false,
+  crossOriginResourcePolicy: false
+});
 
 // //Security + Rate limiting
 fastify.register(rateLimit, {
