@@ -29,12 +29,6 @@ enum MatchStatus {
   FINISHED
 }
 
-enum MatchStatus {
-  PENDING
-  ONGOING
-  FINISHED
-}
-
 enum FriendshipStatus {
   PENDING
   ACCEPTED
