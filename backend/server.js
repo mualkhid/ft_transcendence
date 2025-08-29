@@ -60,7 +60,7 @@ fastify.register(swaggerUI, {
   exposeRoute: true,
 });
 
-//Munia Please check if this interferes with your work or not
+//Munia Please check if this interferes with your work or not I closed it for websockets to work  -Sumaya 
 await fastify.register(helmet, {
   contentSecurityPolicy: false, // Completely disable CSP
   crossOriginEmbedderPolicy: false,
