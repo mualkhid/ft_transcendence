@@ -4,95 +4,81 @@ const prisma = new PrismaClient();
 
 export async function createCasualMatch(player1Alias, player2Alias, customId = null)
 {
-    try {
-        const match = await prisma.match.create({
-            data: {
-                tournamentId: null,
-                roundNumber: 1,
-                matchNumber: 1,
-                status: 'PENDING',
-                player1Alias,
-                player2Alias,
-                players: {
-                    create: [
-                        { alias: player1Alias },
-                        { alias: player2Alias }
-                    ]
-                }
-            }
-        });
+    const matchData = {
+        tournamentId: null,
+        roundNumber: 1,
+        matchNumber: 1,
+        status: 'PENDING',
+        player1Alias,
+        player2Alias,
+    };
 
-        if (customId !== null)
-        {
-            matchData.id = parseInt(customId);
-        }
+    const match = await prisma.match.create({
+        data: matchData,
+    });
 
-        const matchs = await prisma.match.create({
-            data: matchData
-        });
-        return (matchs);
-    }
-    catch (error)
-    {
-        console.error('Failed to create casual match:', error);
-        return null;
-    }
+    await prisma.matchPlayer.createMany({
+        data: [
+            { matchId: match.id, alias: player1Alias},
+            { matchId: match.id, alias: player2Alias}
+        ]
+    });
+
+    return (match);
 }
 
 export async function startMatch(matchId)
 {
-    try {
-        await prisma.match.update({
-            where: { id: matchId },
-            data: {
-                status: 'ONGOING',
-                startedAt: new Date()
-            }
-        });
-    } catch (error) {
-        console.error('Failed to start match:', error);
-    }
+    const updatedMatch = await prisma.match.update({
+        where: { id: matchId },
+        data: {
+            status: 'ONGOING',
+            startedAt: new Date()
+        }
+    });
+    
+    return updatedMatch;
 }
 
 export async function completeMatch(matchId, winnerAlias, player1Score, player2Score)
 {
-    try
-    {
-        await prisma.match.update({
-            where: { id: matchId },
-            data: {
-                status: 'FINISHED',
-                winnerAlias,
-                finishedAt: new Date()
-            }
-        });
+    const match = await prisma.match.findUnique({
+        where: { id: matchId },
+        include: { players: true }
+    });
 
-        await prisma.matchPlayer.updateMany({
-            where: {
-                matchId: matchId,
-                alias: winnerAlias
-            },
-            data: {
-                score: winnerAlias === (await prisma.match.findUnique({ where: { id: matchId } })).player1Alias ? player1Score : player2Score,
-                result: 'WIN'
-            }
-        });
+    if (!match)
+        throw new Error(`Match ${matchId} not found`);
 
-        await prisma.matchPlayer.updateMany({
-            where: {
-                matchId: matchId,
-                alias: { not: winnerAlias }
-            },
-            data: {
-                score: winnerAlias === (await prisma.match.findUnique({ where: { id: matchId } })).player1Alias ? player2Score : player1Score,
-                result: 'LOSS'
-            }
-        });
+    await prisma.match.update({
+        where: { id: matchId },
+        data: {
+            status: 'FINISHED',
+            winnerAlias,
+            finishedAt: new Date()
+        }
+    });
+    const winnerScore = winnerAlias === match.player1Alias ? player1Score : player2Score;
+    await prisma.matchPlayer.updateMany({
+        where: {
+            matchId: matchId,
+            alias: winnerAlias
+        },
+        data: {
+            score: winnerScore,
+            result: 'WIN'
+        }
+    });
 
-        console.log(`Match ${matchId} completed. Winner: ${winnerAlias}`);
-    }
-    catch (error)
-    {
-        console.error('Failed to complete match:', error);
-    }
+    const loserScore = winnerAlias === match.player1Alias ? player2Score : player1Score;
+    await prisma.matchPlayer.updateMany({
+        where: {
+            matchId: matchId,
+            alias: { not: winnerAlias }
+        },
+        data: {
+            score: loserScore,
+            result: 'LOSS'
+        }
+    });
 }
