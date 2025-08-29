@@ -50,7 +50,7 @@ function handleGeneralErrors(e, reply) {
 		return reply.status(400).send({ error: 'Invalid data type provided' });
 	}
 	
-	if (e instanceof SyntaxError) {
+	if (e instanceof SyntaxError || e.code === 'FST_ERR_CTP_INVALID_JSON_BODY') {
 		return reply.status(400).send({ error: 'Invalid JSON format' });
 	}
 	
@@ -58,10 +58,10 @@ function handleGeneralErrors(e, reply) {
 		console.error('ReferenceError:', e.message);
 		return reply.status(500).send({ error: 'Internal server error' });
 	}
-	
+
 	// Generic fallback for unknown errors
 	console.error('Unknown error:', e);
-	return reply.status(500).send({ error: 'Internal server error' });
+	return reply.status(500).send({ error: e.message });
 }
 
 export function globalErrorHandler(error, request, reply) {
