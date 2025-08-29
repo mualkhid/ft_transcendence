@@ -24,7 +24,7 @@ dotenv.config();
 
 const fastify = Fastify();
 fastify.setErrorHandler(globalErrorHandler);
-fastify.addHook('preHandler', trackUserActivity);
+// fastify.addHook('preHandler', trackUserActivity);
 
 // Needed to get __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -36,7 +36,8 @@ fastify.register(fastifyStatic, {
   prefix: '/', 
 });
 
-fastify.register(fastifyWebsocket);
+await fastify.register(fastifyWebsocket);
+
 
 fastify.register(swagger, {
   swagger: {
@@ -53,22 +54,25 @@ fastify.register(swaggerUI, {
   exposeRoute: true,
 });
 
-// Security + Rate limiting
+// fastify.register(helmet);
+
+// //Security + Rate limiting
 fastify.register(rateLimit, {
   max: 20,
   timeWindow: '1 minute',
   allowList: ['127.0.0.1'],
+  skip: (request) => request.headers.upgrade && request.headers.upgrade.toLowerCase() === 'websocket'
 });
 
-fastify.register(helmet);
+
 
 // 🔹 Register routes
 fastify.register(tournamentRoutes, { prefix: '/api' });
-fastify.register(remoteGameRoutes, { prefix: '/api' });
 fastify.register(authRoutes, { prefix: '/api' });
 fastify.register(friendsRoutes, { prefix: '/api' });
 fastify.register(profileRoutes, { prefix: '/api' });
 
+fastify.register(remoteGameRoutes);
 // 🔹 Start server LAST
 try {
   const address = await fastify.listen({ port: 3000, host: '0.0.0.0' });

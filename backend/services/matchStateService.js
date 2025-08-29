@@ -6,11 +6,15 @@ import {
 
 const activeMatches = new Map();
 
-export async function createMatchState(matchId, player1Alias = 'Player1', player2Alias = 'Player2'){
+export async function createMatchState(matchId, player1Alias = 'Player1', player2Alias = 'Player2')
+{
     const numericMatchId = parseInt(matchId);
+    
     if(!activeMatches.has(numericMatchId)){
-        const dbMatch = await createCasualMatch(player1Alias, player2Alias, numericMatchId);
-        activeMatches.set(numericMatchId, {
+        let dbMatch = null;
+        dbMatch = await createCasualMatch(player1Alias, player2Alias, numericMatchId);
+        
+        const matchState = {
             player1: null,
             player2: null,
             matchId: dbMatch ? dbMatch.id : null,
@@ -46,7 +50,10 @@ export async function createMatchState(matchId, player1Alias = 'Player1', player
                 player1Alias,
                 player2Alias
             }
-        });
+        };
+        
+        activeMatches.set(numericMatchId, matchState);
+        return matchState;
     }
     return activeMatches.get(numericMatchId);
 }
@@ -54,15 +61,17 @@ export async function createMatchState(matchId, player1Alias = 'Player1', player
 export async function addPlayerToMatch(matchId, websocket)
 {
     const match = await createMatchState(matchId);
-
-    if(!match)
-        return (null);
+    
+    if(!match) 
+        return null;
+    
     if(!match.player1)
     {
         match.player1 = websocket;
         match.state.connectedPlayers++;
         return (1);
     }
+    
     if(!match.player2)
     {
         match.player2 = websocket;
@@ -183,15 +192,12 @@ export async function updateBall(matchId)
 
     if (!match.state.matchStarted && match.state.connectedPlayers === 2)
     {
-        try {
-            if (match.matchId) {
-                await startMatch(match.matchId);
-                match.state.matchStarted = true;
-            }
-        }
-        catch (error)
+        match.state.matchStarted = true;
+        if (match.matchId)
         {
-            console.error(`Failed to start match in DB: ${error.message}`);
+            startMatch(match.matchId).catch(error => {
+                console.error(`Failed to start match in DB: ${error.message}`);
+            });
         }
     }
     updatePaddlePosition(match);
@@ -206,6 +212,11 @@ export async function updateBall(matchId)
         match.state.scorePlayer2++;
         if(match.state.scorePlayer2 >= match.state.maxScore)
         {
+            if (match.state.gameLoopInterval)
+            {
+                clearInterval(match.state.gameLoopInterval);
+                match.state.gameLoopInterval = null;
+            }
             await broadcastGameOver(match, 2, matchId);
             return ;
         }
@@ -216,6 +227,11 @@ export async function updateBall(matchId)
         match.state.scorePlayer1++;
         if(match.state.scorePlayer1 >= match.state.maxScore)
         {
+            if (match.state.gameLoopInterval)
+            {
+                clearInterval(match.state.gameLoopInterval);
+                match.state.gameLoopInterval = null;
+            }    
             await broadcastGameOver(match, 1, matchId);
             return ;
         }
@@ -275,25 +291,17 @@ async function broadcastGameOver(match, winner, matchId)
         match.player1.send(gameOver);
     if(match.player2)
         match.player2.send(gameOver);
-
-    try
+    
+    if (match.matchId)
     {
-        if (match.matchId) {
-            const winnerAlias = winner === 1 ? match.state.player1Alias : match.state.player2Alias;
-            await completeMatch(
-                match.matchId, 
-                winnerAlias, 
-                match.state.scorePlayer1, 
-                match.state.scorePlayer2
-            );
-            console.log(`Match ${match.matchId} completed and saved to database. Winner: ${winnerAlias}`);
-        }
+        const winnerAlias = winner === 1 ? match.state.player1Alias : match.state.player2Alias;
+        await completeMatch(
+            match.matchId, 
+            winnerAlias, 
+            match.state.scorePlayer1, 
+            match.state.scorePlayer2
+        );
     }
-    catch (error)
-    {
-        console.error(`Failed to save match results to DB: ${error.message}`);
-    }
-
     if (match.state.gameLoopInterval)
     {
         clearInterval(match.state.gameLoopInterval);

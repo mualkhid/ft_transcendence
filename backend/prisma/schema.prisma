@@ -60,6 +60,7 @@ model User {
   requestsReceived  Friendship[]       @relation("received")
   //matchPlayers         MatchPlayer[]
   TournamentPlayer  TournamentPlayer[]
+  
 
   // @@index([email])
 
@@ -140,11 +141,11 @@ model TournamentPlayer {
 
 /**
  * ===== Matches =====
- */
+ */ 
 
 model Match {
   id           Int         @id @default(autoincrement())
-  tournamentId Int
+  tournamentId Int?
   roundNumber  Int
   matchNumber  Int
   status       MatchStatus @default(PENDING)
