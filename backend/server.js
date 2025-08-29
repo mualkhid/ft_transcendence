@@ -20,6 +20,8 @@ import { trackUserActivity } from './services/lastSeenService.js';
 import { getSecrets } from './services/vaultService.js';
 import dotenv from 'dotenv';
 import cookie from '@fastify/cookie';
+import {prisma } from './prisma/prisma_lib.js';
+import { setupGracefulShutdown } from './utils/gracefulShutdown.js';
 
 dotenv.config();
 
@@ -79,6 +81,9 @@ fastify.register(friendsRoutes, { prefix: '/api' });
 fastify.register(profileRoutes, { prefix: '/api' });
 
 fastify.register(remoteGameRoutes);
+
+setupGracefulShutdown(fastify, prisma);
+
 // 🔹 Start server LAST
 try {
   const address = await fastify.listen({ port: 3000, host: '0.0.0.0' });
