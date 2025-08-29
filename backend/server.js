@@ -60,6 +60,7 @@ fastify.register(swaggerUI, {
   exposeRoute: true,
 });
 
+//Munia Please check if this interferes with your work or not
 await fastify.register(helmet, {
   contentSecurityPolicy: false, // Completely disable CSP
   crossOriginEmbedderPolicy: false,
