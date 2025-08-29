@@ -7,6 +7,7 @@ import sanitizeHtml from 'sanitize-html';
 import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
 import crypto from 'crypto';
+import {ValidationError, notFoundError, AuthenticationError} from '../utils/errors.js'
 
 const sanitizedUserSelect = { id: true, username: true, email: true, createdAt: true, lastSeen: true, updatedAt: true }
 
@@ -23,119 +24,83 @@ export async function registerUser(req, reply) {
     const cleanUsername = sanitizeHtml(username);
     const cleanEmail = sanitizeHtml(email);
 
-    if (!cleanUsername || !cleanEmail || !password) {
-        return reply.status(400).send({ error: "Username, email, and password are required." });
-    }
+    const saltRounds = 12;
+    const passwordHash = await bcrypt.hash(password, saltRounds);
 
-    // Password strength check
-    if (password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
-        return reply.status(400).send({ error: "Password must be at least 8 characters, include a number and an uppercase letter." });
-    }
-
-    try {
-        const existingUser = await prisma.user.findUnique({ where: { email: cleanEmail } });
-        if (existingUser) {
-            return reply.status(409).send({ error: "Email already registered." });
+    const user = await prisma.user.create({
+        data: {
+            username: cleanUsername,
+            email: cleanEmail,
+            passwordHash
         }
+    });
 
-        const saltRounds = 12;
-        const passwordHash = await bcrypt.hash(password, saltRounds);
-
-        const user = await prisma.user.create({
-            data: {
-                username: cleanUsername,
-                email: cleanEmail,
-                passwordHash
-            }
-        });
-
-        return reply.status(201).send({
-            user: {
-                id: user.id,
-                username: user.username,
-                email: user.email,
-                createdAt: user.createdAt,
-                updatedAt: user.updatedAt,
-                lastSeen: user.lastSeen
-            }
-        });
-    } catch (err) {
-        console.error("Registration error:", err);
-        return reply.status(500).send({ error: "Internal server error." });
-    }
+    return reply.status(201).send({
+        user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+            lastSeen: user.lastSeen
+        }
+    });
 }
 
 export async function login(req, reply) {
     const { email, password } = req.body;
 
-    // Sanitize input to prevent XSS
-    const cleanEmail = sanitizeHtml(email);
+    const user = await prisma.user.findUnique({ where: { email: email } });
 
-    if (!cleanEmail || !password) {
-        return reply.status(400).send({ error: "Email and password are required." });
-    }
+    const valid = await bcrypt.compare(password, user.passwordHash);
+    if (!valid)
+        throw new AuthenticationError("Invalid email or password.");
 
-    try {
-        const user = await prisma.user.findUnique({ where: { email: cleanEmail } });
-        if (!user) {
-            return reply.status(401).send({ error: "Invalid email or password." });
-        }
-
-        const valid = await bcrypt.compare(password, user.passwordHash);
-        if (!valid) {
-            return reply.status(401).send({ error: "Invalid email or password." });
-        }
-
-        // 2FA verification
-        if (user.isTwoFactorEnabled) {
-            const { twoFactorCode } = req.body;
-            let verified = false;
-            const backupCodesArray = user.backupCodes ? user.backupCodes.split(',') : [];
-            if (twoFactorCode) {
-                verified = speakeasy.totp.verify({
-                    secret: user.twoFactorSecret,
-                    encoding: 'base32',
-                    token: twoFactorCode
+    // 2FA verification
+    if (user.isTwoFactorEnabled) {
+        const { twoFactorCode } = req.body;
+        let verified = false;
+        const backupCodesArray = user.backupCodes ? user.backupCodes.split(',') : [];
+        if (twoFactorCode) {
+            verified = speakeasy.totp.verify({
+                secret: user.twoFactorSecret,
+                encoding: 'base32',
+                token: twoFactorCode
+            });
+            // If not verified, check backup codes
+            if (!verified && backupCodesArray.includes(twoFactorCode)) {
+                // Remove used backup code
+                const updatedCodes = backupCodesArray.filter(code => code !== twoFactorCode);
+                await prisma.user.update({
+                    where: { id: user.id },
+                    data: { backupCodes: updatedCodes.join(',') }
                 });
-                // If not verified, check backup codes
-                if (!verified && backupCodesArray.includes(twoFactorCode)) {
-                    // Remove used backup code
-                    const updatedCodes = backupCodesArray.filter(code => code !== twoFactorCode);
-                    await prisma.user.update({
-                        where: { id: user.id },
-                        data: { backupCodes: updatedCodes.join(',') }
-                    });
-                    verified = true;
-                }
-            }
-            if (!verified) {
-                return reply.status(401).send({ error: "Invalid 2FA or backup code." });
+                verified = true;
             }
         }
-
-        const token = generateToken(user);
-        reply.setCookie('token', token, {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'strict',
-            path: '/',
-            maxAge: 3600
-        });
-        // await prisma.user.update({
-        //     where: { id: user.id },
-        //     data: { lastSeen: new Date(now) }
-        // });
-        return reply.status(200).send({ message: 'Login successful', token });
-    } catch (err) {
-        console.error("Login error:", err);
-        return reply.status(500).send({ error: err.message });
+        if (!verified)
+            throw new AuthenticationError("Invalid 2FA or backup code.");
     }
+
+    const token = generateToken(user);
+    reply.setCookie('token', token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 3600
+    });
+    
+    await prisma.user.update({where: { id: user.id }, data: { lastSeen: new Date() } });
+
+    return reply.status(200).send({ message: 'Login successful', token });
 }
 
 export async function getCurrentUser(req, reply) {
     const userId = req.user.id;
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) return reply.status(404).send({ error: "User not found" });
+    if (!user)
+        return new notFoundError('User not found')
     return reply.status(200).send({
         user: {
             id: user.id,
