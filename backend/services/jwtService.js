@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import 'dotenv/config';
 
 const jwtSecret = process.env.JWT_SECRET;
 
@@ -15,8 +16,9 @@ export function authenticate(request, reply, done) {
     const token = request.cookies.token;
     if (!token) throw new Error('No token');
     request.user = verifyToken(token);
+    
     done();
   } catch (err) {
-    reply.status(401).send({ error: 'Unauthorized' });
+    reply.status(401).send({ error: err.message });
   }
 }

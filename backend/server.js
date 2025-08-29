@@ -19,6 +19,7 @@ import { globalErrorHandler } from './utils/errorHandler.js';
 import { trackUserActivity } from './services/lastSeenService.js';
 import { getSecrets } from './services/vaultService.js';
 import dotenv from 'dotenv';
+import cookie from '@fastify/cookie';
 
 dotenv.config();
 
@@ -44,6 +45,11 @@ fastify.register(swagger, {
     info: { title: 'fastify-api', version: '1.0.0' },
   },
 });
+
+// In your server.js or main file
+
+// Register the cookie plugin
+fastify.register(cookie);
 
 fastify.register(fastifyMultipart, {
   limits: { file: 1, filesize: 5 * 1024 * 1024 },

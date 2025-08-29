@@ -1,8 +1,10 @@
 import {prisma} from '../prisma/prisma_lib.js'
+import { notFoundError, ValidationError } from '../utils/errors.js';
 
+const sanitizedUserSelect = { id: true, username: true, email: true, createdAt: true, lastSeen: true, updatedAt: true }
 
 export async function getFriends(req, reply) {
-	 const id = 2; // later will strap from jwt token
+	const id = req.user.id
 
 	const friendship = await prisma.friendship.findMany ({
 		where: {
@@ -11,10 +13,10 @@ export async function getFriends(req, reply) {
 		},
 		include: {
 			requesterUser: { 
-				omit: {passwordHash: true}
+				select: sanitizedUserSelect
 			},
 			addresseeUser: {
-				omit: {passwordHash: true}
+				select: sanitizedUserSelect
 			},
 		}
 	});
@@ -26,13 +28,16 @@ export async function getFriends(req, reply) {
 
 
 export async function sendRequest(req, reply) {
-	const id = 2; // later will strap from jwt token
+	const id = req.user.id
+	const userId = req.body.userId
 
-	// if it failed to create it, it means that there is already a request / user is blocked.
+	if (id === userId)
+		throw new ValidationError("Cannot be friends with self")
+	
 	await prisma.friendship.create({data: {
 
 		requesterId: id,
-		addresseeId: req.body.userId
+		addresseeId: userId
 	}})
 
 	// if request is pending then it should not allow it to send from the frontend
@@ -42,7 +47,7 @@ export async function sendRequest(req, reply) {
 
 // 200 accepted, 404 if not pending
 export async function acceptRequest(req, reply) {
-	const id = 3;
+	 const id = req.user.id
 
 	await prisma.friendship.update({
 		where: {
@@ -59,7 +64,7 @@ export async function acceptRequest(req, reply) {
 }
 
 export async function declineRequest(req, reply) {
-	const id = 3;
+	const id = req.user.id
 
 	await prisma.friendship.delete({
 		where: {
@@ -75,9 +80,9 @@ export async function declineRequest(req, reply) {
 }
 
 export async function removeFriend(req, reply) {
-	const id = 3;
+	const id = req.user.id
 
-	await prisma.friendship.deleteMany({
+	const result = await prisma.friendship.deleteMany({
 		where: {
 			status: 'ACCEPTED',
 			OR: [
@@ -86,14 +91,17 @@ export async function removeFriend(req, reply) {
 			]
 		}
 	});
+
+	if (result.count === 0)
+		throw new notFoundError("No accepted friendship found")
 	
 	reply.status(200).send({message: "friend removed successfully"});
 }
 
 export async function blockFriend(req, reply) {
-	const id = 3;
+	const id = req.user.id
 
-	await prisma.friendship.updateMany({
+	const result = await prisma.friendship.updateMany({
 		where: {
 			status: 'ACCEPTED',
 			OR : [
@@ -102,7 +110,11 @@ export async function blockFriend(req, reply) {
 			]
 		},
 		data: { status: 'BLOCKED'}
-	  })
+	})
+
+	if (result.count === 0)
+		throw new notFoundError("No accepted friendship found")
+
 	reply.status(200).send({message: "friend blocked successfully"})
 }
 
@@ -112,8 +124,6 @@ export async function searchUser(req, reply) {
 	const limit = 10
 	const skip = (pageNum - 1) * limit
 
-
-
 	const users = await prisma.user.findMany({
 		where: {
 			OR: [
@@ -121,7 +131,7 @@ export async function searchUser(req, reply) {
 					{username: {startsWith: searchTerm}}
 			],
 		},
-		omit: {passwordHash: true},
+		select: sanitizedUserSelect,
 		take: limit,
 		skip: skip
 	})

@@ -20,6 +20,8 @@ export function trackUserActivity(request, reply, done) {
     if (request.user?.id) {
         updateLastSeenIfNeeded(request.user.id);
     }
+    else
+        console.log("no user is sent")
     done();
 }
 
