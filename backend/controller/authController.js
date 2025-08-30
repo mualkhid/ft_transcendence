@@ -60,7 +60,14 @@ export async function login(req, reply) {
     if (user.isTwoFactorEnabled) {
         const { twoFactorCode } = req.body;
         let verified = false;
-        const backupCodesArray = user.backupCodes ? user.backupCodes.split(',') : [];
+        let backupCodesArray = [];
+        if (user.twoFactorBackupCodes) {
+            try {
+                backupCodesArray = JSON.parse(user.twoFactorBackupCodes);
+            } catch (e) {
+                backupCodesArray = [];
+            }
+        }
         if (twoFactorCode) {
             verified = speakeasy.totp.verify({
                 secret: user.twoFactorSecret,
@@ -73,7 +80,7 @@ export async function login(req, reply) {
                 const updatedCodes = backupCodesArray.filter(code => code !== twoFactorCode);
                 await prisma.user.update({
                     where: { id: user.id },
-                    data: { backupCodes: updatedCodes.join(',') }
+                    data: { twoFactorBackupCodes: JSON.stringify(updatedCodes) }
                 });
                 verified = true;
             }
@@ -124,14 +131,13 @@ export async function setup2FA(req, reply) {
 
     // Save secret to user in DB
     const backupCodesArray = generateBackupCodes();
-    const backupCodesString = backupCodesArray.join(',');
 
     await prisma.user.update({
         where: { id: userId },
         data: {
             twoFactorSecret: secret.base32,
             isTwoFactorEnabled: true,
-            backupCodes: backupCodesString
+            twoFactorBackupCodes: JSON.stringify(backupCodesArray)
         }
     });
 

@@ -54,13 +54,18 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  // 2FA fields
+  isTwoFactorEnabled Boolean   @default(false)
+  twoFactorSecret    String?
+  twoFactorTempSecret String?
+  twoFactorBackupCodes String? // JSON array of backup codes
+
   // back-relations
   wonTournaments    Tournament[]       @relation("tournamentsWon")
   requestsRequested Friendship[]       @relation("requested")
   requestsReceived  Friendship[]       @relation("received")
   //matchPlayers         MatchPlayer[]
   TournamentPlayer  TournamentPlayer[]
-  
 
   // @@index([email])
 
