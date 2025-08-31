@@ -4,26 +4,42 @@ import { notFoundError, ValidationError } from '../utils/errors.js';
 const sanitizedUserSelect = { id: true, username: true, email: true, createdAt: true, lastSeen: true, updatedAt: true }
 
 export async function getFriends(req, reply) {
-	const id = req.user.id
+    const id = req.user.id
 
-	const friendship = await prisma.friendship.findMany ({
-		where: {
-			status: "ACCEPTED",
-			OR: [{ requesterId: id }, {addresseeId: id}],
-		},
-		include: {
-			requesterUser: { 
-				select: sanitizedUserSelect
-			},
-			addresseeUser: {
-				select: sanitizedUserSelect
-			},
-		}
-	});
+    const friendships = await prisma.friendship.findMany({
+        where: {
+            OR: [
+                {
+                    status: "ACCEPTED",
+                    OR: [{ requesterId: id }, { addresseeId: id }],
+                },
+                {
+                    status: "PENDING",
+                    addresseeId: id,
+                },
+            ],
+        },
+        include: {
+            requesterUser: { select: sanitizedUserSelect },
+            addresseeUser: { select: sanitizedUserSelect },
+        },
+    });
 
-	return reply.status(200).send({
-		friends: friendship.map (f => f.requesterId === id ? f.addresseeUser : f.requesterUser )
-	})
+    const friends = [];
+    const pendingRequests = [];
+
+    for (const f of friendships) {
+        if (f.status === "ACCEPTED") {
+            friends.push(f.requesterId === id ? f.addresseeUser : f.requesterUser);
+        } else if (f.status === "PENDING" && f.addresseeId === id) {
+            pendingRequests.push(f.requesterUser);
+        }
+    }
+
+    return reply.status(200).send({
+        friends,
+        pendingRequests,
+    });
 }
 
 
