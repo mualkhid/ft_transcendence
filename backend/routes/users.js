@@ -2,11 +2,8 @@ import { registerUser, deleteAccount, anonymizeAccount } from '../controller/use
 import { registerSchema, deleteAccountSchema, anonymizeAccountSchema } from '../schema/userSchema.js';
 import { authenticate } from '../services/jwtService.js';
 
-async function userRoutes(fastify, options)
-{
+export default function userRoutes(fastify, options) {
     fastify.post('/register', { schema: registerSchema }, registerUser);
     fastify.delete('/user/delete', { preHandler: authenticate, schema: deleteAccountSchema }, deleteAccount);
     fastify.post('/user/anonymize', { preHandler: authenticate, schema: anonymizeAccountSchema }, anonymizeAccount);
 }
-
-export default userRoutes;

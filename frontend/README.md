@@ -113,7 +113,7 @@ ft_transcendence/
 lsof -i :8080
 
 # Kill the process or use a different port
-docker run -p 8081:80 powerpuff-pong
+docker run -p 8080:80 powerpuff-pong
 ```
 
 ### Rebuild Docker Image

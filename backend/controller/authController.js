@@ -100,7 +100,18 @@ export async function login(req, reply) {
     
     await prisma.user.update({where: { id: user.id }, data: { lastSeen: new Date() } });
 
-    return reply.status(200).send({ message: 'Login successful', token });
+    return reply.status(200).send({ 
+        message: 'Login successful', 
+        token,
+        user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+            lastSeen: user.lastSeen
+        }
+    });
 }
 
 export async function getCurrentUser(req, reply) {

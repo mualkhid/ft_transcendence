@@ -1,7 +1,6 @@
-import { users, generateUserId } from '../services/userService.js';
 import bcrypt from 'bcrypt';
 import sanitizeHtml from 'sanitize-html';
-import { prisma } from '../server.js';
+import { prisma } from '../prisma/prisma_lib.js';
 import crypto from 'crypto';
 
 export async function registerUser(request, reply){
@@ -19,23 +18,35 @@ export async function registerUser(request, reply){
         return reply.status(400).send({ error: "Password must be at least 8 characters, include a number and an uppercase letter." });
     }
 
-    for(const user of users.values()){
-        if(user.username === username)
-            return reply.status(409).send({ error: 'Username already exists'});
-        if(user.email === email)
-            return reply.status(409).send({ error: 'Email already exists'});
-    }
-
     try {
-        const passwordHash = await bcrypt.hash(password, 12);
-        const user = {
-            id: generateUserId(),
-            username,
-            email,
-            passwordHash
-        };
+        // Check if user already exists
+        const existingUser = await prisma.user.findFirst({
+            where: {
+                OR: [
+                    { username: username },
+                    { email: email }
+                ]
+            }
+        });
 
-        users.set(user.id, user);
+        if (existingUser) {
+            if (existingUser.username === username) {
+                return reply.status(409).send({ error: 'Username already exists' });
+            }
+            if (existingUser.email === email) {
+                return reply.status(409).send({ error: 'Email already exists' });
+            }
+        }
+
+        const passwordHash = await bcrypt.hash(password, 12);
+        const user = await prisma.user.create({
+            data: {
+                username,
+                email,
+                passwordHash
+            }
+        });
+
         // Do not return passwordHash in response
         const { passwordHash: _, ...userWithoutHash } = user;
         return reply.status(201).send(userWithoutHash);
@@ -45,11 +56,7 @@ export async function registerUser(request, reply){
     }
 };
 
-export async function getUsers(request, reply)
-{
-    const userList = Array.from(users.values());
-    return reply.send(userList);
-}
+
 
 export async function deleteAccount(req, reply) {
   const userId = req.user.id;

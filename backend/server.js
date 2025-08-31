@@ -6,10 +6,12 @@ import swaggerUI from '@fastify/swagger-ui';
 import fastifyStatic from '@fastify/static';
 import rateLimit from '@fastify/rate-limit';
 import helmet from '@fastify/helmet';
+import fastifyCors from '@fastify/cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 import authRoutes from './routes/authRoutes.js';
+import userRoutes from './routes/users.js';
 import tournamentRoutes from './routes/tournament.js';
 import remoteGameRoutes from './routes/remoteGameRoutes.js';
 import friendsRoutes from './routes/friendsRoute.js';
@@ -33,6 +35,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // 🔹 Register plugins BEFORE starting server
+fastify.register(fastifyCors, {
+  origin: ['http://localhost:8080', 'http://127.0.0.1:8080'],
+  credentials: true
+});
+
 fastify.register(fastifyStatic, {
   root: path.join(__dirname, 'public'),
   prefix: '/', 
@@ -82,6 +89,7 @@ fastify.register(rateLimit, {
 // 🔹 Register routes
 fastify.register(tournamentRoutes, { prefix: '/api' });
 fastify.register(authRoutes, { prefix: '/api' });
+fastify.register(userRoutes, { prefix: '/api' });
 fastify.register(friendsRoutes, { prefix: '/api' });
 fastify.register(profileRoutes, { prefix: '/api' });
 
