@@ -20,10 +20,11 @@ services:
     environment:
       - NODE_ENV=production
     expose:
-      - "3000"
+      - "3000:3000"
     depends_on:
       - database
       - vault
+    restart: unless-stopped
 
   # Frontend service  
   frontend:

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal Test</title>
+</head>
+<body>
+    <h1>Minimal Test</h1>
+    <p>Testing for AppNavigation error</p>
+    
+    <script>
+        console.log('Minimal test script loaded');
+        console.log('Checking for AppNavigation globally...');
+        
+        if (typeof AppNavigation !== 'undefined') {
+            console.log('ERROR: AppNavigation found globally:', AppNavigation);
+        } else {
+            console.log('SUCCESS: AppNavigation NOT found globally');
+        }
+        
+        // Check all global variables
+        console.log('All global variables:', Object.keys(window).filter(key => key.includes('App') || key.includes('Navigation')));
+    </script>
+</body>
+</html>
