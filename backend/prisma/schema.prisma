@@ -1,0 +1,183 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+//
+
+// takes all the prisma code and convert it
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/**
+ * ===== Enums =====
+ */
+
+enum TournamentStatus {
+  NOT_STARTED
+  ONGOING
+  FINISHED
+}
+
+enum MatchStatus {
+  PENDING
+  ONGOING
+  FINISHED
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
+}
+
+enum MatchResult {
+  WIN
+  LOSS
+}
+
+/**
+ * ===== Core User =====
+ */
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  email        String   @unique // store lowercase in app code
+  passwordHash String
+  avatarUrl    String?
+  lastSeen     DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // 2FA fields
+  isTwoFactorEnabled Boolean   @default(false)
+  twoFactorSecret    String?
+  twoFactorTempSecret String?
+  twoFactorBackupCodes String? // JSON array of backup codes
+
+  // back-relations
+  wonTournaments    Tournament[]       @relation("tournamentsWon")
+  requestsRequested Friendship[]       @relation("requested")
+  requestsReceived  Friendship[]       @relation("received")
+  //matchPlayers         MatchPlayer[]
+  TournamentPlayer  TournamentPlayer[]
+
+  // @@index([email])
+
+  Tournament Tournament[] @relation("tournamentsCreated")
+}
+
+/**
+ * ===== Friendships (edge table) =====
+ */
+
+model Friendship {
+  // id        Int              @id @default(autoincrement())
+  requesterId Int
+  addresseeId Int
+  status      FriendshipStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  requesterUser User @relation("requested", fields: [requesterId], references: [id], onDelete: Cascade)
+  addresseeUser User @relation("received", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@id([requesterId, addresseeId])
+  @@index([addresseeId, status]) // “incoming pending requests”
+}
+
+/**
+ * ===== Tournaments =====
+ */
+
+model Tournament {
+  id           Int              @id @default(autoincrement())
+  name         String
+  status       TournamentStatus @default(NOT_STARTED)
+  maxPlayers   Int
+  currentRound Int
+
+  creatorId   Int?
+  winnerId    Int?
+  winnerAlias String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  players TournamentPlayer[]
+  matches Match[]
+
+  // Back-relations
+  creator User? @relation("tournamentsCreated", fields: [creatorId], references: [id], onDelete: SetNull)
+  winner  User? @relation("tournamentsWon", fields: [winnerId], references: [id], onDelete: SetNull)
+
+  // @@index([status])
+  // @@index([creatorId])
+}
+
+/**
+ * ===== Preregistration / membership =====
+ */
+
+model TournamentPlayer {
+  id           Int    @id @default(autoincrement())
+  tournamentId Int
+  alias        String
+  userId       Int?
+  playerOrder  Int
+
+  joinedAt DateTime @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user       User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  // If aliases must be unique within a tournament:
+  // @@unique([tournamentId, displayName])
+
+  @@unique([tournamentId, userId])
+  @@unique([tournamentId, playerOrder])
+  @@index([tournamentId])
+  @@index([userId])
+}
+
+/**
+ * ===== Matches =====
+ */ 
+
+model Match {
+  id           Int         @id @default(autoincrement())
+  tournamentId Int?
+  roundNumber  Int
+  matchNumber  Int
+  status       MatchStatus @default(PENDING)
+
+  player1Alias String
+  player2Alias String
+  winnerAlias  String?
+
+  startedAt  DateTime?
+  finishedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  tournament Tournament?   @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  players    MatchPlayer[] // this is not a relation, it just says that it has multiple players
+
+  @@unique([tournamentId, roundNumber, matchNumber])
+  @@index([tournamentId])
+  @@index([tournamentId, roundNumber])
+}
+
+model MatchPlayer {
+  matchId Int
+  alias   String
+  score   Int          @default(0)
+  result  MatchResult?
+
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@id([matchId, alias])
+}

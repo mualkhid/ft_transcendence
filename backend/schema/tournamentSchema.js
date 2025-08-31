@@ -1,124 +1,42 @@
-const  createTournamentSchema = {
-    response: {
-        201: {
-            type: 'object',
-            properties: {
-                id: { type: 'number' },
-                name: { type: 'string' },
-                message: { type: 'string' },
-            },
-            required: ['id', 'name', 'message']
-        }
-    }
-}
-
-const getTournamentSchema = {
-    response: {
-        200: {
-            type: 'object',
-            properties: {
-                id: { type: 'number'},
-                name: { type: 'string'}
-            },
-            required: ['id', 'name']
-        },
-        404: {
-            type: 'object',
-            properties: {
-                error: {type: 'string'}
-            },
-            required: ['error']
-        }
-    }
-}
-
-const joinTournamentSchema = {
-    body:{
+export const  createTournamentSchema = {
+    body: {
         type: 'object',
-        properties: {userId: {type: 'number'}},
-        required: ['userId'],
-    },
-    response: {
-        200: {
-            type: 'object',
-            properties: { message: {type: 'string'}},
-            required: ['message']
-        },
-        400: {
-            type: 'object',
-            properties: { error: {type: 'string'}},
-            required: ['error']
-        },
-        403: {
-            type: 'object',
-            properties: { error: {type: 'string'}},
-            required: ['error']
-        },
-        404: {
-            type: 'object',
-            properties: { error: {type: 'string'}},
-            required: ['error']
-        },
-        409: {
-            type: 'object',
-            properties: { error: {type: 'string'}},
-            required: ['error']
-        }
-    }
-}
-
-const nextMatchSchema = {
-    response: {
-        200: {
-            type: 'object',
-            properties: {
-              matchId: { type: 'number' },
-              player1: {
-                type: 'object',
-                properties: {
-                  id: { type: 'number' },
-                  alias: { type: 'string' }
-                },
-                required: ['id', 'alias']
-              },
-              player2: {
-                type: 'object',
-                properties: {
-                  id: { type: 'number' },
-                  alias: { type: 'string' }
-                },
-                required: ['id', 'alias']
-              }
+        properties: {
+            name: { 
+                type: 'string', 
+                minLength: 1,
+                maxLength: 100 
             },
-            required: ['matchId', 'player1', 'player2']
-          },
-        400: {
-            type: 'object',
-            properties: { error: {type: 'string'}},
-            required: ['error']
+            aliases: { 
+                type: 'array',
+                items: { 
+                    type: 'string', 
+                    minLength: 1,
+                    maxLength: 50
+                },
+                minItems: 4,
+                maxItems: 8
+            }
         },
-        404: {
-            type: 'object',
-            properties: { error: {type: 'string'}},
-            required: ['error']
-        }
+        required: ['aliases'],
+        additionalProperties: false
     }
-}
-
-const resetTournamentSchema = {
-    response: {
-        200: {
-            type: 'object',
-            properties: { message: {type: 'string'}},
-            required: ['message']
-        }
+};
+export const completeMatchSchema = {
+    body: {
+        type: 'object',
+        properties: {
+            matchId: { 
+                type: 'number',
+                minimum: 1
+            },
+            winner: { 
+                type: 'string', 
+                minLength: 1,
+                maxLength: 50
+            }
+        },
+        required: ['matchId', 'winner'],
+        additionalProperties: false
     }
-}
-
-module.exports = {
-    createTournamentSchema,
-    getTournamentSchema,
-    joinTournamentSchema,
-    nextMatchSchema,
-    resetTournamentSchema
-}
+};
