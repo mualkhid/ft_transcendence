@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Powerpuff Girls Pong - Registration</title>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">
@@ -329,18 +332,16 @@
                     <!-- Game Instructions -->
                     <div class="mt-12 text-center">
                         <h2 class="text-3xl font-logo text-white mb-4">How to Play</h2>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
                             <div class="bg-white bg-opacity-10 rounded-lg p-4">
-                                <h3 class="text-lg font-bold text-white mb-2">Player 1 (Blossom)</h3>
-                                <p class="text-white text-sm">W/S keys to move</p>
+                                <h3 class="text-lg font-bold text-white mb-2">Local Game (1v1)</h3>
+                                <p class="text-white text-sm">You play with W/S keys</p>
+                                <p class="text-white text-sm">Other player uses Up/Down arrow keys</p>
                             </div>
                             <div class="bg-white bg-opacity-10 rounded-lg p-4">
-                                <h3 class="text-lg font-bold text-white mb-2">Player 2 (Bubbles)</h3>
-                                <p class="text-white text-sm">Up/Down arrow keys</p>
-                            </div>
-                            <div class="bg-white bg-opacity-10 rounded-lg p-4">
-                                <h3 class="text-lg font-bold text-white mb-2">Power-ups</h3>
-                                <p class="text-white text-sm">Space to activate</p>
+                                <h3 class="text-lg font-bold text-white mb-2">Online Game</h3>
+                                <p class="text-white text-sm">Both players can use W/S keys</p>
+                                <p class="text-white text-sm">Or Up/Down arrow keys</p>
                             </div>
                         </div>
                     </div>
@@ -528,19 +529,6 @@
                                 </div>
                             </div>
                             
-                            <!-- Availability Toggle -->
-                            <div class="mb-6">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <label class="block text-white font-semibold mb-1">Availability</label>
-                                        <p class="text-white text-sm opacity-80">Show when you're online</p>
-                                    </div>
-                                    <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" id="availabilityToggle" class="sr-only peer" checked>
-                                        <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
-                                    </label>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -549,58 +537,18 @@
             <!-- Game Section -->
             <div id="gameSection" class="section">
                 <div class="container mx-auto px-4 py-8">
-                    <!-- Header -->
-                    <header class="text-center mb-8">
-                        <h1 class="text-6xl font-bold text-white mb-4 animate-bounce-slow">
-                            💖 Powerpuff Pong 💙
-                        </h1>
-                        <p class="text-2xl text-white mb-4">Sugar, Spice, and Everything Pong!</p>
-                    </header>
-
-                    <!-- Game Container -->
-                    <div class="flex justify-center mb-8">
-                        <div class="relative bg-black rounded-lg shadow-2xl border-4 border-powerpuff-purple">
-                            <canvas id="gameCanvas" width="800" height="600" class="rounded-lg"></canvas>
-                            
-                            <!-- Game Overlay -->
-                            <div id="gameOverlay" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg hidden">
-                                <div class="text-center text-white">
-                                    <h2 id="gameMessage" class="text-4xl font-bold mb-4">Welcome to Powerpuff Pong!</h2>
-                                    <button id="startButton" class="bg-powerpuff-pink hover:bg-powerpuff-purple text-white font-bold py-3 px-6 rounded-full text-xl transition-colors">
-                                        Start Game
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Controls -->
-                    <div class="text-center text-white">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                            <div class="bg-powerpuff-purple bg-opacity-50 rounded-lg p-4">
-                                <h3 class="text-xl font-bold mb-2">Player 1 (Blossom)</h3>
-                                <p class="text-sm">W/S keys to move</p>
-                            </div>
-                            <div class="bg-powerpuff-blue bg-opacity-50 rounded-lg p-4">
-                                <h3 class="text-xl font-bold mb-2">Player 2 (Bubbles)</h3>
-                                <p class="text-sm">Up/Down arrow keys</p>
-                            </div>
-                            <div class="bg-powerpuff-green bg-opacity-50 rounded-lg p-4">
-                                <h3 class="text-xl font-bold mb-2">Power-ups</h3>
-                                <p class="text-sm">Space to activate</p>
-                            </div>
-                        </div>
-                        
+                    <!-- Score Display -->
+                    <div class="text-center text-white mb-8">
                         <div class="flex justify-center space-x-4">
                             <div class="bg-powerpuff-pink bg-opacity-50 rounded-lg p-4">
                                 <h3 class="text-lg font-bold">Score</h3>
                                 <div class="flex justify-center space-x-8">
                                     <div>
-                                        <p class="text-sm" id="player1Name">Blossom</p>
+                                        <p class="text-sm" id="player1Name">Player 1</p>
                                         <p id="player1Score" class="text-2xl font-bold">0</p>
                                     </div>
                                     <div>
-                                        <p class="text-sm" id="player2Name">Bubbles</p>
+                                        <p class="text-sm" id="player2Name">Player 2</p>
                                         <p id="player2Score" class="text-2xl font-bold">0</p>
                                     </div>
                                 </div>
@@ -608,26 +556,134 @@
                         </div>
                     </div>
 
-                    <!-- Powerpuff Girls Characters -->
-                    <div class="flex justify-center space-x-8 mt-8">
-                        <div class="text-center">
-                            <div class="w-16 h-16 bg-powerpuff-pink rounded-full mx-auto mb-2 animate-pulse-slow"></div>
-                            <p class="text-white font-bold">Blossom</p>
+                    <!-- Game Container -->
+                    <div class="flex justify-center mb-8">
+                        <div class="relative bg-black rounded-lg shadow-2xl border-4 border-powerpuff-purple">
+                            <!-- Customize Button - Top Left -->
+                            <button id="customizeBtn" class="absolute top-4 left-4 z-20 bg-gradient-to-r from-blue-400 to-purple-500 hover:from-blue-500 hover:to-purple-600 text-white font-bold py-2 px-4 rounded-full text-sm transition-all transform hover:scale-105 shadow-lg">
+                                🎨 Customize
+                            </button>
+                            
+                            <canvas id="gameCanvas" width="800" height="600" class="rounded-lg"></canvas>
+                            
+                            <!-- Game Overlay - Just Start Button -->
+                            <div id="gameOverlay" class="absolute inset-0 flex items-center justify-center rounded-lg z-10" style="display: flex !important; align-items: center; justify-content: center; flex-direction: column;">
+                                <div class="text-center w-full flex flex-col items-center justify-center">
+                                    <h2 id="gameMessage" class="text-3xl font-bold mb-6 text-white drop-shadow-lg"></h2>
+                                    <button id="startButton" class="bg-powerpuff-pink hover:bg-powerpuff-purple text-white font-bold py-3 px-6 rounded-full text-xl transition-colors shadow-lg">
+                                        Start Game
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <div class="text-center">
-                            <div class="w-16 h-16 bg-powerpuff-blue rounded-full mx-auto mb-2 animate-bounce-slow"></div>
-                            <p class="text-white font-bold">Bubbles</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Online Game Section -->
+            <div id="onlineGameSection" class="section">
+                <div class="container mx-auto px-4 py-8">
+                    <!-- Matchmaking Status -->
+                    <div class="text-center text-white mb-8">
+                        <h2 class="text-4xl font-logo text-powerpuff-green mb-4">🌐 Online Matchmaking</h2>
+                        <p class="text-xl mb-6">Find an opponent to play against!</p>
+                        
+                        <!-- Matchmaking Status Display -->
+                        <div class="bg-white bg-opacity-10 rounded-lg p-6 backdrop-blur-sm max-w-md mx-auto mb-6">
+                            <div id="matchmakingStatus" class="text-center">
+                                <div class="text-3xl mb-4">🔍</div>
+                                <h3 class="text-xl font-bold mb-2">Searching for opponent...</h3>
+                                <div class="mt-4">
+                                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-powerpuff-green mx-auto"></div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="text-center">
-                            <div class="w-16 h-16 bg-powerpuff-green rounded-full mx-auto mb-2 animate-spin-slow"></div>
-                            <p class="text-white font-bold">Buttercup</p>
+                        
+                        <!-- Matchmaking Controls -->
+                        <div class="flex justify-center space-x-4">
+                            <button id="cancelMatchmakingBtn" class="bg-powerpuff-red hover:bg-red-600 text-white font-bold py-3 px-6 rounded-full text-lg transition-colors shadow-lg">
+                                ❌ Cancel Search
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Online Score Display -->
+                    <div class="text-center text-white mb-8" style="display: none;">
+                        <div class="flex justify-center space-x-4">
+                            <div class="bg-powerpuff-pink bg-opacity-50 rounded-lg p-4">
+                                <h3 class="text-lg font-bold">Score</h3>
+                                <div class="flex justify-center space-x-8">
+                                    <div>
+                                        <p class="text-sm" id="onlinePlayer1Name">Player 1</p>
+                                        <p id="onlinePlayer1Score" class="text-2xl font-bold">0</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm" id="onlinePlayer2Name">Player 2</p>
+                                        <p id="onlinePlayer2Score" class="text-2xl font-bold">0</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Online Game Container -->
+                    <div class="flex justify-center mb-8">
+                        <div class="relative bg-black rounded-lg shadow-2xl border-4 border-powerpuff-green">
+                            <!-- Customize Button - Top Left -->
+                            <button id="onlineCustomizeBtn" class="absolute top-4 left-4 z-20 bg-gradient-to-r from-blue-400 to-purple-500 hover:from-blue-500 hover:to-purple-600 text-white font-bold py-2 px-4 rounded-full text-sm transition-all transform hover:scale-105 shadow-lg">
+                                🎨 Customize
+                            </button>
+                            
+                            <canvas id="onlineGameCanvas" width="800" height="600" class="rounded-lg"></canvas>
+                            
+                            <!-- Online Game Overlay -->
+                            <div id="onlineGameOverlay" class="absolute inset-0 flex items-center justify-center rounded-lg z-10" style="display: none;">
+                                <div class="text-center">
+                                    <h2 id="onlineGameMessage" class="text-3xl font-bold mb-6 text-white drop-shadow-lg"></h2>
+                                    <button id="onlineStartButton" class="bg-powerpuff-green hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full text-xl transition-colors shadow-lg">
+                                        Start Online Game
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customization Modal -->
+            <div id="customizeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+                <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+                    <div class="text-center mb-6">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-2">🎨 Customize Your Game</h3>
+                        <p class="text-gray-600">Choose your favorite colors!</p>
+                    </div>
+                    
+                    <!-- Table Color Section -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-semibold text-gray-700 mb-3">Table Color</h4>
+                        <div class="grid grid-cols-4 gap-3">
+                            <button class="color-option bg-blue-900 hover:bg-blue-800 w-12 h-12 rounded-full border-2 border-gray-300 hover:border-gray-400 transition-all" data-color="#0f0f23" data-type="table"></button>
+                            <button class="color-option bg-purple-900 hover:bg-purple-800 w-12 h-12 rounded-full border-2 border-gray-300 hover:border-gray-400 transition-all" data-color="#2d1b69" data-type="table"></button>
+                            <button class="color-option bg-green-900 hover:bg-green-800 w-12 h-12 rounded-full border-2 border-gray-300 hover:border-gray-400 transition-all" data-color="#1a472a" data-type="table"></button>
+                            <button class="color-option bg-red-900 hover:bg-red-800 w-12 h-12 rounded-full border-2 border-gray-300 hover:border-gray-400 transition-all" data-color="#4a1c1c" data-type="table"></button>
                         </div>
                     </div>
                     
-                    <!-- Back to Home Button -->
-                    <div class="text-center mt-8">
-                        <button id="backToHome" class="bg-powerpuff-purple hover:bg-purple-600 text-white font-bold py-3 px-8 rounded-full text-xl transition-colors transform hover:scale-105">
-                            ← Back to Home
+                    <!-- Paddle Color Section -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-semibold text-gray-700 mb-3">Paddle Colors</h4>
+                        <div class="grid grid-cols-4 gap-3">
+                            <button class="color-option bg-red-500 hover:bg-red-400 w-12 h-12 rounded-full border-2 border-gray-300 hover:border-gray-400 transition-all" data-color="#e94560" data-type="paddle"></button>
+                            <button class="color-option bg-blue-500 hover:bg-blue-400 w-12 h-12 rounded-full border-2 border-gray-300 hover:border-gray-400 transition-all" data-color="#3b82f6" data-type="paddle"></button>
+                            <button class="color-option bg-green-500 hover:bg-green-400 w-12 h-12 rounded-full border-2 border-gray-300 hover:border-gray-400 transition-all" data-color="#10b981" data-type="paddle"></button>
+                            <button class="color-option bg-purple-500 hover:bg-purple-400 w-12 h-12 rounded-full border-2 border-gray-300 hover:border-gray-400 transition-all" data-color="#8b5cf6" data-type="paddle"></button>
+                        </div>
+                    </div>
+                    
+                    <!-- Close Button -->
+                    <div class="text-center">
+                        <button id="closeCustomizeBtn" class="bg-gradient-to-r from-gray-400 to-gray-600 hover:from-gray-500 hover:to-gray-700 text-white font-bold py-3 px-8 rounded-full transition-all transform hover:scale-105">
+                            ✨ Done
                         </button>
                     </div>
                 </div>
@@ -635,6 +691,6 @@
         </div>
     </div>
 
-    <script src="./dist/main.js?v=1756534000"></script>
+    <script src="./dist/main.js?v=1756785020"></script>
 </body>
 </html> 

@@ -1,36 +1,9 @@
-const { 
-    registerUser, 
-    loginUser, 
-    getUserProfile, 
-    updateUserProfile, 
-    uploadAvatar,
-    updateGameStats,
-    getAllUsers, 
-    searchUsers 
-} = require('../controller/userController');
+import { registerUser, deleteAccount, anonymizeAccount } from '../controller/userController.js';
+import { registerSchema, deleteAccountSchema, anonymizeAccountSchema } from '../schema/userSchema.js';
+import { authenticate } from '../services/jwtService.js';
 
-const { 
-    registerSchema, 
-    loginSchema, 
-    updateProfileSchema 
-} = require('../schema/userSchema');
-
-async function userRoutes(fastify, options) {
-    // Public routes (no authentication required)
-    fastify.post('/register', { schema: registerSchema }, registerUser);
-    fastify.post('/login', { schema: loginSchema }, loginUser);
-    
-    // Protected routes (authentication required)
-    fastify.get('/profile', { preHandler: fastify.authenticate }, getUserProfile);
-    fastify.put('/profile', { 
-        schema: updateProfileSchema, 
-        preHandler: fastify.authenticate 
-    }, updateUserProfile);
-    fastify.post('/profile/avatar', { preHandler: fastify.authenticate }, uploadAvatar);
-    fastify.post('/profile/stats', { preHandler: fastify.authenticate }, updateGameStats);
-    
-    fastify.get('/users', { preHandler: fastify.authenticate }, getAllUsers);
-    fastify.get('/users/search', { preHandler: fastify.authenticate }, searchUsers);
+export default function userRoutes(fastify, options) {
+    // Removed conflicting /register route - using /auth/registerUser instead
+    fastify.delete('/user/delete', { preHandler: authenticate, schema: deleteAccountSchema }, deleteAccount);
+    fastify.post('/user/anonymize', { preHandler: authenticate, schema: anonymizeAccountSchema }, anonymizeAccount);
 }
-
-module.exports = userRoutes;

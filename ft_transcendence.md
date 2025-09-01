@@ -531,7 +531,7 @@ Key features and goals include:
 ◦ Deploy Elasticsearch to efficiently store and index log data, ensuring it is easily
 searchable and accessible.
 ◦ Configure Logstash to collect, process, and transform log data from various
-sources, sending it to Elastic.
+sources, sending it to Elasticsearch.
 ◦ Set up Kibana for visualizing log data, creating dashboards, and generating
 insights from log events.
 ◦ Define data retention and archiving policies to manage log data storage effec-

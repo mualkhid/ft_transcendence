@@ -1,205 +1,155 @@
-const { runQuery, getQuery, allQuery } = require('../database');
+import {prisma} from '../prisma/prisma_lib.js'
+import { notFoundError, ValidationError } from '../utils/errors.js';
 
-// Send friend request
-async function sendFriendRequest(request, reply) {
-    try {
-        const userId = request.user.userId;
-        const { friendId } = request.body;
+const sanitizedUserSelect = { id: true, username: true, email: true, createdAt: true, lastSeen: true, updatedAt: true }
 
-        if (userId === friendId) {
-            return reply.status(400).send({ error: 'Cannot send friend request to yourself' });
+export async function getFriends(req, reply) {
+    const id = req.user.id
+
+    const friendships = await prisma.friendship.findMany({
+        where: {
+            OR: [
+                {
+                    status: "ACCEPTED",
+                    OR: [{ requesterId: id }, { addresseeId: id }],
+                },
+                {
+                    status: "PENDING",
+                    addresseeId: id,
+                },
+            ],
+        },
+        include: {
+            requesterUser: { select: sanitizedUserSelect },
+            addresseeUser: { select: sanitizedUserSelect },
+        },
+    });
+
+    const friends = [];
+    const pendingRequests = [];
+
+    for (const f of friendships) {
+        if (f.status === "ACCEPTED") {
+            friends.push(f.requesterId === id ? f.addresseeUser : f.requesterUser);
+        } else if (f.status === "PENDING" && f.addresseeId === id) {
+            pendingRequests.push(f.requesterUser);
         }
-
-        // Check if friend request already exists
-        const existingRequest = await getQuery(
-            'SELECT * FROM friendships WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)',
-            [userId, friendId, friendId, userId]
-        );
-
-        if (existingRequest) {
-            return reply.status(409).send({ error: 'Friend request already exists' });
-        }
-
-        // Check if friend exists
-        const friend = await getQuery('SELECT id, username FROM users WHERE id = ?', [friendId]);
-        if (!friend) {
-            return reply.status(404).send({ error: 'User not found' });
-        }
-
-        // Create friend request
-        await runQuery(
-            'INSERT INTO friendships (user_id, friend_id, status) VALUES (?, ?, ?)',
-            [userId, friendId, 'pending']
-        );
-
-        reply.status(201).send({
-            message: `Friend request sent to ${friend.username}`,
-            friend: { id: friend.id, username: friend.username }
-        });
-    } catch (error) {
-        console.error('Send friend request error:', error);
-        reply.status(500).send({ error: 'Internal server error' });
     }
+
+    return reply.status(200).send({
+        friends,
+        pendingRequests,
+    });
 }
 
-// Accept friend request
-async function acceptFriendRequest(request, reply) {
-    try {
-        const userId = request.user.userId;
-        const { friendId } = request.params;
 
-        // Find and update friend request
-        const result = await runQuery(
-            'UPDATE friendships SET status = ? WHERE friend_id = ? AND user_id = ? AND status = ?',
-            ['accepted', userId, friendId, 'pending']
-        );
+export async function sendRequest(req, reply) {
+	const id = req.user.id
+	const userId = req.body.userId
 
-        if (result.changes === 0) {
-            return reply.status(404).send({ error: 'Friend request not found' });
-        }
+	if (id === userId)
+		throw new ValidationError("Cannot be friends with self")
+	
+	await prisma.friendship.create({data: {
 
-        reply.status(200).send({ message: 'Friend request accepted' });
-    } catch (error) {
-        console.error('Accept friend request error:', error);
-        reply.status(500).send({ error: 'Internal server error' });
-    }
+		requesterId: id,
+		addresseeId: userId
+	}})
+
+	// if request is pending then it should not allow it to send from the frontend
+	reply.status(201).send({message: "request sent successfully"})
+
 }
 
-// Reject friend request
-async function rejectFriendRequest(request, reply) {
-    try {
-        const userId = request.user.userId;
-        const { friendId } = request.params;
+// 200 accepted, 404 if not pending
+export async function acceptRequest(req, reply) {
+	 const id = req.user.id
 
-        // Delete friend request
-        const result = await runQuery(
-            'DELETE FROM friendships WHERE friend_id = ? AND user_id = ? AND status = ?',
-            [userId, friendId, 'pending']
-        );
+	await prisma.friendship.update({
+		where: {
+			status: 'PENDING',
+			requesterId_addresseeId: { // Composite key syntax 
+				requesterId: req.body.userId,
+				addresseeId: id,
+			},
+		},
+		data: { status: 'ACCEPTED' }
+	});
 
-        if (result.changes === 0) {
-            return reply.status(404).send({ error: 'Friend request not found' });
-        }
-
-        reply.status(200).send({ message: 'Friend request rejected' });
-    } catch (error) {
-        console.error('Reject friend request error:', error);
-        reply.status(500).send({ error: 'Internal server error' });
-    }
+	reply.status(200).send({message: "request accepted successfully"});
 }
 
-// Get friend requests
-async function getFriendRequests(request, reply) {
-    try {
-        const userId = request.user.userId;
+export async function declineRequest(req, reply) {
+	const id = req.user.id
 
-        const requests = await allQuery(
-            `SELECT f.*, u.username, u.avatar_url, u.last_seen, u.created_at as user_created_at
-             FROM friendships f
-             JOIN users u ON f.user_id = u.id
-             WHERE f.friend_id = ? AND f.status = ?
-             ORDER BY f.created_at DESC`,
-            [userId, 'pending']
-        );
-
-        reply.status(200).send({ requests });
-    } catch (error) {
-        console.error('Get friend requests error:', error);
-        reply.status(500).send({ error: 'Internal server error' });
-    }
+	await prisma.friendship.delete({
+		where: {
+			status: 'PENDING',
+			requesterId_addresseeId: { // Composite key syntax 
+				requesterId: req.body.userId,
+				addresseeId: id,
+			},
+		},
+	  })
+	// convention is to send an empty message for deletion
+	reply.status(204).send()
 }
 
-// Get friends list
-async function getFriendsList(request, reply) {
-    try {
-        const userId = request.user.userId;
+export async function removeFriend(req, reply) {
+	const id = req.user.id
 
-        const friends = await allQuery(
-            `SELECT u.id, u.username, u.avatar_url, u.last_seen, u.created_at as user_created_at,
-                    CASE 
-                        WHEN u.last_seen > datetime('now', '-5 minutes') THEN 'online'
-                        ELSE 'offline'
-                    END as status
-             FROM friendships f
-             JOIN users u ON (f.user_id = u.id OR f.friend_id = u.id)
-             WHERE (f.user_id = ? OR f.friend_id = ?) 
-             AND f.status = 'accepted'
-             AND u.id != ?
-             ORDER BY u.username`,
-            [userId, userId, userId]
-        );
+	const result = await prisma.friendship.deleteMany({
+		where: {
+			status: 'ACCEPTED',
+			OR: [
+				{ requesterId: id, addresseeId: req.body.userId },
+				{ requesterId: req.body.userId, addresseeId: id }
+			]
+		}
+	});
 
-        reply.status(200).send({ friends });
-    } catch (error) {
-        console.error('Get friends list error:', error);
-        reply.status(500).send({ error: 'Internal server error' });
-    }
+	if (result.count === 0)
+		throw new notFoundError("No accepted friendship found")
+	
+	reply.status(200).send({message: "friend removed successfully"});
 }
 
-// Remove friend
-async function removeFriend(request, reply) {
-    try {
-        const userId = request.user.userId;
-        const { friendId } = request.params;
+export async function blockFriend(req, reply) {
+	const id = req.user.id
 
-        // Delete friendship
-        const result = await runQuery(
-            'DELETE FROM friendships WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)',
-            [userId, friendId, friendId, userId]
-        );
+	const result = await prisma.friendship.updateMany({
+		where: {
+			status: 'ACCEPTED',
+			OR : [
+				{ requesterId: id, addresseeId: req.body.userId },
+				{ requesterId: req.body.userId, addresseeId: id }
+			]
+		},
+		data: { status: 'BLOCKED'}
+	})
 
-        if (result.changes === 0) {
-            return reply.status(404).send({ error: 'Friendship not found' });
-        }
+	if (result.count === 0)
+		throw new notFoundError("No accepted friendship found")
 
-        reply.status(200).send({ message: 'Friend removed' });
-    } catch (error) {
-        console.error('Remove friend error:', error);
-        reply.status(500).send({ error: 'Internal server error' });
-    }
+	reply.status(200).send({message: "friend blocked successfully"})
 }
 
-// Search for users to add as friends
-async function searchUsersForFriends(request, reply) {
-    try {
-        const userId = request.user.userId;
-        const { query } = request.query;
+export async function searchUser(req, reply) {
+	const {q: searchTerm, page = 1} = req.query
+	const pageNum = parseInt(page, 10) || 1
+	const limit = 10
+	const skip = (pageNum - 1) * limit
 
-        if (!query || query.length < 2) {
-            return reply.status(400).send({ error: 'Search query must be at least 2 characters' });
-        }
-
-        // Get users that match search and are not already friends
-        const users = await allQuery(
-            `SELECT u.id, u.username, u.email, u.avatar_url, u.games_played, u.wins, u.losses, u.created_at, u.last_seen
-             FROM users u
-             WHERE (u.username LIKE ? OR u.email LIKE ?)
-             AND u.id != ?
-             AND u.id NOT IN (
-                 SELECT CASE 
-                     WHEN user_id = ? THEN friend_id 
-                     ELSE user_id 
-                 END
-                 FROM friendships 
-                 WHERE (user_id = ? OR friend_id = ?)
-             )
-             ORDER BY u.username`,
-            [`%${query}%`, `%${query}%`, userId, userId, userId, userId]
-        );
-
-        reply.status(200).send({ users });
-    } catch (error) {
-        console.error('Search users for friends error:', error);
-        reply.status(500).send({ error: 'Internal server error' });
-    }
+	const users = await prisma.user.findMany({
+		where: {
+			OR: [
+					{email: { startsWith: searchTerm}},
+					{username: {startsWith: searchTerm}}
+			],
+		},
+		select: sanitizedUserSelect,
+		take: limit,
+		skip: skip
+	})
+	reply.status(200).send({users: users})
 }
-
-module.exports = {
-    sendFriendRequest,
-    acceptFriendRequest,
-    rejectFriendRequest,
-    getFriendRequests,
-    getFriendsList,
-    removeFriend,
-    searchUsersForFriends
-};

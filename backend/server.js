@@ -1,133 +1,114 @@
-const fastify = require('fastify')({ 
-    logger: true,
-    trustProxy: true
+import Fastify from 'fastify';
+import fastifyWebsocket from '@fastify/websocket';
+import fastifyMultipart from '@fastify/multipart';
+import swagger from '@fastify/swagger';
+import swaggerUI from '@fastify/swagger-ui';
+import fastifyStatic from '@fastify/static';
+import rateLimit from '@fastify/rate-limit';
+import helmet from '@fastify/helmet';
+import fastifyCors from '@fastify/cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+import authRoutes from './routes/authRoutes.js';
+import userRoutes from './routes/users.js';
+import tournamentRoutes from './routes/tournament.js';
+import remoteGameRoutes from './routes/remoteGameRoutes.js';
+import friendsRoutes from './routes/friendsRoute.js';
+import profileRoutes from './routes/profileRoutes.js';
+import matchmakingRoutes from './routes/matchmakingRoutes.js';
+
+import { globalErrorHandler } from './utils/errorHandler.js';
+import { trackUserActivity } from './services/lastSeenService.js';
+import { getSecrets } from './services/vaultService.js';
+import dotenv from 'dotenv';
+import cookie from '@fastify/cookie';
+import {prisma } from './prisma/prisma_lib.js';
+import { setupGracefulShutdown } from './utils/gracefulShutdown.js';
+
+dotenv.config();
+
+const fastify = Fastify();
+fastify.setErrorHandler(globalErrorHandler);
+
+// Needed to get __dirname in ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// 🔹 Register plugins BEFORE starting server
+fastify.register(fastifyCors, {
+  origin: ['http://localhost:8080', 'http://127.0.0.1:8080', 'http://localhost:3000', 'http://127.0.0.1:3000'],
+  credentials: true
 });
 
-// Import database and initialize it
-const { initDatabase } = require('./database');
-
-// Import routes
-const userRoutes = require('./routes/users');
-const gameRoutes = require('./routes/games');
-const friendsRoutes = require('./routes/friends');
-const tournamentRoutes = require('./routes/tournament');
-
-// Register plugins
-fastify.register(require('@fastify/cors'), {
-    origin: true,
-    credentials: true
+fastify.register(fastifyStatic, {
+  root: path.join(__dirname, 'public'),
+  prefix: '/', 
 });
 
-fastify.register(require('@fastify/jwt'), {
-    secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production'
+await fastify.register(fastifyWebsocket);
+
+
+fastify.register(swagger, {
+  swagger: {
+    info: { title: 'fastify-api', version: '1.0.0' },
+  },
 });
 
-// Register multipart for file uploads
-fastify.register(require('@fastify/multipart'), {
-    limits: {
-        fileSize: 10 * 1024 * 1024, // 10MB limit
-        files: 1
-    }
+// In your server.js or main file
+
+// Register the cookie plugin
+fastify.register(cookie);
+
+fastify.register(fastifyMultipart, {
+  limits: { file: 1, filesize: 5 * 1024 * 1024 },
 });
 
-// Swagger documentation
-fastify.register(require('@fastify/swagger'), {
-    swagger: {
-        info: {
-            title: 'Powerpuff Pong API',
-            description: 'A multiplayer Pong game with tournaments',
-            version: '1.0.0',
-        },
-        host: 'localhost:3000',
-        schemes: ['http'],
-        consumes: ['application/json'],
-        produces: ['application/json'],
-        tags: [
-            { name: 'auth', description: 'Authentication endpoints' },
-            { name: 'users', description: 'User management endpoints' },
-            { name: 'games', description: 'Game endpoints' },
-            { name: 'friends', description: 'Friends management endpoints' },
-            { name: 'tournaments', description: 'Tournament endpoints' }
-        ]
-    }
+fastify.register(swaggerUI, {
+  routePrefix: '/docs',
+  exposeRoute: true,
 });
 
-fastify.register(require('@fastify/swagger-ui'), {
-    routePrefix: '/docs',
-    exposeRoute: true,
-    uiConfig: {
-        docExpansion: 'full',
-        deepLinking: false
-    }
+//Munia Please check if this interferes with your work or not I closed it for websockets to work  -Sumaya 
+await fastify.register(helmet, {
+  contentSecurityPolicy: false, // Completely disable CSP
+  crossOriginEmbedderPolicy: false,
+  crossOriginOpenerPolicy: false,
+  crossOriginResourcePolicy: false
 });
 
-// Authentication middleware
-fastify.decorate('authenticate', async function(request, reply) {
-    try {
-        await request.jwtVerify();
-    } catch (err) {
-        reply.send(err);
-    }
+// //Security + Rate limiting
+fastify.register(rateLimit, {
+  max: 20,
+  timeWindow: '1 minute',
+  allowList: ['127.0.0.1'],
+  skip: (request) => request.headers.upgrade && request.headers.upgrade.toLowerCase() === 'websocket'
 });
 
-// Register routes
-fastify.register(userRoutes, { prefix: '/api' });
-fastify.register(gameRoutes, { prefix: '/api' });
-fastify.register(friendsRoutes, { prefix: '/api' });
+
+
+// 🔹 Register routes
 fastify.register(tournamentRoutes, { prefix: '/api' });
+fastify.register(authRoutes, { prefix: '/api' });
+fastify.register(userRoutes, { prefix: '/api' });
+fastify.register(friendsRoutes, { prefix: '/api' });
+fastify.register(profileRoutes, { prefix: '/api' });
+fastify.register(matchmakingRoutes, { prefix: '/api' });
 
-// Serve avatar files
-fastify.get('/avatars/*', async (request, reply) => {
-    const filePath = request.params['*'];
-    const fullPath = `./avatars/${filePath}`;
-    
-    try {
-        const fs = require('fs');
-        if (fs.existsSync(fullPath)) {
-            const stream = fs.createReadStream(fullPath);
-            reply.type('image/*');
-            return reply.send(stream);
-        } else {
-            reply.status(404).send({ error: 'Avatar not found' });
-        }
-    } catch (error) {
-        reply.status(500).send({ error: 'Internal server error' });
-    }
-});
+fastify.register(remoteGameRoutes);
 
-// Health check endpoint
-fastify.get('/health', async (request, reply) => {
-    return { status: 'OK', timestamp: new Date().toISOString() };
-});
+setupGracefulShutdown(fastify, prisma);
 
-// Root endpoint
-fastify.get('/', async (request, reply) => {
-    return { 
-        message: 'Powerpuff Pong API', 
-        version: '1.0.0',
-        docs: '/docs'
-    };
-});
+// 🔹 Start server LAST
+try {
+  const address = await fastify.listen({ port: 3000, host: '0.0.0.0' });
+  console.log(`Server running at ${address}`);
+} catch (err) {
+  fastify.log.error("catched in server => ", err);
+  process.exit(1);
+}
 
-// Start server
-const start = async () => {
-    try {
-        // Initialize database
-        await initDatabase();
-        console.log('Database initialized successfully');
-
-        // Start server
-        await fastify.listen({ 
-            port: 3000, 
-            host: '0.0.0.0' 
-        });
-        
-        console.log('Server is running on http://localhost:3000');
-        console.log('API Documentation available at http://localhost:3000/docs');
-    } catch (err) {
-        fastify.log.error(err);
-        process.exit(1);
-    }
-};
-
-start();
+// 🔹 After server boot, safe to use secrets or configs
+const secrets = await getSecrets();
+const jwtSecret = secrets.JWT_SECRET;
+const dbPassword = secrets.DB_PASSWORD;
