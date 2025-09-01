@@ -1,17 +1,14 @@
-FROM nginx:alpine
+FROM node:18-alpine
+WORKDIR /app
 
-# Copy the built files to nginx
-COPY dist/ /usr/share/nginx/html/
-COPY index.html /usr/share/nginx/html/
-COPY logo.png /usr/share/nginx/html/
-COPY hearts.gif /usr/share/nginx/html/
-COPY avatars/ /usr/share/nginx/html/avatars/
+COPY package*.json ./
+RUN npm install
 
-# Copy custom nginx config to conf.d directory
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY . .
 
-# Expose port 80
-EXPOSE 80
+RUN npm run build
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+EXPOSE 8080
+CMD ["npx", "http-server", "-p", "8080", "-a", "0.0.0.0"]
+
+

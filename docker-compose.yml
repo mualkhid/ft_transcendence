@@ -15,6 +15,16 @@ services:
 
 
   # Backend service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+    - "8080:8080"
+    environment:
+    - CHOKIDAR_USEPOLLING=true
+    - WATCHPACK_POLLING=true
+  
   backend:
     build: ./backend
     environment:
@@ -22,26 +32,22 @@ services:
       - JWT_SECRET=1234
     ports:
       - "3000:3000"
-    depends_on:
-      - vault
+    # depends_on:
+    #   - vault
 
 
   # (Optional) Frontend service
   # Uncomment and configure if/when frontend is ready
-  # frontend:
-  #   build: ./frontend
-  #   ports:
-  #     - "8080:8080"
 
 
   # HashiCorp Vault for secrets management
-  vault:
-    image: hashicorp/vault:1.15.2
-    cap_add:
-      - IPC_LOCK
-    command: server -config=/vault/config/vault.hcl
-    volumes:
-      - ./security/vault/config:/vault/config
-      - ./security/vault/data:/vault/data
-    ports:
-      - "18300:18300"
+  # vault:
+  #   image: hashicorp/vault:1.15.2
+  #   cap_add:
+  #     - IPC_LOCK
+  #   command: server -config=/vault/config/vault.hcl
+  #   volumes:
+  #     - ./security/vault/config:/vault/config
+  #     - ./security/vault/data:/vault/data
+  #   ports:
+  #     - "18300:18300"
