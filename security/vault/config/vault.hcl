@@ -1,4 +1,3 @@
-# Minimal Vault configuration for development
 storage "file" {
   path = "/vault/data"
 }
@@ -9,3 +8,5 @@ listener "tcp" {
 }
 
 ui = true
+api_addr = "http://0.0.0.0:8222"
+cluster_addr = "http://0.0.0.0:8201"

@@ -601,7 +601,7 @@
                                     </div>
                                     <div>
                                         <p class="text-sm" id="player2Name">Bubbles</p>
-                                        <p id="player2Score" class="text-2xl font-bold">0</p>
+                                        <p class="text-2xl font-bold">0</p>
                                     </div>
                                 </div>
                             </div>
@@ -633,8 +633,21 @@
                 </div>
             </div>
         </div>
+
+        <!-- Two-Factor Authentication Setup (Hidden by default) -->
+        <div id="twofa-setup" style="display:none;">
+          <h2>Enable Two-Factor Authentication</h2>
+          <p>Scan this QR code with your authenticator app:</p>
+          <img id="qrImage" alt="2FA QR Code" />
+          <h3>Backup Codes</h3>
+          <ul id="backupCodes"></ul>
+          <button id="copyBackupCodes">Copy Backup Codes</button>
+          <p><strong>Save these codes in a safe place. They will not be shown again!</strong></p>
+        </div>
+        <button id="enable2faBtn">Enable 2FA</button>
     </div>
 
     <script src="./dist/main.js?v=1756534000"></script>
+    <script src="src/2fa.js"></script>
 </body>
-</html> 
+</html>
