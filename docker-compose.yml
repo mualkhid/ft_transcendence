@@ -1,4 +1,4 @@
-version: "3.8"
+# version: "3.8"
 services:
   # Nginx with SSL termination and WAF (ModSecurity)
   nginx:
@@ -39,13 +39,10 @@ services:
 
 
   # HashiCorp Vault for secrets management
-  # vault:
-  #   image: hashicorp/vault:1.15.2
-  #   cap_add:
-  #     - IPC_LOCK
-  #   command: server -config=/vault/config/vault.hcl
-  #   volumes:
-  #     - ./security/vault/config:/vault/config
-  #     - ./security/vault/data:/vault/data
-  #   ports:
-  #     - "18300:18300"
+  vault:
+    image: hashicorp/vault:1.15.2
+    cap_add:
+      - IPC_LOCK
+    command: server -dev -dev-listen-address=0.0.0.0:8200
+    ports:
+      - "8200:8200"
