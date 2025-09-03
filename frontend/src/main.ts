@@ -229,7 +229,7 @@ class SimpleAuth {
     private async testAuthentication(): Promise<void> {
         try {
             console.log('Testing authentication...');
-            const response = await fetch('http://localhost:3000/api/profile/test-auth', {
+            const response = await fetch('https://localhost/api/profile/test-auth', {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -274,7 +274,7 @@ class SimpleAuth {
         // Check if backend is running first
         try {
             console.log('Testing backend connection...');
-            const healthCheck = await fetch('http://localhost:3000/api/profile/me', {
+            const healthCheck = await fetch('https://localhost/api/profile/me', {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -301,7 +301,7 @@ class SimpleAuth {
 
         try {
             console.log('Sending username update request:', { newUsername });
-            console.log('Request URL:', 'http://localhost:3000/api/profile/username');
+            console.log('Request URL:', 'https://localhost/api/profile/username');
             console.log('Request method:', 'PATCH');
             console.log('Request headers:', {
                 'Content-Type': 'application/json',
@@ -309,7 +309,7 @@ class SimpleAuth {
             console.log('Request body:', JSON.stringify({ newUsername }));
             console.log('Credentials:', 'include');
             
-            const response = await fetch('http://localhost:3000/api/profile/username', {
+            const response = await fetch('https://localhost/api/profile/username', {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -395,7 +395,7 @@ class SimpleAuth {
 
         try {
             console.log('Sending password update request');
-            console.log('Request URL:', 'http://localhost:3000/api/profile/password');
+            console.log('Request URL:', 'https://localhost/api/profile/password');
             console.log('Request method:', 'PATCH');
             console.log('Request headers:', {
                 'Content-Type': 'application/json',
@@ -403,7 +403,7 @@ class SimpleAuth {
             console.log('Request body:', JSON.stringify({ currentPassword, newPassword: '***' }));
             console.log('Credentials:', 'include');
             
-            const response = await fetch('http://localhost:3000/api/profile/password', {
+            const response = await fetch('https://localhost/api/profile/password', {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -493,7 +493,7 @@ class SimpleAuth {
             const formData = new FormData();
             formData.append('avatar', file);
 
-            const response = await fetch('http://localhost:3000/api/profile/avatar', {
+            const response = await fetch('https://localhost/api/profile/avatar', {
                 method: 'PATCH',
                 body: formData,
                 credentials: 'include'
@@ -509,7 +509,7 @@ class SimpleAuth {
                 const profileAvatar = document.getElementById('profileAvatar') as HTMLImageElement;
                 if (profileAvatar) {
                     // Add timestamp to prevent caching
-                    profileAvatar.src = `http://localhost:3000${data.avatarUrl}?t=${Date.now()}`;
+                    profileAvatar.src = `https://localhost${data.avatarUrl}?t=${Date.now()}`;
                 }
                 
                 // Update current user data
@@ -559,7 +559,7 @@ class SimpleAuth {
 
         try {
             console.log('Searching users with term:', searchTerm);
-            const response = await fetch(`http://localhost:3000/api/friends/searchUser?q=${encodeURIComponent(searchTerm)}`, {
+            const response = await fetch(`https://localhost/api/friends/searchUser?q=${encodeURIComponent(searchTerm)}`, {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -596,7 +596,7 @@ class SimpleAuth {
 
         try {
             console.log('Loading friends data...');
-            const response = await fetch('http://localhost:3000/api/friends', {
+            const response = await fetch('https://localhost/api/friends', {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -646,7 +646,7 @@ class SimpleAuth {
                 <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
                     <div class="flex items-center space-x-3">
                         <div class="relative">
-                            <img src="${user.avatarUrl ? `http://localhost:3000${user.avatarUrl}?t=${Date.now()}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}`}" 
+                            <img src="${user.avatarUrl ? `https://localhost${user.avatarUrl}?t=${Date.now()}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}`}" 
                                  alt="${user.username}" 
                                  class="w-12 h-12 rounded-full object-cover border-2 border-white border-opacity-30">
                         </div>
@@ -682,7 +682,7 @@ class SimpleAuth {
                 <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
                     <div class="flex items-center space-x-3">
                         <div class="relative">
-                            <img src="${friend.avatarUrl ? `http://localhost:3000${friend.avatarUrl}?t=${Date.now()}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(friend.username)}`}" 
+                            <img src="${friend.avatarUrl ? `https://localhost${friend.avatarUrl}?t=${Date.now()}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(friend.username)}`}" 
                                  alt="${friend.username}" 
                                  class="w-12 h-12 rounded-full object-cover border-2 border-white border-opacity-30">
                             <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${isOnline ? 'bg-green-400' : 'bg-gray-400'}"></div>
@@ -725,7 +725,7 @@ class SimpleAuth {
             <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
                 <div class="flex items-center space-x-3">
                     <div class="relative">
-                        <img src="${request.avatarUrl ? `http://localhost:3000${request.avatarUrl}?t=${Date.now()}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(request.username)}`}" 
+                        <img src="${request.avatarUrl ? `https://localhost${request.avatarUrl}?t=${Date.now()}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(request.username)}`}" 
                              alt="${request.username}" 
                              class="w-12 h-12 rounded-full object-cover border-2 border-white border-opacity-30">
                     </div>
@@ -772,7 +772,7 @@ class SimpleAuth {
 
         try {
             console.log('Sending friend request to user:', userId);
-            const response = await fetch('http://localhost:3000/api/friends/sendRequest', {
+            const response = await fetch('https://localhost/api/friends/sendRequest', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -821,7 +821,7 @@ class SimpleAuth {
 
         try {
             console.log('Accepting friend request from user:', userId);
-            const response = await fetch('http://localhost:3000/api/friends/acceptRequest', {
+            const response = await fetch('https://localhost/api/friends/acceptRequest', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -863,7 +863,7 @@ class SimpleAuth {
 
         try {
             console.log('Declining friend request from user:', userId);
-            const response = await fetch('http://localhost:3000/api/friends/declineRequest', {
+            const response = await fetch('https://localhost/api/friends/declineRequest', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -904,7 +904,7 @@ class SimpleAuth {
 
         try {
             console.log('Removing friend:', userId);
-            const response = await fetch('http://localhost:3000/api/friends/removeFriend', {
+            const response = await fetch('https://localhost/api/friends/removeFriend', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -946,7 +946,7 @@ class SimpleAuth {
 
         try {
             console.log('Blocking friend:', userId);
-            const response = await fetch('http://localhost:3000/api/friends/blockFriend', {
+            const response = await fetch('https://localhost/api/friends/blockFriend', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -995,8 +995,8 @@ class SimpleAuth {
         }
 
         try {
-            console.log('Sending registration request to:', 'http://localhost:3000/api/auth/registerUser');
-            const response = await fetch('http://localhost:3000/api/auth/registerUser', {
+            console.log('Sending registration request to:', 'https://localhost/api/auth/registerUser');
+            const response = await fetch('https://localhost/api/auth/registerUser', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1040,8 +1040,8 @@ class SimpleAuth {
         }
 
         try {
-            console.log('Sending login request to:', 'http://localhost:3000/api/auth/login');
-            const response = await fetch('http://localhost:3000/api/auth/login', {
+            console.log('Sending login request to:', 'https://localhost/api/auth/login');
+            const response = await fetch('https://localhost/api/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1187,7 +1187,7 @@ class SimpleAuth {
     private async tryRefreshToken(): Promise<void> {
         console.log('Attempting to refresh token...');
         try {
-            const response = await fetch('http://localhost:3000/api/auth/refresh', {
+            const response = await fetch('https://localhost/api/auth/refresh', {
                 method: 'POST',
                 credentials: 'include'
             });
@@ -1248,7 +1248,7 @@ class SimpleAuth {
     private async handleLogout(): Promise<void> {
         try {
             // Call the logout endpoint to clear the server-side cookie
-            await fetch('http://localhost:3000/api/auth/logout', {
+            await fetch('https://localhost/api/auth/logout', {
                 method: 'POST',
                 credentials: 'include'
             });
@@ -1417,7 +1417,7 @@ class SimpleAuth {
 
         // Check authentication before proceeding
         try {
-            const response = await fetch('http://localhost:3000/api/profile/me', {
+            const response = await fetch('https://localhost/api/profile/me', {
                 credentials: 'include'
             });
             
@@ -2094,7 +2094,7 @@ class SimpleAuth {
         
         try {
             console.log('Loading user profile, current cookies:', document.cookie);
-            const response = await fetch('http://localhost:3000/api/profile/me', {
+            const response = await fetch('https://localhost/api/profile/me', {
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
@@ -2164,7 +2164,7 @@ class SimpleAuth {
         if (profileAvatar) {
             if (this.currentUser.avatarUrl) {
                 // Use the user's custom avatar
-                profileAvatar.src = `http://localhost:3000${this.currentUser.avatarUrl}?t=${Date.now()}`;
+                profileAvatar.src = `https://localhost${this.currentUser.avatarUrl}?t=${Date.now()}`;
                 console.log('Updated avatar with custom image:', this.currentUser.avatarUrl);
             } else {
                 // Use default avatar with username
@@ -2230,7 +2230,7 @@ class SimpleAuth {
     private async refreshUserData(): Promise<void> {
         try {
             console.log('🔄 Refreshing user data from server...');
-            const response = await fetch('http://localhost:3000/api/auth/profile', {
+            const response = await fetch('https://localhost/api/auth/profile', {
                 method: 'GET',
                 credentials: 'include',
                 headers: {
@@ -2304,7 +2304,7 @@ class SimpleAuth {
 
     private async refreshToken(): Promise<void> {
         try {
-            const response = await fetch('http://localhost:3000/api/auth/refresh', {
+            const response = await fetch('https://localhost/api/auth/refresh', {
                 method: 'POST',
                 credentials: 'include'
             });
@@ -2351,7 +2351,7 @@ class SimpleAuth {
         // this.showStatus('Updating game stats...', 'info'); // Removed popup message
 
         try {
-            const response = await fetch('http://localhost:3000/api/profile/update-stats', {
+            const response = await fetch('https://localhost/api/profile/update-stats', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -3121,7 +3121,7 @@ class SimpleAuth {
         
         const matchId = this.onlineGameState.matchId;
         const username = this.currentUser?.username || 'Anonymous';
-        const wsUrl = `ws://localhost:3000/simple-remote/${matchId}?username=${encodeURIComponent(username)}`;
+        const wsUrl = `ws://localhost/simple-remote/${matchId}?username=${encodeURIComponent(username)}`;
         
         console.log('Connecting to:', wsUrl);
 
@@ -3639,7 +3639,7 @@ class SimpleAuth {
         
         try {
             // Connect to matchmaking WebSocket
-            const matchmakingSocket = new WebSocket('ws://localhost:3000/api/matchmaking');
+            const matchmakingSocket = new WebSocket('ws://localhost/api/matchmaking');
             
             matchmakingSocket.onopen = () => {
                 console.log('Connected to matchmaking server');
@@ -3749,7 +3749,7 @@ class SimpleAuth {
         console.log('Connecting to game:', matchId);
         
         try {
-            const gameSocket = new WebSocket(`ws://localhost:3000/api/remote-game/${matchId}`);
+            const gameSocket = new WebSocket(`ws://localhost/api/remote-game/${matchId}`);
             
             gameSocket.onopen = () => {
                 console.log('Connected to game server');

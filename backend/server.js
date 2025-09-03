@@ -1,6 +1,4 @@
 import { WebSocketServer } from 'ws';
-import { completeMatch } from './services/matchDatabaseService.js';
-import Fastify from 'fastify';
 
 // Create WebSocket server
 const wss = new WebSocketServer({ noServer: true });
@@ -31,7 +29,7 @@ function initializeGameState(matchId) {
 }
 
 // Update ball position and check collisions
-async function updateGameState(matchId) {
+function updateGameState(matchId) {
     const gameState = gameStates.get(matchId);
     if (!gameState || !gameState.isActive) return;
     
@@ -73,67 +71,9 @@ async function updateGameState(matchId) {
         resetBall(gameState);
     }
     
-    // Check for game over (first to 5 points wins)
-    if (gameState.player1Score >= 5 || gameState.player2Score >= 5) {
-        gameState.isActive = false;
-        if (gameState.gameLoop) {
-            clearInterval(gameState.gameLoop);
-            console.log('🎮 Game loop stopped - game over for match', matchId);
-        }
-        
-        // Send game over message
-        const matchPlayers = Array.from(connectedPlayers.keys()).filter(key => key.startsWith(matchId + '-'));
-        if (matchPlayers.length === 2) {
-            const player1Key = matchPlayers[0];
-            const player2Key = matchPlayers[1];
-            const player1Username = player1Key.split('-')[1];
-            const player2Username = player2Key.split('-')[1];
-            
-            const winner = gameState.player1Score >= 5 ? player1Username : player2Username;
-            const winnerScore = gameState.player1Score >= 5 ? gameState.player1Score : gameState.player2Score;
-            const loserScore = gameState.player1Score >= 5 ? gameState.player2Score : gameState.player1Score;
-            
-            // Record the completed match in database
-            try {
-                await completeMatch(parseInt(matchId), winner, winnerScore, loserScore);
-                console.log(`📊 Match ${matchId} recorded in database`);
-            } catch (error) {
-                console.error(`❌ Failed to record match ${matchId} in database:`, error);
-            }
-            
-            const gameOverMessage = JSON.stringify({
-                type: 'game-over',
-                winner: winner,
-                winnerScore: winnerScore,
-                loserScore: loserScore,
-                player1Username: player1Username,
-                player2Username: player2Username,
-                finalScore: `${winnerScore}-${loserScore}`
-            });
-            
-            const player1Ws = connectedPlayers.get(player1Key);
-            const player2Ws = connectedPlayers.get(player2Key);
-            
-            if (player1Ws && player1Ws.readyState === 1) {
-                player1Ws.send(gameOverMessage);
-            }
-            if (player2Ws && player2Ws.readyState === 1) {
-                player2Ws.send(gameOverMessage);
-            }
-            
-            console.log(`🏆 Game Over! ${winner} wins ${winnerScore}-${loserScore}`);
-        }
-        return;
-    }
-
     // Send updated game state to both players
     const matchPlayers = Array.from(connectedPlayers.keys()).filter(key => key.startsWith(matchId + '-'));
     if (matchPlayers.length === 2) {
-        const player1Key = matchPlayers[0];
-        const player2Key = matchPlayers[1];
-        const player1Username = player1Key.split('-')[1];
-        const player2Username = player2Key.split('-')[1];
-        
         const gameStateMessage = JSON.stringify({
             type: 'game-state',
             ballX: gameState.ballX,
@@ -141,20 +81,15 @@ async function updateGameState(matchId) {
             leftPaddleY: gameState.leftPaddleY,
             rightPaddleY: gameState.rightPaddleY,
             player1Score: gameState.player1Score,
-            player2Score: gameState.player2Score,
-            player1Username: player1Username,
-            player2Username: player2Username
+            player2Score: gameState.player2Score
         });
         
-        const player1Ws = connectedPlayers.get(player1Key);
-        const player2Ws = connectedPlayers.get(player2Key);
-        
-        if (player1Ws && player1Ws.readyState === 1) {
-            player1Ws.send(gameStateMessage);
-        }
-        if (player2Ws && player2Ws.readyState === 1) {
-            player2Ws.send(gameStateMessage);
-        }
+        matchPlayers.forEach(playerKey => {
+            const playerWs = connectedPlayers.get(playerKey);
+            if (playerWs && playerWs.readyState === 1) {
+                playerWs.send(gameStateMessage);
+            }
+        });
     }
 }
 
@@ -268,19 +203,10 @@ wss.on('connection', (ws, request) => {
     
     console.log('📝 Player connected:', { matchId, username });
     
-    // Calculate player number first
-    const existingPlayers = Array.from(connectedPlayers.keys()).filter(key => key.startsWith(matchId + '-'));
-    // Only count active connections (readyState === 1)
-    const currentActivePlayers = existingPlayers.filter(key => {
-        const playerWs = connectedPlayers.get(key);
-        return playerWs && playerWs.readyState === 1;
-    });
-    const playerNumber = currentActivePlayers.length + 1; // Player 1 or Player 2
-    
     // Send immediate success message
     const successMessage = JSON.stringify({
         type: 'success',
-        playerNumber: playerNumber,
+        playerNumber: 1,
         message: 'Connected to remote game',
         player1Username: username,
         player2Username: 'Waiting...'
@@ -297,6 +223,8 @@ wss.on('connection', (ws, request) => {
     ws.send(waitingMessage);
     
     // Store the connection with player number
+    const existingPlayers = Array.from(connectedPlayers.keys()).filter(key => key.startsWith(matchId + '-'));
+    const playerNumber = existingPlayers.length + 1; // Player 1 or Player 2
     const playerKey = `${matchId}-${username}-${Date.now()}-${playerNumber}`;
     connectedPlayers.set(playerKey, ws);
     
@@ -304,16 +232,12 @@ wss.on('connection', (ws, request) => {
     
     // Check if we have 2 players for this match
     const matchPlayers = Array.from(connectedPlayers.keys()).filter(key => key.startsWith(matchId + '-'));
-    const activePlayers = matchPlayers.filter(key => {
-        const playerWs = connectedPlayers.get(key);
-        return playerWs && playerWs.readyState === 1;
-    });
     
-    console.log(`📊 Players in match ${matchId}:`, activePlayers.length, 'players');
-    console.log('🔑 Player keys:', activePlayers);
+    console.log(`📊 Players in match ${matchId}:`, matchPlayers.length, 'players');
+    console.log('🔑 Player keys:', matchPlayers);
     
     // If more than 2 players, kick out the oldest ones
-    if (activePlayers.length > 2) {
+    if (matchPlayers.length > 2) {
         console.log('⚠️ Too many players, kicking out oldest connections');
         const sortedPlayers = matchPlayers.sort((a, b) => {
             const timeA = parseInt(a.split('-')[2]);
@@ -345,8 +269,8 @@ wss.on('connection', (ws, request) => {
         if (remainingPlayers.length === 2) {
             startGameForPlayers(remainingPlayers, matchId);
         }
-    } else if (activePlayers.length === 2) {
-        startGameForPlayers(activePlayers, matchId);
+    } else if (matchPlayers.length === 2) {
+        startGameForPlayers(matchPlayers, matchId);
     }
     
     // Handle disconnection
@@ -355,13 +279,8 @@ wss.on('connection', (ws, request) => {
         connectedPlayers.delete(playerKey);
         
         // Clean up game state if no players left
-        const remainingPlayers = Array.from(connectedPlayers.keys()).filter(key => key.startsWith(matchId + '-'));
-        const stillActivePlayers = remainingPlayers.filter(key => {
-            const playerWs = connectedPlayers.get(key);
-            return playerWs && playerWs.readyState === 1;
-        });
-        
-        if (stillActivePlayers.length === 0) {
+        const matchPlayers = Array.from(connectedPlayers.keys()).filter(key => key.startsWith(matchId + '-'));
+        if (matchPlayers.length === 0) {
             const gameState = gameStates.get(matchId);
             if (gameState && gameState.gameLoop) {
                 clearInterval(gameState.gameLoop);
@@ -411,6 +330,7 @@ wss.on('connection', (ws, request) => {
     });
 });
 
+import Fastify from 'fastify';
 import fastifyWebsocket from '@fastify/websocket';
 import fastifyMultipart from '@fastify/multipart';
 import swagger from '@fastify/swagger';
@@ -448,7 +368,7 @@ const __dirname = path.dirname(__filename);
 
 // 🔹 Register plugins BEFORE starting server
 fastify.register(fastifyCors, {
-  origin: ['http://localhost:8080', 'http://127.0.0.1:8080', 'http://localhost:3000', 'http://127.0.0.1:3000'],
+  origin: ['http://localhost:8080', 'http://127.0.0.1:8080', 'http://localhost:3000', 'http://127.0.0.1:3000', 'https://localhost', 'https://127.0.0.1'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
@@ -506,8 +426,10 @@ fastify.register(authRoutes, { prefix: '/api' });
 fastify.register(userRoutes, { prefix: '/api' });
 fastify.register(friendsRoutes, { prefix: '/api' });
 fastify.register(profileRoutes, { prefix: '/api' });
-// fastify.register(remoteGameRoutes, { prefix: '/api' }); // Disabled - using native WebSocket server
-// fastify.register(remoteGameRoutes); // Disabled - using native WebSocket server
+fastify.register(remoteGameRoutes, { prefix: '/api' });
+
+// Also register without prefix for testing
+fastify.register(remoteGameRoutes);
 
 // Register test WebSocket route directly
 fastify.get('/ws-test', { websocket: true }, async (connection, request) => {
