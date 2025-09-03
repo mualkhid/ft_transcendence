@@ -1,4 +1,5 @@
-
+networks:
+  webapp: {}
 
 
 services:
@@ -8,10 +9,11 @@ services:
     ports:
       - "443:443"
       - "80:80"
-    environment:
-      - MODSECURITY_CONFIG=/etc/nginx/modsec/modsecurity.conf
     depends_on:
       - backend
+      - frontend
+    networks: [webapp]
+    restart: unless-stopped
 
 
   # Backend service
@@ -19,19 +21,24 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    ports:
-    - "8080:8080"
+    expose:
+      - "8080"
     environment:
-    - CHOKIDAR_USEPOLLING=true
-    - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    networks: [webapp]
+    restart: unless-stopped
+    
   
   backend:
     build: ./backend
     environment:
       - NODE_ENV=production
       - JWT_SECRET=1234
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
+    networks: [webapp]
+    restart: unless-stopped
     # depends_on:
     #   - vault
 
@@ -41,13 +48,13 @@ services:
 
 
   # HashiCorp Vault for secrets management
-  # vault:
-  #   image: hashicorp/vault:1.15.2
-  #   cap_add:
-  #     - IPC_LOCK
-  #   command: server -config=/vault/config/vault.hcl
-  #   volumes:
-  #     - ./security/vault/config:/vault/config
-  #     - ./security/vault/data:/vault/data
-  #   ports:
-  #     - "18300:18300"
+  vault:
+    image: hashicorp/vault:1.15.2
+    cap_add:
+      - IPC_LOCK
+    command: server -config=/vault/config/vault.hcl
+    volumes:
+      - ./security/vault/config:/vault/config
+      - ./security/vault/data:/vault/data
+    ports:
+      - "18300:18300"
