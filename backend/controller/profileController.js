@@ -15,7 +15,8 @@ const sanitizedUserSelect = {
     updatedAt: true,
     gamesPlayed: true,
     wins: true,
-    losses: true
+    losses: true,
+    avatarUrl: true
 }
 
 export async function getCurrentUser(req, reply) {
@@ -60,6 +61,8 @@ export async function updatePassword (req, reply)
 	if (currentPassword === newPassword)
 		return reply.status(400).send({message: 'current password cant be the same as new password'})
 
+	// Import bcrypt for password comparison
+	const bcrypt = await import('bcrypt');
 
 	const user = await prisma.user.findUnique({
 		where :{id: id},
@@ -71,13 +74,17 @@ export async function updatePassword (req, reply)
 	if (!user)
 		throw new notFoundError('user not found')
 
-	if (currentPassword != user.passwordHash)
+	// Compare current password with stored hash
+	const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
+	if (!isCurrentPasswordValid)
 		throw new AuthenticationError('password Incorrect');
 		
+	// Hash the new password
+	const newPasswordHash = await bcrypt.hash(newPassword, 12);
 
 	await prisma.user.update ({
 		where: {id: id},
-		data: {passwordHash: newPassword}
+		data: {passwordHash: newPasswordHash}
 	})
 	return reply.status(200).send({message: 'password updated successfully'})
 }
@@ -93,6 +100,11 @@ export async function updateAvatar(req, reply)
 	if (!allowed.has(file.mimetype))
 		return reply.status(415).send({error: 'Unsupported file type'})
 	
+	// Check file size before processing (max 5MB)
+	const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+	if (file.file.bytesRead > maxSize) {
+		return reply.status(413).send({error: 'File too large. Maximum size is 5MB'})
+	}
 	
 	const ext = file.mimetype === 'image/jpeg' ? 'jpg'
 	: file.mimetype === 'image/png'  ? 'png'
@@ -103,6 +115,7 @@ export async function updateAvatar(req, reply)
 	const writeStream = (await import('fs')).createWriteStream(destPath)
 	await pump(file.file, writeStream)
 	
+	// Double-check if file was truncated during upload
 	if (file.file.truncated)
 		return reply.status(413).send({error: 'File too large'})
 	const publicUrl = `/avatars/${filename}`

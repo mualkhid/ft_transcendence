@@ -1,178 +1,311 @@
-import {
-  createNewTournament,
-    getTournament,
-    getCurrentMatch,
-    completeMatch,
-    getTournamentBracket,
-    resetTournament
-} from '../services/tournamentService.js';
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
 
-export async function createTournament(request, reply)
-{
-  try {
-      const { name = 'Tournament', aliases } = request.body;
-      if (!aliases || !Array.isArray(aliases) || aliases.length === 0)
-          return reply.status(400).send({ error: 'Aliases array is required' });
-
-      if (![4, 8].includes(aliases.length))
-          return reply.status(400).send({ error: 'Tournament must have exactly 4 or 8 players' });
-
-      const creatorId = request.user?.id || null;
-
-      const tournament = await createNewTournament(name, aliases, creatorId);
-
-      return reply.status(201).send({
-          ...tournament,
-          message: `Tournament created with ${aliases.length} players! Ready to start.`
-      });
-    }
-    catch (error)
-    {
-      return reply.status(400).send({ error: error.message });
-    }
-}
-export async function getCurrentMatchRequest(request, reply)
-{
-    try {
-        const tournamentId = request.query.tournamentId ? parseInt(request.query.tournamentId) : null;
-        
-        const match = await getCurrentMatch(tournamentId);
-        
-        if (!match) {
-            const tournament = await getTournament(tournamentId);
+class TournamentController {
+    // Create a new tournament
+    async createTournament(request, reply) {
+        try {
+            const { name, maxPlayers, createdBy } = request.body;
             
-            if (!tournament)
-                return reply.status(404).send({ error: 'No tournament found' });
-
-            if (tournament.status === 'finished')
-            {
-                return reply.status(200).send({
-                    message: 'Tournament completed',
-                    status: 'completed',
-                    winner: tournament.winner,
-                    tournament: {
-                        id: tournament.id,
-                        name: tournament.name,
-                        status: tournament.status
-                    }
-                });
-            }
-
-            return reply.status(404).send({ 
-                error: 'No current match',
-                tournament: {
-                    id: tournament.id,
-                    name: tournament.name,
-                    status: tournament.status
+            const tournament = await prisma.tournament.create({
+                data: {
+                    name,
+                    maxPlayers,
+                    createdBy,
+                    status: 'ACTIVE'
                 }
             });
-        }
-
-        return reply.status(200).send({
-            message: `Round ${match.roundNumber}, Match ${match.matchNumber} of ${match.totalMatches}`,
-            match: {
-                id: match.id,
-                player1: match.player1.alias,
-                player2: match.player2.alias,
-                round: match.roundNumber,
-                matchNumber: match.matchNumber,
-                totalMatches: match.totalMatches,
-                status: match.status,
-                tournamentId: match.tournamentId
-            }
-        });
-    } catch (error) {
-        console.error('Get current match error:', error);
-        return reply.status(500).send({ error: 'Failed to get current match' });
-    }
-}
-
-export async function completeMatchRequest(request, reply)
-{
-    try {
-        const { matchId, winner } = request.body;
-        
-        if (!matchId || !winner)
-            return reply.status(400).send({ error: 'Match ID and winner are required' });
-
-        const result = await completeMatch(matchId, winner);
-        
-        if (result.error)
-            return reply.status(400).send({ error: result.error });
-
-        const tournament = await getTournament();
-        
-        let message = `Match completed! ${winner} wins!`;
-    
-        if (tournament.status === 'finished')
-            message += ` 🏆 Tournament winner: ${tournament.winner.alias}!`;
-        else
-        {
-            const nextMatch = await getCurrentMatch();
-            if (nextMatch)
-                message += ` Next match: ${nextMatch.player1.alias} vs ${nextMatch.player2.alias}`;
-        }
-
-        return reply.status(200).send({
-            success: true,
-            message,
-            match: {
-                id: result.match.id,
-                winner: winner,
-                status: 'completed'
-            },
-            tournament: {
-                id: tournament.id,
-                name: tournament.name,
-                status: tournament.status,
-                winner: tournament.winner
-            }
-        });
-    }
-    catch (error)
-    {
-        console.error('Complete match error:', error);
-        return reply.status(500).send({ error: 'Failed to complete match' });
-    }
-}
-
-export async function getTournamentBracketRequest(request, reply)
-{
-    try {
-        const tournamentId = request.query.tournamentId ? parseInt(request.query.tournamentId) : null;
-        
-        const bracket = await getTournamentBracket(tournamentId);
-        
-        if (!bracket)
-            return reply.status(404).send({ error: 'No tournament found' });
-
-        return reply.status(200).send(bracket);
-    }
-    catch (error)
-    {
-        console.error('Get tournament bracket error:', error);
-        return reply.status(500).send({ error: 'Failed to get tournament bracket' });
-    }
-}
-
-export async function resetTournamentRequest(request, reply)
-{
-    try {
-        const tournamentId = request.body?.tournamentId || null;
-        
-        await resetTournament(tournamentId);
-        
-        const message = tournamentId ? `Tournament ${tournamentId} reset successfully.`
-            : 'All tournaments reset successfully.';
             
-        return reply.status(200).send({ 
-            success: true,
-            message 
-        });
+            reply.code(201).send({
+                success: true,
+                tournament
+            });
+        } catch (error) {
+            console.error('Error creating tournament:', error);
+            reply.code(500).send({
+                success: false,
+                error: 'Failed to create tournament'
+            });
+        }
     }
-    catch (error)
-    {
-        console.error('Reset tournament error:', error);
-        return reply.status(500).send({ error: 'Failed to reset tournament' });
+
+    // Get all active tournaments
+    async getActiveTournaments(request, reply) {
+        try {
+            const tournaments = await prisma.tournament.findMany({
+                where: {
+                    status: 'ACTIVE'
+                },
+                include: {
+                    matches: {
+                        include: {
+                            player1: true,
+                            player2: true,
+                            winner: true
+                        }
+                    }
+                },
+                orderBy: {
+                    createdAt: 'desc'
+                }
+            });
+            
+            reply.send({
+                success: true,
+                tournaments
+            });
+        } catch (error) {
+            console.error('Error fetching tournaments:', error);
+            reply.code(500).send({
+                success: false,
+                error: 'Failed to fetch tournaments'
+            });
+        }
+    }
+
+    // Join a tournament
+    async joinTournament(request, reply) {
+        try {
+            const { tournamentId, playerName } = request.body;
+            
+            // Check if tournament exists and has space
+            const tournament = await prisma.tournament.findUnique({
+                where: { id: tournamentId },
+                include: {
+                    players: true
+                }
+            });
+            
+            if (!tournament) {
+                return reply.code(404).send({
+                    success: false,
+                    error: 'Tournament not found'
+                });
+            }
+            
+            if (tournament.players.length >= tournament.maxPlayers) {
+                return reply.code(400).send({
+                    success: false,
+                    error: 'Tournament is full'
+                });
+            }
+            
+            // Add player to tournament
+            const player = await prisma.tournamentPlayer.create({
+                data: {
+                    name: playerName,
+                    tournamentId: tournamentId
+                }
+            });
+            
+            reply.send({
+                success: true,
+                player
+            });
+        } catch (error) {
+            console.error('Error joining tournament:', error);
+            reply.code(500).send({
+                success: false,
+                error: 'Failed to join tournament'
+            });
+        }
+    }
+
+    // Generate tournament bracket
+    async generateBracket(request, reply) {
+        try {
+            const { tournamentId } = request.params;
+            
+            const tournament = await prisma.tournament.findUnique({
+                where: { id: parseInt(tournamentId) },
+                include: {
+                    players: true
+                }
+            });
+            
+            if (!tournament) {
+                return reply.code(404).send({
+                    success: false,
+                    error: 'Tournament not found'
+                });
+            }
+            
+            const players = tournament.players;
+            const matches = [];
+            
+            // Shuffle players for random seeding
+            const shuffledPlayers = [...players].sort(() => Math.random() - 0.5);
+            
+            // Generate first round matches
+            for (let i = 0; i < shuffledPlayers.length; i += 2) {
+                if (i + 1 < shuffledPlayers.length) {
+                    matches.push({
+                        player1Id: shuffledPlayers[i].id,
+                        player2Id: shuffledPlayers[i + 1].id,
+                        round: 1,
+                        tournamentId: tournamentId
+                    });
+                }
+            }
+            
+            // Create matches in database
+            const createdMatches = await prisma.tournamentMatch.createMany({
+                data: matches
+            });
+            
+            reply.send({
+                success: true,
+                matches: createdMatches
+            });
+        } catch (error) {
+            console.error('Error generating bracket:', error);
+            reply.code(500).send({
+                success: false,
+                error: 'Failed to generate bracket'
+            });
+        }
+    }
+
+    // Record match result
+    async recordMatchResult(request, reply) {
+        try {
+            const { matchId, winnerId } = request.body;
+            
+            const match = await prisma.tournamentMatch.update({
+                where: { id: matchId },
+                data: {
+                    winnerId: winnerId,
+                    completed: true,
+                    completedAt: new Date()
+                },
+                include: {
+                    player1: true,
+                    player2: true,
+                    winner: true
+                }
+            });
+            
+            reply.send({
+                success: true,
+                match
+            });
+        } catch (error) {
+            console.error('Error recording match result:', error);
+            reply.code(500).send({
+                success: false,
+                error: 'Failed to record match result'
+            });
+        }
+    }
+
+    // Get tournament bracket
+    async getTournamentBracket(request, reply) {
+        try {
+            const { tournamentId } = request.params;
+            
+            const matches = await prisma.tournamentMatch.findMany({
+                where: {
+                    tournamentId: parseInt(tournamentId)
+                },
+                include: {
+                    player1: true,
+                    player2: true,
+                    winner: true
+                },
+                orderBy: [
+                    { round: 'asc' },
+                    { id: 'asc' }
+                ]
+            });
+            
+            // Group matches by round
+            const bracket = {};
+            matches.forEach(match => {
+                if (!bracket[match.round]) {
+                    bracket[match.round] = [];
+                }
+                bracket[match.round].push(match);
+            });
+            
+            reply.send({
+                success: true,
+                bracket
+            });
+        } catch (error) {
+            console.error('Error fetching bracket:', error);
+            reply.code(500).send({
+                success: false,
+                error: 'Failed to fetch bracket'
+            });
+        }
+    }
+
+    // Get next match
+    async getNextMatch(request, reply) {
+        try {
+            const { tournamentId } = request.params;
+            
+            const nextMatch = await prisma.tournamentMatch.findFirst({
+                where: {
+                    tournamentId: parseInt(tournamentId),
+                    completed: false
+                },
+                include: {
+                    player1: true,
+                    player2: true
+                },
+                orderBy: [
+                    { round: 'asc' },
+                    { id: 'asc' }
+                ]
+            });
+            
+            if (!nextMatch) {
+                return reply.send({
+                    success: true,
+                    match: null,
+                    message: 'Tournament complete'
+                });
+            }
+            
+            reply.send({
+                success: true,
+                match: nextMatch
+            });
+        } catch (error) {
+            console.error('Error fetching next match:', error);
+            reply.code(500).send({
+                success: false,
+                error: 'Failed to fetch next match'
+            });
+        }
+    }
+
+    // Complete tournament
+    async completeTournament(request, reply) {
+        try {
+            const { tournamentId } = request.params;
+            
+            const tournament = await prisma.tournament.update({
+                where: { id: parseInt(tournamentId) },
+                data: {
+                    status: 'COMPLETED',
+                    completedAt: new Date()
+                }
+            });
+            
+            reply.send({
+                success: true,
+                tournament
+            });
+        } catch (error) {
+            console.error('Error completing tournament:', error);
+            reply.code(500).send({
+                success: false,
+                error: 'Failed to complete tournament'
+            });
+        }
     }
 }
+
+export default new TournamentController();

@@ -126,7 +126,8 @@ export async function login(req, reply) {
         secure: false, // Set to false for development (localhost)
         sameSite: 'lax', // Allow cross-origin requests
         path: '/',
-        maxAge: 3600
+        maxAge: 3600,
+        domain: 'localhost' // Explicitly set domain for cross-origin
     });
     
     await prisma.user.update({where: { id: user.id }, data: { lastSeen: new Date() } });
@@ -143,7 +144,8 @@ export async function login(req, reply) {
             lastSeen: user.lastSeen,
             gamesPlayed: user.gamesPlayed,
             wins: user.wins,
-            losses: user.losses
+            losses: user.losses,
+            avatarUrl: user.avatarUrl
         }
     });
 }
@@ -169,7 +171,8 @@ export function logout(req, reply) {
     reply.clearCookie('token', { 
         path: '/',
         secure: false,
-        sameSite: 'lax'
+        sameSite: 'lax',
+        domain: 'localhost'
     });
     return reply.status(200).send({ message: "logged-out" });
 }
@@ -188,7 +191,8 @@ export async function refreshToken(req, reply) {
                 lastSeen: true,
                 gamesPlayed: true,
                 wins: true,
-                losses: true
+                losses: true,
+                avatarUrl: true
             }
         });
         
@@ -205,7 +209,8 @@ export async function refreshToken(req, reply) {
             secure: false, // Set to false for development (localhost)
             sameSite: 'lax', // Allow cross-origin requests
             path: '/',
-            maxAge: 3600
+            maxAge: 3600,
+            domain: 'localhost' // Explicitly set domain for cross-origin
         });
         
         // Update last seen

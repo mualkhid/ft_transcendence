@@ -94,13 +94,52 @@
             0%, 100% { transform: scale(1.2) rotate(15deg); }
             50% { transform: scale(1.3) rotate(15deg); }
         }
+        
+        /* Elegant glass morphism enhancements */
+        .glass-card {
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.45);
+        }
+        
+        /* Subtle text shadow for better readability */
+        .text-shadow {
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Smooth transitions for all interactive elements */
+        * {
+            transition: all 0.2s ease-in-out;
+        }
+        
+        /* Enhanced button hover effects */
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Elegant input focus states */
+        input:focus {
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-powerpuff-pink via-powerpuff-blue to-powerpuff-green min-h-screen">
-    <!-- Animated Hearts Background -->
-    <div class="fixed inset-0 -z-10 opacity-70 pointer-events-none">
+    <!-- Balanced Animated Hearts Background -->
+    <div class="fixed inset-0 -z-10 opacity-35 pointer-events-none">
         <img src="hearts.gif" alt="Animated Hearts" class="w-full h-full object-cover">
     </div>
+    
+    <!-- Subtle Colorful Gradient Overlay -->
+    <div class="fixed inset-0 bg-gradient-to-br from-powerpuff-pink/25 via-powerpuff-blue/20 to-powerpuff-green/25 pointer-events-none"></div>
 
     <div id="app">
         <!-- Modern Pop-up Notification System -->
@@ -131,8 +170,8 @@
                     <p class="text-2xl text-white mb-8">Sugar, Spice, and Everything Pong!</p>
                 </div>
 
-                <div class="max-w-md mx-auto bg-white bg-opacity-10 rounded-lg p-8 backdrop-blur-sm">
-                    <h2 class="text-4xl font-logo text-powerpuff-pink mb-6 text-center">Create Your Account</h2>
+                <div class="max-w-md mx-auto bg-white/20 rounded-2xl p-8 backdrop-blur-md border border-white/30 shadow-2xl">
+                    <h2 class="text-4xl font-logo text-powerpuff-pink mb-6 text-center drop-shadow-lg">Create Your Account</h2>
                     
                     <form id="registrationForm" class="space-y-6">
                         <div>
@@ -202,8 +241,8 @@
                     <p class="text-2xl text-white mb-8">Ready to play some Pong?</p>
                 </div>
 
-                <div class="max-w-md mx-auto bg-white bg-opacity-10 rounded-lg p-8 backdrop-blur-sm">
-                    <h2 class="text-4xl font-logo text-powerpuff-blue mb-6 text-center">Login</h2>
+                <div class="max-w-md mx-auto bg-white/20 rounded-2xl p-8 backdrop-blur-md border border-white/30 shadow-2xl">
+                    <h2 class="text-4xl font-logo text-powerpuff-blue mb-6 text-center drop-shadow-lg">Login</h2>
                     
                     <form id="loginForm" class="space-y-6">
                         <div>
@@ -239,7 +278,7 @@
         <!-- Main App (After Authentication) -->
         <div id="mainApp" class="page">
             <!-- Navigation Bar -->
-            <nav class="flex items-center justify-between px-8 py-4 bg-white bg-opacity-20 shadow-lg mb-4">
+            <nav class="flex items-center justify-between px-8 py-4 bg-white/25 backdrop-blur-md border-b border-white/30 shadow-lg mb-4">
                 <div class="flex items-center space-x-4">
                     <img src="logo.png" alt="Powerpuff Girls Logo" class="h-12 w-auto" id="mainLogo">
                     <span class="text-3xl font-logo text-powerpuff-pink">Powerpuff Pong</span>
@@ -263,7 +302,7 @@
                         <p class="text-xl text-white opacity-90 mb-8">Ready to play the ultimate Pong experience?</p>
                         
                         <!-- Game Statistics -->
-                        <div class="bg-white bg-opacity-10 rounded-2xl p-4 backdrop-blur-sm max-w-2xl mx-auto mb-8">
+                        <div class="bg-white/30 rounded-2xl p-6 backdrop-blur-md border border-white/40 shadow-xl max-w-2xl mx-auto mb-8">
                             <h3 class="text-xl font-bold text-white mb-3 text-center">Your Stats</h3>
                             <div class="flex justify-center space-x-8">
                                 <div class="text-center">
@@ -285,7 +324,7 @@
                     <!-- Game Options Grid -->
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-2xl mx-auto">
                         <!-- 1 vs 1 Local Game -->
-                        <div class="bg-white bg-opacity-20 rounded-lg p-3 backdrop-blur-sm transition-all duration-300 cursor-pointer transform hover:scale-110 hover:bg-opacity-40 hover:bg-powerpuff-pink hover:shadow-lg border border-transparent hover:border-white group" data-game-type="1v1">
+                        <div class="bg-white/25 rounded-xl p-4 backdrop-blur-md border border-white/35 transition-all duration-300 cursor-pointer transform hover:scale-105 hover:bg-white/35 hover:shadow-xl group" data-game-type="1v1">
                             <div class="text-center">
                                 <div class="w-8 h-8 bg-powerpuff-pink rounded-lg mx-auto mb-2 flex items-center justify-center transition-all duration-300 group-hover:scale-125 group-hover:rotate-6 group-hover:bg-white group-hover:shadow-md">
                                     <span class="text-sm group-hover:text-powerpuff-pink transition-colors">🎮</span>
@@ -296,7 +335,7 @@
                         </div>
 
                         <!-- 1 vs AI -->
-                        <div class="bg-white bg-opacity-20 rounded-lg p-3 backdrop-blur-sm transition-all duration-300 cursor-pointer transform hover:scale-110 hover:bg-opacity-40 hover:bg-powerpuff-blue hover:shadow-lg border border-transparent hover:border-white group" data-game-type="1vAI">
+                        <div class="bg-white/35 rounded-xl p-4 backdrop-blur-md border border-white/40 transition-all duration-300 cursor-pointer transform hover:scale-105 hover:bg-white/45 hover:shadow-xl group" data-game-type="1vAI">
                             <div class="text-center">
                                 <div class="w-8 h-8 bg-powerpuff-blue rounded-lg mx-auto mb-2 flex items-center justify-center transition-all duration-300 group-hover:scale-125 group-hover:-rotate-6 group-hover:bg-white group-hover:shadow-md">
                                     <span class="text-sm group-hover:text-powerpuff-blue transition-colors">🤖</span>
@@ -307,18 +346,18 @@
                         </div>
 
                         <!-- Online Game -->
-                        <div class="bg-white bg-opacity-20 rounded-lg p-3 backdrop-blur-sm transition-all duration-300 cursor-pointer transform hover:scale-110 hover:bg-opacity-40 hover:bg-powerpuff-green hover:shadow-lg border border-transparent hover:border-white group" data-game-type="online">
+                        <div class="bg-white/35 rounded-xl p-4 backdrop-blur-md border border-white/40 transition-all duration-300 cursor-pointer transform hover:scale-105 hover:bg-white/45 hover:shadow-xl group" data-game-type="online">
                             <div class="text-center">
                                 <div class="w-8 h-8 bg-powerpuff-green rounded-lg mx-auto mb-2 flex items-center justify-center transition-all duration-300 group-hover:scale-125 group-hover:rotate-6 group-hover:bg-white group-hover:shadow-md">
-                                    <span class="text-sm group-hover:text-powerpuff-green transition-colors">🌐</span>
+                                    <span class="text-sm group-hover:text-powerpuff-green transition-colors">🔗</span>
                                 </div>
-                                <h3 class="text-xs font-bold text-white mb-1 group-hover:text-powerpuff-green transition-colors">Online</h3>
-                                <p class="text-white text-xs opacity-80 group-hover:opacity-100 transition-opacity">Multiplayer</p>
+                                <h3 class="text-xs font-bold text-white mb-1 group-hover:text-powerpuff-green transition-colors">Remote Game</h3>
+                                <p class="text-white text-xs opacity-80 group-hover:opacity-100 transition-opacity">Direct Connect</p>
                             </div>
                         </div>
 
                         <!-- Tournament -->
-                        <div class="bg-white bg-opacity-20 rounded-lg p-3 backdrop-blur-sm transition-all duration-300 cursor-pointer transform hover:scale-110 hover:bg-opacity-40 hover:bg-powerpuff-purple hover:shadow-lg border border-transparent hover:border-white group" data-game-type="tournament">
+                        <div class="bg-white/35 rounded-xl p-4 backdrop-blur-md border border-white/40 transition-all duration-300 cursor-pointer transform hover:scale-105 hover:bg-white/45 hover:shadow-xl group" data-game-type="tournament">
                             <div class="text-center">
                                 <div class="w-8 h-8 bg-powerpuff-purple rounded-lg mx-auto mb-2 flex items-center justify-center transition-all duration-300 group-hover:scale-125 group-hover:-rotate-6 group-hover:bg-white group-hover:shadow-md animate-pulse">
                                     <span class="text-xs group-hover:text-powerpuff-purple transition-colors">🏆</span>
@@ -339,9 +378,9 @@
                                 <p class="text-white text-sm">Other player uses Up/Down arrow keys</p>
                             </div>
                             <div class="bg-white bg-opacity-10 rounded-lg p-4">
-                                <h3 class="text-lg font-bold text-white mb-2">Online Game</h3>
-                                <p class="text-white text-sm">Both players can use W/S keys</p>
-                                <p class="text-white text-sm">Or Up/Down arrow keys</p>
+                                <h3 class="text-lg font-bold text-white mb-2">Remote Game</h3>
+                                <p class="text-white text-sm">Direct connection to specific match</p>
+                                <p class="text-white text-sm">Use W/S or Arrow keys</p>
                             </div>
                         </div>
                     </div>
@@ -352,39 +391,135 @@
                 </div>
             </div>
 
+            <!-- Local Tournament Section -->
+            <div id="localTournamentSection" class="section">
+                <div class="container mx-auto px-4 py-8">
+                    <div class="max-w-4xl mx-auto">
+                        <h2 class="text-4xl font-logo text-powerpuff-purple mb-6 text-center">🏆 Local Tournament</h2>
+                        
+                        <!-- Tournament Setup -->
+                        <div class="bg-white/25 rounded-2xl p-8 backdrop-blur-md border border-white/35 shadow-xl mb-6">
+                            <h3 class="text-2xl font-bold text-white mb-4 text-center">Tournament Setup</h3>
+                            
+                            <!-- Player Count Selection -->
+                            <div class="mb-6">
+                                <label class="block text-white text-lg mb-3">Number of Players:</label>
+                                <div class="flex justify-center space-x-4">
+                                    <button type="button" id="tournament4Players" class="bg-powerpuff-pink hover:bg-powerpuff-purple text-white font-bold py-3 px-6 rounded-lg transition-colors border-2 border-white/30">
+                                        4 Players
+                                    </button>
+                                    <button type="button" id="tournament8Players" class="bg-powerpuff-blue hover:bg-powerpuff-purple text-white font-bold py-3 px-6 rounded-lg transition-colors border-2 border-white/30">
+                                        8 Players
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Player Names Form -->
+                            <div id="playerNamesForm" class="hidden">
+                                <h4 class="text-xl font-bold text-white mb-4 text-center">Enter Player Names</h4>
+                                <div id="playerInputs" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                    <!-- Player inputs will be generated here -->
+                                </div>
+                                <div class="text-center">
+                                    <button type="button" id="startTournament" class="bg-powerpuff-green hover:bg-powerpuff-purple text-white font-bold py-3 px-8 rounded-lg transition-colors text-lg">
+                                        🏆 Start Tournament
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tournament Bracket -->
+                        <div id="tournamentBracket" class="bg-white/25 rounded-2xl p-8 backdrop-blur-md border border-white/35 shadow-xl mb-6 hidden">
+                            <h3 class="text-2xl font-bold text-white mb-4 text-center">Tournament Bracket</h3>
+                            <div id="bracketContainer" class="flex justify-center">
+                                <!-- Bracket will be generated here -->
+                            </div>
+                        </div>
+
+                        <!-- Current Match -->
+                        <div id="currentMatch" class="bg-white/25 rounded-2xl p-8 backdrop-blur-md border border-white/35 shadow-xl mb-6 hidden">
+                            <h3 class="text-2xl font-bold text-white mb-4 text-center">Current Match</h3>
+                            <div id="matchInfo" class="text-center text-white text-lg mb-4">
+                                <!-- Match info will be displayed here -->
+                            </div>
+                            <div class="text-center">
+                                <button type="button" id="startMatch" class="bg-powerpuff-green hover:bg-powerpuff-purple text-white font-bold py-3 px-8 rounded-lg transition-colors text-lg">
+                                    🎮 Start Match
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Match Results -->
+                        <div id="matchResults" class="bg-white/25 rounded-2xl p-8 backdrop-blur-md border border-white/35 shadow-xl mb-6 hidden">
+                            <h3 class="text-2xl font-bold text-white mb-4 text-center">Match Results</h3>
+                            <div id="resultsInfo" class="text-center text-white text-lg mb-4">
+                                <!-- Results will be displayed here -->
+                            </div>
+                            <div class="text-center">
+                                <button type="button" id="nextMatch" class="bg-powerpuff-blue hover:bg-powerpuff-purple text-white font-bold py-3 px-8 rounded-lg transition-colors text-lg">
+                                    ➡️ Next Match
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Tournament Results -->
+                        <div id="tournamentResults" class="bg-white/25 rounded-2xl p-8 backdrop-blur-md border border-white/35 shadow-xl hidden">
+                            <h3 class="text-2xl font-bold text-white mb-4 text-center">🏆 Tournament Champion</h3>
+                            <div id="championInfo" class="text-center text-white text-lg mb-4">
+                                <!-- Champion will be displayed here -->
+                            </div>
+                            <div class="text-center">
+                                <button type="button" id="newTournament" class="bg-powerpuff-green hover:bg-powerpuff-purple text-white font-bold py-3 px-8 rounded-lg transition-colors text-lg">
+                                    🏆 New Tournament
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Status Messages -->
+                        <div id="tournamentStatus" class="mt-4 text-center hidden"></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Friends Section -->
             <div id="friendsSection" class="section">
                 <div class="container mx-auto px-4 py-8">
-                    <div class="max-w-4xl mx-auto bg-white bg-opacity-10 rounded-lg p-6 backdrop-blur-sm">
-                        <h2 class="text-4xl font-logo text-powerpuff-blue mb-6 text-center">Friends</h2>
+                    <div class="max-w-6xl mx-auto">
                         
-                        <!-- Add Friend Form -->
-                        <div class="mb-6 p-4 bg-white bg-opacity-20 rounded-lg">
-                            <h3 class="text-xl font-bold text-white mb-4">Add Friend</h3>
-                            <form id="addFriendForm" class="flex gap-2">
-                                <input type="text" id="friendUsername" placeholder="Enter username" required 
-                                       class="flex-1 px-3 py-2 rounded border-2 border-powerpuff-blue bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:border-powerpuff-purple">
-                                <button type="submit" class="bg-powerpuff-blue hover:bg-powerpuff-purple text-white font-bold py-2 px-4 rounded transition-colors">
-                                    Send Request
-                                </button>
-                            </form>
+                        <!-- Search Users Section -->
+                        <div class="bg-white/30 rounded-2xl p-6 backdrop-blur-md border border-white/40 shadow-xl mb-6">
+                            <h3 class="text-2xl font-bold text-white mb-4">🔍 Search Users</h3>
+                            <div class="mb-4">
+                                <input type="text" id="searchUsersInput" placeholder="Search users by username..." 
+                                       class="w-full px-4 py-2 rounded-lg border-2 border-powerpuff-blue bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:border-powerpuff-purple">
+                            </div>
+                            <div id="usersList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <!-- Users will be populated here -->
+                            </div>
                         </div>
 
-                        <!-- Friends Lists -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <!-- Current Friends -->
-                            <div class="bg-white bg-opacity-20 rounded-lg p-4">
-                                <h3 class="text-xl font-bold text-white mb-4">My Friends</h3>
-                                <div id="friendsList" class="space-y-2">
-                                    <p class="text-white text-center">No friends yet</p>
+                        <!-- Friends Management Grid -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            
+                            <!-- My Friends -->
+                            <div class="bg-white/30 rounded-2xl p-6 backdrop-blur-md border border-white/40 shadow-xl">
+                                <h3 class="text-2xl font-bold text-white mb-4">👥 My Friends</h3>
+                                <div id="friendsList" class="space-y-3">
+                                    <div class="text-center text-white">
+                                        <div class="text-4xl mb-2">👥</div>
+                                        <p>No friends yet</p>
+                                    </div>
                                 </div>
                             </div>
 
                             <!-- Friend Requests -->
-                            <div class="bg-white bg-opacity-20 rounded-lg p-4">
-                                <h3 class="text-xl font-bold text-white mb-4">Friend Requests</h3>
-                                <div id="friendRequests" class="space-y-2">
-                                    <p class="text-white text-center">No pending requests</p>
+                            <div class="bg-white/30 rounded-2xl p-6 backdrop-blur-md border border-white/40 shadow-xl">
+                                <h3 class="text-2xl font-bold text-white mb-4">📨 My Requests</h3>
+                                <div id="friendRequests" class="space-y-3">
+                                    <div class="text-center text-white">
+                                        <div class="text-4xl mb-2">📨</div>
+                                        <p>No pending requests</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -398,11 +533,11 @@
             <!-- Tournaments Section -->
             <div id="tournamentsSection" class="section">
                 <div class="container mx-auto px-4 py-8">
-                    <div class="max-w-4xl mx-auto bg-white bg-opacity-10 rounded-lg p-6 backdrop-blur-sm">
+                    <div class="max-w-4xl mx-auto bg-white/15 rounded-2xl p-6 backdrop-blur-md border border-white/20 shadow-xl">
                         <h2 class="text-4xl font-logo text-powerpuff-green mb-6 text-center">Tournaments</h2>
                         
                         <!-- Create Tournament -->
-                        <div class="mb-6 p-4 bg-white bg-opacity-20 rounded-lg">
+                        <div class="mb-6 p-4 bg-white/20 rounded-xl backdrop-blur-md border border-white/20">
                             <h3 class="text-xl font-bold text-white mb-4">Create Tournament</h3>
                             <form id="createTournamentForm" class="space-y-4">
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -430,7 +565,7 @@
                         </div>
 
                         <!-- Join Tournament -->
-                        <div class="mb-6 p-4 bg-white bg-opacity-20 rounded-lg">
+                        <div class="mb-6 p-4 bg-white/20 rounded-xl backdrop-blur-md border border-white/20">
                             <h3 class="text-xl font-bold text-white mb-4">Join Tournament</h3>
                             <form id="joinTournamentForm" class="flex gap-2">
                                 <input type="text" id="tournamentId" placeholder="Enter Tournament ID" required 
@@ -452,9 +587,9 @@
                 <div class="container mx-auto px-4 py-8">
                     <div class="max-w-2xl mx-auto">
                         <!-- Profile Header -->
-                        <div class="bg-white bg-opacity-10 rounded-lg p-6 backdrop-blur-sm text-center mb-6">
+                        <div class="bg-white/15 rounded-2xl p-6 backdrop-blur-md border border-white/20 shadow-xl text-center mb-6">
                             <div class="relative inline-block">
-                                <img id="profileAvatar" src="https://ui-avatars.com/api/?name=Player" alt="Avatar" class="mx-auto h-24 w-24 rounded-full mb-4 border-4 border-white border-opacity-30">
+                                <img id="profileAvatar" src="https://ui-avatars.com/api/?name=Player" alt="Avatar" class="mx-auto h-24 w-24 rounded-full mb-4 border-4 border-white border-opacity-30 object-cover">
                                 <div class="absolute -bottom-2 -right-2">
                                     <label for="avatarUpload" class="cursor-pointer">
                                         <div class="w-8 h-8 bg-powerpuff-pink rounded-full flex items-center justify-center hover:bg-powerpuff-purple transition-colors">
@@ -474,15 +609,15 @@
                             </div>
                             
                             <div class="grid grid-cols-3 gap-4 text-center">
-                                <div class="bg-white bg-opacity-20 rounded-lg p-3">
+                                <div class="bg-white/20 rounded-xl p-4 backdrop-blur-md border border-white/20">
                                     <div class="text-white text-2xl font-bold" id="profileGames">0</div>
                                     <div class="text-white text-sm">Games Played</div>
                                 </div>
-                                <div class="bg-white bg-opacity-20 rounded-lg p-3">
+                                <div class="bg-white/20 rounded-xl p-4 backdrop-blur-md border border-white/20">
                                     <div class="text-white text-2xl font-bold" id="profileWins">0</div>
                                     <div class="text-white text-sm">Wins</div>
                                 </div>
-                                <div class="bg-white bg-opacity-20 rounded-lg p-3">
+                                <div class="bg-white/20 rounded-xl p-4 backdrop-blur-md border border-white/20">
                                     <div class="text-white text-2xl font-bold" id="profileLosses">0</div>
                                     <div class="text-white text-sm">Losses</div>
                                 </div>
@@ -490,7 +625,7 @@
                         </div>
                         
                         <!-- Profile Settings -->
-                        <div class="bg-white bg-opacity-10 rounded-lg p-6 backdrop-blur-sm">
+                        <div class="bg-white/15 rounded-2xl p-6 backdrop-blur-md border border-white/20 shadow-xl">
                             <h3 class="text-2xl font-bold text-white mb-6 text-center">Profile Settings</h3>
                             
                             <!-- Change Username -->
@@ -504,13 +639,17 @@
                                 </div>
                             </div>
                             
-                            <!-- Change Email -->
+                            <!-- Change Password -->
                             <div class="mb-6">
-                                <label class="block text-white font-semibold mb-2">Email</label>
-                                <div class="flex gap-2">
-                                    <input type="email" id="newEmail" placeholder="Enter new email" class="flex-1 px-4 py-2 rounded-lg border-2 border-powerpuff-blue bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:border-powerpuff-purple">
-                                    <button id="changeEmailBtn" class="bg-powerpuff-blue hover:bg-powerpuff-purple text-white font-semibold py-2 px-4 rounded-lg transition-colors">
-                                        Change
+                                <label class="block text-white font-semibold mb-2">Change Password</label>
+                                <div class="space-y-3">
+                                    <input type="password" id="currentPassword" placeholder="Enter current password" class="w-full px-4 py-2 rounded-lg border-2 border-powerpuff-blue bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:border-powerpuff-purple">
+                                    <input type="password" id="newPassword" placeholder="Enter new password" class="w-full px-4 py-2 rounded-lg border-2 border-powerpuff-blue bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:border-powerpuff-purple">
+                                    <div id="passwordRequirements" class="mt-2 text-xs text-white">
+                                        <p>Password must have: at least 8 characters, one lowercase letter, one uppercase letter, one number, one special character</p>
+                                    </div>
+                                    <button id="changePasswordBtn" class="w-full bg-powerpuff-blue hover:bg-powerpuff-purple text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+                                        Change Password
                                     </button>
                                 </div>
                             </div>
@@ -585,8 +724,8 @@
                 <div class="container mx-auto px-4 py-8">
                     <!-- Matchmaking Status -->
                     <div class="text-center text-white mb-8">
-                        <h2 class="text-4xl font-logo text-powerpuff-green mb-4">🌐 Online Matchmaking</h2>
-                        <p class="text-xl mb-6">Find an opponent to play against!</p>
+                        <h2 class="text-4xl font-logo text-powerpuff-green mb-4">🔗 Remote Game</h2>
+                        <p class="text-xl mb-6">Connect directly to match #1</p>
                         
                         <!-- Matchmaking Status Display -->
                         <div class="bg-white bg-opacity-10 rounded-lg p-6 backdrop-blur-sm max-w-md mx-auto mb-6">
@@ -602,13 +741,13 @@
                         <!-- Matchmaking Controls -->
                         <div class="flex justify-center space-x-4">
                             <button id="cancelMatchmakingBtn" class="bg-powerpuff-red hover:bg-red-600 text-white font-bold py-3 px-6 rounded-full text-lg transition-colors shadow-lg">
-                                ❌ Cancel Search
+                                ❌ Disconnect
                             </button>
                         </div>
                     </div>
 
                     <!-- Online Score Display -->
-                    <div class="text-center text-white mb-8" style="display: none;">
+                    <div class="text-center text-white mb-8">
                         <div class="flex justify-center space-x-4">
                             <div class="bg-powerpuff-pink bg-opacity-50 rounded-lg p-4">
                                 <h3 class="text-lg font-bold">Score</h3>
@@ -617,11 +756,13 @@
                                         <p class="text-sm" id="onlinePlayer1Name">Player 1</p>
                                         <p id="onlinePlayer1Score" class="text-2xl font-bold">0</p>
                                     </div>
+                                    <div class="text-2xl font-bold text-powerpuff-green">VS</div>
                                     <div>
                                         <p class="text-sm" id="onlinePlayer2Name">Player 2</p>
                                         <p id="onlinePlayer2Score" class="text-2xl font-bold">0</p>
                                     </div>
                                 </div>
+                                <div class="mt-2 text-sm text-gray-300">First to 5 points wins!</div>
                             </div>
                         </div>
                     </div>
@@ -640,9 +781,6 @@
                             <div id="onlineGameOverlay" class="absolute inset-0 flex items-center justify-center rounded-lg z-10" style="display: none;">
                                 <div class="text-center">
                                     <h2 id="onlineGameMessage" class="text-3xl font-bold mb-6 text-white drop-shadow-lg"></h2>
-                                    <button id="onlineStartButton" class="bg-powerpuff-green hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full text-xl transition-colors shadow-lg">
-                                        Start Online Game
-                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -671,12 +809,23 @@
                     
                     <!-- Paddle Color Section -->
                     <div class="mb-6">
-                        <h4 class="text-lg font-semibold text-gray-700 mb-3">Paddle Colors</h4>
+                        <h4 class="text-lg font-semibold text-gray-700 mb-3">My Paddle Color</h4>
                         <div class="grid grid-cols-4 gap-3">
-                            <button class="color-option bg-red-500 hover:bg-red-400 w-12 h-12 rounded-full border-2 border-gray-300 hover:border-gray-400 transition-all" data-color="#e94560" data-type="paddle"></button>
-                            <button class="color-option bg-blue-500 hover:bg-blue-400 w-12 h-12 rounded-full border-2 border-gray-300 hover:border-gray-400 transition-all" data-color="#3b82f6" data-type="paddle"></button>
-                            <button class="color-option bg-green-500 hover:bg-green-400 w-12 h-12 rounded-full border-2 border-gray-300 hover:border-gray-400 transition-all" data-color="#10b981" data-type="paddle"></button>
-                            <button class="color-option bg-purple-500 hover:bg-purple-400 w-12 h-12 rounded-full border-2 border-gray-300 hover:border-gray-400 transition-all" data-color="#8b5cf6" data-type="paddle"></button>
+                            <button class="color-option bg-purple-500 hover:bg-purple-400 w-12 h-12 rounded-full border-2 border-gray-300 hover:border-gray-400 transition-all" data-color="#8b5cf6" data-type="myPaddle"></button>
+                            <button class="color-option bg-blue-500 hover:bg-blue-400 w-12 h-12 rounded-full border-2 border-gray-300 hover:border-gray-400 transition-all" data-color="#3b82f6" data-type="myPaddle"></button>
+                            <button class="color-option bg-green-500 hover:bg-green-400 w-12 h-12 rounded-full border-2 border-gray-300 hover:border-gray-400 transition-all" data-color="#10b981" data-type="myPaddle"></button>
+                            <button class="color-option bg-pink-500 hover:bg-pink-400 w-12 h-12 rounded-full border-2 border-gray-300 hover:border-gray-400 transition-all" data-color="#ec4899" data-type="myPaddle"></button>
+                        </div>
+                    </div>
+                    
+                    <!-- Opponent Paddle Color Section -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-semibold text-gray-700 mb-3">Opponent Paddle Color</h4>
+                        <div class="grid grid-cols-4 gap-3">
+                            <button class="color-option bg-red-500 hover:bg-red-400 w-12 h-12 rounded-full border-2 border-gray-300 hover:border-gray-400 transition-all" data-color="#e94560" data-type="opponentPaddle"></button>
+                            <button class="color-option bg-orange-500 hover:bg-orange-400 w-12 h-12 rounded-full border-2 border-gray-300 hover:border-gray-400 transition-all" data-color="#f97316" data-type="opponentPaddle"></button>
+                            <button class="color-option bg-yellow-500 hover:bg-yellow-400 w-12 h-12 rounded-full border-2 border-gray-300 hover:border-gray-400 transition-all" data-color="#eab308" data-type="opponentPaddle"></button>
+                            <button class="color-option bg-gray-500 hover:bg-gray-400 w-12 h-12 rounded-full border-2 border-gray-300 hover:border-gray-400 transition-all" data-color="#6b7280" data-type="opponentPaddle"></button>
                         </div>
                     </div>
                     

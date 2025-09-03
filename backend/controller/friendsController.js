@@ -1,7 +1,7 @@
 import {prisma} from '../prisma/prisma_lib.js'
 import { notFoundError, ValidationError } from '../utils/errors.js';
 
-const sanitizedUserSelect = { id: true, username: true, email: true, createdAt: true, lastSeen: true, updatedAt: true }
+const sanitizedUserSelect = { id: true, username: true, email: true, createdAt: true, lastSeen: true, updatedAt: true, avatarUrl: true }
 
 export async function getFriends(req, reply) {
     const id = req.user.id

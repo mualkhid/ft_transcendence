@@ -18,9 +18,8 @@ datasource db {
  */
 
 enum TournamentStatus {
-  NOT_STARTED
-  ONGOING
-  FINISHED
+  ACTIVE
+  COMPLETED
 }
 
 enum MatchStatus {
@@ -66,10 +65,8 @@ model User {
   twoFactorBackupCodes String? // JSON array of backup codes
 
   // back-relations
-  wonTournaments    Tournament[]       @relation("tournamentsWon")
   requestsRequested Friendship[]       @relation("requested")
   requestsReceived  Friendship[]       @relation("received")
-  //matchPlayers         MatchPlayer[]
   TournamentPlayer  TournamentPlayer[]
 
   // @@index([email])
@@ -103,26 +100,23 @@ model Friendship {
 model Tournament {
   id           Int              @id @default(autoincrement())
   name         String
-  status       TournamentStatus @default(NOT_STARTED)
+  status       TournamentStatus @default(ACTIVE)
   maxPlayers   Int
-  currentRound Int
+  createdBy    Int?
 
-  creatorId   Int?
-  winnerId    Int?
-  winnerAlias String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  completedAt  DateTime?
 
   players TournamentPlayer[]
-  matches Match[]
+  matches TournamentMatch[]
+  legacyMatches Match[]
 
   // Back-relations
-  creator User? @relation("tournamentsCreated", fields: [creatorId], references: [id], onDelete: SetNull)
-  winner  User? @relation("tournamentsWon", fields: [winnerId], references: [id], onDelete: SetNull)
+  creator User? @relation("tournamentsCreated", fields: [createdBy], references: [id], onDelete: SetNull)
 
-  // @@index([status])
-  // @@index([creatorId])
+  @@index([status])
+  @@index([createdBy])
 }
 
 /**
@@ -132,25 +126,54 @@ model Tournament {
 model TournamentPlayer {
   id           Int    @id @default(autoincrement())
   tournamentId Int
-  alias        String
+  name         String
   userId       Int?
-  playerOrder  Int
 
   joinedAt DateTime @default(now())
 
   tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   user       User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
-  // If aliases must be unique within a tournament:
-  // @@unique([tournamentId, displayName])
 
-  @@unique([tournamentId, userId])
-  @@unique([tournamentId, playerOrder])
+  // Matches where this player is player1
+  player1Matches TournamentMatch[] @relation("Player1Matches")
+  // Matches where this player is player2
+  player2Matches TournamentMatch[] @relation("Player2Matches")
+  // Matches where this player won
+  wonMatches TournamentMatch[] @relation("WinnerMatches")
+
   @@index([tournamentId])
   @@index([userId])
 }
 
 /**
- * ===== Matches =====
+ * ===== Tournament Matches =====
+ */ 
+
+model TournamentMatch {
+  id           Int         @id @default(autoincrement())
+  tournamentId Int
+  round        Int
+  player1Id    Int
+  player2Id    Int
+  winnerId     Int?
+  completed    Boolean     @default(false)
+  
+  createdAt    DateTime @default(now())
+  completedAt  DateTime?
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player1     TournamentPlayer @relation("Player1Matches", fields: [player1Id], references: [id], onDelete: Cascade)
+  player2     TournamentPlayer @relation("Player2Matches", fields: [player2Id], references: [id], onDelete: Cascade)
+  winner      TournamentPlayer? @relation("WinnerMatches", fields: [winnerId], references: [id], onDelete: SetNull)
+
+  @@index([tournamentId])
+  @@index([tournamentId, round])
+  @@index([player1Id])
+  @@index([player2Id])
+}
+
+/**
+ * ===== Legacy Matches (keeping for compatibility) =====
  */ 
 
 model Match {

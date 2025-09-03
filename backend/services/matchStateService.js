@@ -11,53 +11,94 @@ export async function createMatchState(matchId, player1Alias = 'Player1', player
     const numericMatchId = parseInt(matchId);
     
     if(!activeMatches.has(numericMatchId)){
-       let dbMatch = await createCasualMatch(player1Alias, player2Alias, numericMatchId);
-        
-        const matchState = {
-            player1: null,
-            player2: null,
-            matchId: dbMatch.id,
-            state: {
-                status: 'waiting',
-                connectedPlayers: 0,
-                player1Keys: {
-                    up: false,
-                    down: false
-                },
-                player2Keys: {
-                    up: false,
-                    down: false
-                },
-                ballPositionX: 400,
-                ballPositionY: 300,
-                speedX : 5,
-                speedY: 3,
-                radius: 10,
-                canvasHeight:600,
-                leftPaddleX: 50,
-                leftPaddleY: 250,
-                rightPaddleX: 735,
-                rightPaddleY: 250,         
-                paddleWidth: 15,
-                paddleHeight: 100,
-                canvasWidth: 800,
-                scorePlayer1: 0,
-                scorePlayer2: 0,
-                maxScore: 5,
-                gameLoopInterval: null,
-                matchStarted: false,
-                player1Alias,
-                player2Alias
-            }
-        };
-        
-        activeMatches.set(numericMatchId, matchState);
-        return matchState;
+        try {
+            let dbMatch = await createCasualMatch(player1Alias, player2Alias, numericMatchId);
+            
+            const matchState = {
+                player1: null,
+                player2: null,
+                matchId: dbMatch.id,
+                state: {
+                    status: 'waiting',
+                    connectedPlayers: 0,
+                    player1Keys: {
+                        up: false,
+                        down: false
+                    },
+                    player2Keys: {
+                        up: false,
+                        down: false
+                    },
+                    ballPositionX: 400,
+                    ballPositionY: 300,
+                    speedX : 5,
+                    speedY: 3,
+                    radius: 10,
+                    canvasHeight:600,
+                    leftPaddleX: 50,
+                    leftPaddleY: 250,
+                    rightPaddleX: 735,
+                    rightPaddleY: 250,         
+                    paddleWidth: 15,
+                    paddleHeight: 100,
+                    canvasWidth: 800,
+                    scorePlayer1: 0,
+                    scorePlayer2: 0,
+                    maxScore: 5,
+                    gameLoopInterval: null,
+                    matchStarted: false,
+                    player1Alias,
+                    player2Alias
+                }
+            };
+            
+            activeMatches.set(numericMatchId, matchState);
+            console.log(`✅ Match state created for match ${numericMatchId}`);
+            return matchState;
+        } catch (error) {
+            console.error(`❌ Failed to create match state for match ${numericMatchId}:`, error);
+            // Create a match state without database persistence as fallback
+            const fallbackMatchState = {
+                player1: null,
+                player2: null,
+                matchId: numericMatchId,
+                state: {
+                    status: 'waiting',
+                    connectedPlayers: 0,
+                    player1Keys: { up: false, down: false },
+                    player2Keys: { up: false, down: false },
+                    ballPositionX: 400,
+                    ballPositionY: 300,
+                    speedX : 5,
+                    speedY: 3,
+                    radius: 10,
+                    canvasHeight:600,
+                    leftPaddleX: 50,
+                    leftPaddleY: 250,
+                    rightPaddleX: 735,
+                    rightPaddleY: 250,         
+                    paddleWidth: 15,
+                    paddleHeight: 100,
+                    canvasWidth: 800,
+                    scorePlayer1: 0,
+                    scorePlayer2: 0,
+                    maxScore: 5,
+                    gameLoopInterval: null,
+                    matchStarted: false,
+                    player1Alias,
+                    player2Alias
+                }
+            };
+            
+            activeMatches.set(numericMatchId, fallbackMatchState);
+            console.log(`✅ Fallback match state created for match ${numericMatchId}`);
+            return fallbackMatchState;
+        }
     }
     return activeMatches.get(numericMatchId);
 }
 
-export async function addPlayerToMatch(matchId, websocket)
+export async function addPlayerToMatch(matchId, websocket, username = null)
 {
     const match = await createMatchState(matchId);
     
@@ -68,6 +109,9 @@ export async function addPlayerToMatch(matchId, websocket)
     {
         match.player1 = websocket;
         match.state.connectedPlayers++;
+        if (username) {
+            match.state.player1Alias = username;
+        }
         return (1);
     }
     
@@ -75,6 +119,9 @@ export async function addPlayerToMatch(matchId, websocket)
     {
         match.player2 = websocket;
         match.state.connectedPlayers++;
+        if (username) {
+            match.state.player2Alias = username;
+        }
         return (2);
     }
     return (null);

@@ -1,0 +1,4 @@
+Routes registered successfully
+Attempting to start server...
+Server running at http://127.0.0.1:3000
+✅ WebSocket server attached to HTTP server
