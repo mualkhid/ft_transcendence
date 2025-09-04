@@ -1,0 +1,112 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Hearts GIF Background for login/registration only */
+#loginPage, #registrationPage {
+    background-image: url('../hearts.gif');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    min-height: 100vh;
+}
+
+/* Powerpuff Girls Background for main app (after login) */
+#mainApp {
+    background-image: url('../powerpuff-bg.webp') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    background-attachment: fixed !important;
+    min-height: 100vh !important;
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+/* Add a subtle overlay to improve text readability */
+#mainApp::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.2);
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* Custom CSS for page navigation */
+.page {
+    display: none;
+}
+
+.page.active {
+    display: block;
+}
+
+.section {
+    display: none;
+}
+
+.section.active {
+    display: block;
+}
+
+/* Status message styles */
+.status {
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    margin: 1rem 0;
+    font-weight: bold;
+    font-size: 1.1rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    border: 2px solid transparent;
+    min-width: 300px;
+    text-align: center;
+}
+
+.status.success {
+    background-color: #10b981;
+    color: white;
+}
+
+.status.error {
+    background-color: #ef4444;
+    color: white;
+}
+
+.status.info {
+    background-color: #3b82f6;
+    color: white;
+}
+
+/* Notification system styles */
+#notificationOverlay {
+    position: fixed !important;
+    z-index: 9999 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
+    transform: none !important;
+    isolation: isolate !important;
+}
+
+#notificationCard {
+    position: relative !important;
+    z-index: 10000 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
+    transform: none !important;
+    isolation: isolate !important;
+    background: white !important;
+    color: black !important;
+}
+
+#notificationCard * {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
+} 

@@ -1,0 +1,12 @@
+services:
+  powerpuff-pong:
+    build: .
+    ports:
+      - "8080:80"
+    volumes:
+      - ./dist:/usr/share/nginx/html/dist
+      - ./index.html:/usr/share/nginx/html/index.html
+      - ./logo.png:/usr/share/nginx/html/logo.png
+      - ./hearts.gif:/usr/share/nginx/html/hearts.gif
+      - ./avatars:/usr/share/nginx/html/avatars
+    restart: unless-stopped
