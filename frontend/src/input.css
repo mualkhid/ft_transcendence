@@ -2,6 +2,41 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Hearts GIF Background for login/registration only */
+#loginPage, #registrationPage {
+    background-image: url('../hearts.gif');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    min-height: 100vh;
+}
+
+/* Powerpuff Girls Background for main app (after login) */
+#mainApp {
+    background-image: url('../powerpuff-bg.webp') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    background-attachment: fixed !important;
+    min-height: 100vh !important;
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+/* Add a subtle overlay to improve text readability */
+#mainApp::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.2);
+    z-index: -1;
+    pointer-events: none;
+}
+
 /* Custom CSS for page navigation */
 .page {
     display: none;

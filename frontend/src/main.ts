@@ -205,7 +205,12 @@ class SimpleAuth {
         const startMatch = document.getElementById('startMatch');
         if (startMatch) {
             startMatch.addEventListener('click', () => {
-                this.startCurrentMatch();
+                // Only start match if there's a current match available
+                if (this.tournamentState.matches[this.tournamentState.currentMatch]) {
+                    this.startCurrentMatch();
+                } else {
+                    console.log('No match available to start');
+                }
             });
         }
 
@@ -760,7 +765,7 @@ class SimpleAuth {
         const lastSeenTime = new Date(lastSeen);
         const now = new Date();
         const diffInMinutes = (now.getTime() - lastSeenTime.getTime()) / (1000 * 60);
-        return diffInMinutes < 5; // Consider online if last seen within 5 minutes
+        return diffInMinutes < 2; // Consider online if last seen within 2 minutes for more accurate status
     }
 
     // Global methods for button clicks
@@ -1393,6 +1398,18 @@ class SimpleAuth {
                 this.handleLogout();
             });
         }
+
+        // Set up periodic refresh of friends list for real-time online status
+        this.setupFriendsRefresh();
+    }
+
+    private setupFriendsRefresh(): void {
+        // Refresh friends list every 30 seconds to update online status
+        setInterval(() => {
+            if (this.currentUser && document.getElementById('friendsSection')?.classList.contains('hidden') === false) {
+                this.loadFriendsData();
+            }
+        }, 30000); // 30 seconds
     }
 
     private setupGameOptions(): void {
@@ -1504,16 +1521,16 @@ class SimpleAuth {
         player1Name.textContent = this.currentUser.username || 'Player 1';
         player2Name.textContent = 'Local Player';
 
-        // Reset scores
+        // Reset scores to game state values
         const player1Score = document.getElementById('player1Score');
         const player2Score = document.getElementById('player2Score');
-        if (player1Score) player1Score.textContent = '0';
-        if (player2Score) player2Score.textContent = '0';
+        if (player1Score) player1Score.textContent = this.gameState?.scorePlayer1?.toString() || '0';
+        if (player2Score) player2Score.textContent = this.gameState?.scorePlayer2?.toString() || '0';
 
-        // Show game overlay with just the start button (no white box)
+        // Show game overlay with start button
         gameOverlay.style.display = 'flex';
         console.log('Game overlay display set to:', gameOverlay.style.display);
-        gameMessage.textContent = ''; // Remove welcome message
+        gameMessage.textContent = '';
         startButton.style.display = 'block';
         startButton.textContent = 'Start Game';
 
@@ -1539,6 +1556,8 @@ class SimpleAuth {
         // Start button handler
         newStartButton.addEventListener('click', () => {
             console.log('Start button clicked!');
+            console.log('Game overlay:', gameOverlay);
+            console.log('Game state before start:', this.gameState);
             gameOverlay.style.display = 'none';
             this.startLocalGame();
         });
@@ -1593,6 +1612,31 @@ class SimpleAuth {
         // Add new listeners
         document.addEventListener('keydown', this.handleGameKeyDown.bind(this));
         document.addEventListener('keyup', this.handleGameKeyUp.bind(this));
+
+        // Add tournament leave detection
+        this.setupTournamentLeaveDetection();
+    }
+
+    private setupTournamentLeaveDetection(): void {
+        // Add beforeunload event to detect when player leaves the page
+        window.addEventListener('beforeunload', (event) => {
+            if (this.currentTournamentMatch && this.gameLoopInterval) {
+                console.log('Player leaving tournament page');
+                // This will trigger when the page is being unloaded
+                // We can't prevent the navigation, but we can log it
+            }
+        });
+
+        // Add visibility change detection
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden' && this.currentTournamentMatch && this.gameLoopInterval) {
+                console.log('Player left tournament (page hidden)');
+                // Handle as if the current user left
+                if (this.currentUser) {
+                    this.handleTournamentPlayerLeave(this.currentUser.username);
+                }
+            }
+        });
     }
 
     private handleGameKeyDown(event: KeyboardEvent): void {
@@ -1635,12 +1679,13 @@ class SimpleAuth {
 
     private gameState: any = null;
     private gameLoopInterval: number | null = null;
+    private isGoingHome: boolean = false;
 
     // Online game state
     private onlineGameState: {
         matchmakingSocket: WebSocket | null;
         gameSocket: WebSocket | null;
-        matchId: number | null;
+        matchId: number | string | null;
         playerNumber: number | null;
         isConnected: boolean;
         isInMatch: boolean;
@@ -1684,6 +1729,13 @@ class SimpleAuth {
     };
 
     private startLocalGame(): void {
+        console.log('=== START LOCAL GAME CALLED ===');
+        console.log('Starting local game...');
+        
+        // Reset game state completely
+        this.resetGameState();
+        console.log('Game state reset for local game:', this.gameState);
+
         // Initialize game state
         this.gameState = {
             ballPositionX: 400,
@@ -1706,10 +1758,16 @@ class SimpleAuth {
             player2Keys: { up: false, down: false }
         };
 
+        // Update score display to reflect reset scores
+        this.updateScoreDisplay();
+
         // Hide the start button when game starts
         const startButton = document.getElementById('startButton');
         if (startButton) {
             startButton.style.display = 'none';
+            console.log('Start button hidden');
+        } else {
+            console.log('Start button not found!');
         }
 
         // Keep customize button visible during gameplay
@@ -1722,6 +1780,9 @@ class SimpleAuth {
         const gameOverlay = document.getElementById('gameOverlay');
         if (gameOverlay) {
             gameOverlay.style.display = 'none';
+            console.log('Game overlay hidden');
+        } else {
+            console.log('Game overlay not found!');
         }
 
         // Start game loop
@@ -1729,7 +1790,7 @@ class SimpleAuth {
             this.updateGame();
         }, 16); // ~60 FPS
 
-        console.log('Local game started');
+        console.log('Local game started successfully');
     }
 
     private updateGame(): void {
@@ -1750,7 +1811,9 @@ class SimpleAuth {
 
         // Ball collision with left wall (Player 2 scores)
         if (this.gameState.ballPositionX - this.gameState.radius <= 0) {
+            console.log('Player 2 scored! Previous score:', this.gameState.scorePlayer2);
             this.gameState.scorePlayer2++;
+            console.log('Player 2 new score:', this.gameState.scorePlayer2);
             this.resetBall();
             this.updateScoreDisplay();
             
@@ -1762,7 +1825,9 @@ class SimpleAuth {
 
         // Ball collision with right wall (Player 1 scores)
         if (this.gameState.ballPositionX + this.gameState.radius >= this.gameState.canvasWidth) {
+            console.log('Player 1 scored! Previous score:', this.gameState.scorePlayer1);
             this.gameState.scorePlayer1++;
+            console.log('Player 1 new score:', this.gameState.scorePlayer1);
             this.resetBall();
             this.updateScoreDisplay();
             
@@ -1841,6 +1906,13 @@ class SimpleAuth {
         const player1Score = document.getElementById('player1Score');
         const player2Score = document.getElementById('player2Score');
         
+        console.log('Updating score display:', {
+            gameStateScore1: this.gameState?.scorePlayer1,
+            gameStateScore2: this.gameState?.scorePlayer2,
+            player1Element: !!player1Score,
+            player2Element: !!player2Score
+        });
+        
         if (player1Score) player1Score.textContent = this.gameState.scorePlayer1.toString();
         if (player2Score) player2Score.textContent = this.gameState.scorePlayer2.toString();
     }
@@ -1848,7 +1920,7 @@ class SimpleAuth {
     private showCustomizationModal(): void {
         const modal = document.getElementById('customizeModal');
         if (modal) {
-            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
             this.setupColorOptions();
         }
     }
@@ -1856,7 +1928,7 @@ class SimpleAuth {
     private hideCustomizationModal(): void {
         const modal = document.getElementById('customizeModal');
         if (modal) {
-            modal.classList.add('hidden');
+            modal.style.display = 'none';
         }
     }
 
@@ -1872,9 +1944,9 @@ class SimpleAuth {
                 if (color && type) {
                     if (type === 'table') {
                         this.customizationSettings.tableColor = color;
-                    } else if (type === 'myPaddle') {
+                    } else if (type === 'paddle') {
+                        // For paddle colors, set both my paddle and opponent paddle to the same color
                         this.customizationSettings.myPaddleColor = color;
-                    } else if (type === 'opponentPaddle') {
                         this.customizationSettings.opponentPaddleColor = color;
                     }
                     
@@ -1939,8 +2011,9 @@ class SimpleAuth {
         ctx.setLineDash([]);
 
         // Draw paddles with custom color
-        ctx.fillStyle = this.customizationSettings.paddleColor;
+        ctx.fillStyle = this.customizationSettings.myPaddleColor;
         ctx.fillRect(this.gameState.leftPaddleX, this.gameState.leftPaddleY, this.gameState.paddleWidth, this.gameState.paddleHeight);
+        ctx.fillStyle = this.customizationSettings.opponentPaddleColor;
         ctx.fillRect(this.gameState.rightPaddleX, this.gameState.rightPaddleY, this.gameState.paddleWidth, this.gameState.paddleHeight);
 
         // Draw ball
@@ -1960,80 +2033,90 @@ class SimpleAuth {
             this.gameLoopInterval = null;
         }
 
-        const gameOverlay = document.getElementById('gameOverlay');
-        const gameMessage = document.getElementById('gameMessage');
-        const startButton = document.getElementById('startButton');
-
-        if (gameOverlay && gameMessage && startButton) {
-            gameOverlay.style.display = 'flex';
-            gameOverlay.style.alignItems = 'center';
-            gameOverlay.style.justifyContent = 'center';
-            gameOverlay.style.flexDirection = 'column';
+        // Show the game over modal
+        const gameOverModal = document.getElementById('gameOverModal');
+        const gameOverIcon = document.getElementById('gameOverIcon');
+        const gameOverTitle = document.getElementById('gameOverTitle');
+        const gameOverMessage = document.getElementById('gameOverMessage');
+        const gameOverPlayer1Name = document.getElementById('gameOverPlayer1Name');
+        const gameOverPlayer2Name = document.getElementById('gameOverPlayer2Name');
+        const gameOverPlayer1Score = document.getElementById('gameOverPlayer1Score');
+        const gameOverPlayer2Score = document.getElementById('gameOverPlayer2Score');
+        
+        if (gameOverModal && gameOverIcon && gameOverTitle && gameOverMessage) {
+            // Set winner icon and title
+            gameOverIcon.textContent = '🏆';
+            gameOverTitle.textContent = 'Game Over!';
             
-            // Set winner message with enhanced styling
             // Check if this is a tournament game
             if (this.currentTournamentMatch) {
                 // Use tournament player names
                 const winnerName = winner === 1 ? this.currentTournamentMatch.player1 : this.currentTournamentMatch.player2;
-                gameMessage.textContent = `🏆 ${winnerName} wins! 🏆`;
-                gameMessage.className = 'text-4xl font-bold mb-8 text-white drop-shadow-lg text-center w-full';
+                const loserName = winner === 1 ? this.currentTournamentMatch.player2 : this.currentTournamentMatch.player1;
+                gameOverMessage.textContent = `${winnerName} wins!`;
+                
+                // Set player names and scores
+                if (gameOverPlayer1Name && gameOverPlayer2Name && gameOverPlayer1Score && gameOverPlayer2Score) {
+                    gameOverPlayer1Name.textContent = this.currentTournamentMatch.player1;
+                    gameOverPlayer2Name.textContent = this.currentTournamentMatch.player2;
+                    gameOverPlayer1Score.textContent = this.gameState?.scorePlayer1?.toString() || '0';
+                    gameOverPlayer2Score.textContent = this.gameState?.scorePlayer2?.toString() || '0';
+                }
             } else {
                 // Use regular 1v1 logic
                 if (winner === 1) {
-                    gameMessage.textContent = `🏆 ${this.currentUser.username} wins! 🏆`;
-                    gameMessage.className = 'text-4xl font-bold mb-8 text-white drop-shadow-lg text-center w-full';
-                    console.log('User won, showing result popup...');
+                    gameOverMessage.textContent = `${this.currentUser.username} wins!`;
                 } else {
-                    gameMessage.textContent = '🏆 Local Player wins! 🏆';
-                    gameMessage.className = 'text-4xl font-bold mb-8 text-white drop-shadow-lg text-center w-full';
-                    console.log('User lost, showing result popup...');
+                    gameOverMessage.textContent = 'Local Player wins!';
+                }
+                
+                // Set player names and scores
+                if (gameOverPlayer1Name && gameOverPlayer2Name && gameOverPlayer1Score && gameOverPlayer2Score) {
+                    gameOverPlayer1Name.textContent = this.currentUser.username || 'Player 1';
+                    gameOverPlayer2Name.textContent = 'Local Player';
+                    gameOverPlayer1Score.textContent = this.gameState?.scorePlayer1?.toString() || '0';
+                    gameOverPlayer2Score.textContent = this.gameState?.scorePlayer2?.toString() || '0';
                 }
             }
             
-            // Hide the start button and customize button
-            startButton.style.display = 'none';
-            const customizeBtn = document.getElementById('customizeBtn');
-            if (customizeBtn) {
-                customizeBtn.style.display = 'none';
+            // Show the modal
+            gameOverModal.classList.remove('hidden');
+            
+            // Set up button event listeners
+            const playAgainBtn = document.getElementById('playAgainBtn');
+            const goHomeBtn = document.getElementById('goHomeBtn');
+            
+            if (playAgainBtn) {
+                // Remove existing listeners by cloning the button
+                const newPlayAgainBtn = playAgainBtn.cloneNode(true) as HTMLButtonElement;
+                playAgainBtn.parentNode?.replaceChild(newPlayAgainBtn, playAgainBtn);
+                
+                // Add unique identifier to prevent multiple handlers
+                newPlayAgainBtn.setAttribute('data-handler-attached', 'true');
+                
+                newPlayAgainBtn.onclick = async () => {
+                    console.log('Play Again clicked, updating stats...');
+                    await this.updateUserStats(winner === 1);
+                    gameOverModal.classList.add('hidden');
+                    this.startNewGame();
+                };
             }
             
-            // Create Play Again button
-            const playAgainBtn = document.createElement('button');
-            playAgainBtn.id = 'playAgainBtn';
-            playAgainBtn.className = 'bg-powerpuff-green hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full text-xl transition-colors transform hover:scale-105 mr-4 shadow-lg';
-            playAgainBtn.textContent = '🎮 Play Again';
-            playAgainBtn.addEventListener('click', async () => {
-                console.log('Play Again clicked, updating stats...');
-                await this.updateUserStats(winner === 1);
-                this.startNewGame();
-            });
-            
-            // Create Go to Home button
-            const goHomeBtn = document.createElement('button');
-            goHomeBtn.id = 'goHomeBtn';
-            goHomeBtn.className = 'bg-powerpuff-purple hover:bg-purple-600 text-white font-bold py-3 px-6 rounded-full text-xl transition-colors transform hover:scale-105 shadow-lg';
-            goHomeBtn.textContent = '🏠 Go to Home';
-            goHomeBtn.addEventListener('click', async () => {
-                console.log('Go to Home clicked, updating stats...');
-                await this.updateUserStats(winner === 1);
-                this.showSection('homeSection');
-            });
-            
-            // Add buttons to the overlay with perfect centering
-            const buttonContainer = document.createElement('div');
-            buttonContainer.className = 'flex justify-center items-center space-x-4 w-full';
-            buttonContainer.style.marginTop = '2rem';
-            buttonContainer.appendChild(playAgainBtn);
-            buttonContainer.appendChild(goHomeBtn);
-            
-            // Remove old button container if it exists
-            const oldButtonContainer = gameOverlay.querySelector('.flex.justify-center.space-x-4, .flex.justify-center.items-center.space-x-4');
-            if (oldButtonContainer) {
-                oldButtonContainer.remove();
+            if (goHomeBtn) {
+                // Remove existing listeners by cloning the button
+                const newGoHomeBtn = goHomeBtn.cloneNode(true) as HTMLButtonElement;
+                goHomeBtn.parentNode?.replaceChild(newGoHomeBtn, goHomeBtn);
+                
+                // Add unique identifier to prevent multiple handlers
+                newGoHomeBtn.setAttribute('data-handler-attached', 'true');
+                
+                newGoHomeBtn.onclick = async () => {
+                    console.log('Go to Home clicked, updating stats...');
+                    await this.updateUserStats(winner === 1);
+                    gameOverModal.classList.add('hidden');
+                    this.goHome();
+                };
             }
-            
-            // Add the new button container to the overlay
-            gameOverlay.appendChild(buttonContainer);
         }
 
         console.log(`Game ended. Winner: Player ${winner}`);
@@ -2044,6 +2127,9 @@ class SimpleAuth {
         
         // Reset game state
         this.resetGameState();
+
+        // Update score display to reflect reset scores
+        this.updateScoreDisplay();
 
         // Show overlay with buttons
         const gameOverlay = document.getElementById('gameOverlay');
@@ -2330,13 +2416,8 @@ class SimpleAuth {
         // Removed - no longer needed
     }
 
-    private async updateUserStats(userWon: boolean): Promise<void> {
-        // Don't update stats for tournament games
-        if (this.currentTournamentMatch) {
-            console.log('Tournament game - skipping stats update');
-            return;
-        }
-
+        private async updateUserStats(userWon: boolean): Promise<void> {
+        // Update stats for all games including tournament games
         if (!this.currentUser) {
             console.log('No current user found, cannot update stats');
             return;
@@ -2346,9 +2427,7 @@ class SimpleAuth {
         console.log('User won:', userWon);
         console.log('Current user ID:', this.currentUser.id);
         console.log('Current cookies:', document.cookie);
-
-        // Show loading state
-        // this.showStatus('Updating game stats...', 'info'); // Removed popup message
+        console.log('Tournament game:', !!this.currentTournamentMatch);
 
         try {
             const response = await fetch('https://localhost/api/profile/update-stats', {
@@ -2521,6 +2600,12 @@ class SimpleAuth {
         bracket.push(firstRound);
         this.tournamentState.bracket = bracket;
         this.tournamentState.matches = [...firstRound];
+        this.tournamentState.currentRound = 0;
+        this.tournamentState.currentMatch = 0;
+
+        console.log(`Generated tournament bracket for ${players.length} players:`);
+        console.log(`First round: ${firstRound.length} matches`);
+        console.log(`Expected rounds: ${Math.ceil(Math.log2(players.length))}`);
 
         this.displayBracket();
     }
@@ -2592,7 +2677,14 @@ class SimpleAuth {
 
     private startCurrentMatch(): void {
         const currentMatch = this.tournamentState.matches[this.tournamentState.currentMatch];
-        if (!currentMatch) return;
+        if (!currentMatch) {
+            console.error('No current match found');
+            return;
+        }
+
+        console.log('Starting tournament match:', currentMatch);
+        console.log('Current match index:', this.tournamentState.currentMatch);
+        console.log('Total matches:', this.tournamentState.matches.length);
 
         // Hide current match section
         const currentMatchDiv = document.getElementById('currentMatch');
@@ -2636,16 +2728,20 @@ class SimpleAuth {
 
         // Reset game state completely
         this.resetGameState();
+        console.log('Game state reset for tournament game:', this.gameState);
 
         // Set tournament player names
         player1Name.textContent = match.player1;
         player2Name.textContent = match.player2;
 
-        // Reset scores
+        // Reset scores to game state values
         const player1Score = document.getElementById('player1Score');
         const player2Score = document.getElementById('player2Score');
-        if (player1Score) player1Score.textContent = '0';
-        if (player2Score) player2Score.textContent = '0';
+        if (player1Score) player1Score.textContent = this.gameState?.scorePlayer1?.toString() || '0';
+        if (player2Score) player2Score.textContent = this.gameState?.scorePlayer2?.toString() || '0';
+
+        // Update score display to ensure it's correct
+        this.updateScoreDisplay();
 
         // Show game overlay with tournament message
         gameOverlay.style.display = 'flex';
@@ -2672,6 +2768,7 @@ class SimpleAuth {
             
             newStartButton.addEventListener('click', () => {
                 console.log('Tournament game start button clicked');
+                console.log('Game state before tournament start:', this.gameState);
                 this.startLocalGame();
             });
         }
@@ -2709,9 +2806,25 @@ class SimpleAuth {
         const currentMatch = this.currentTournamentMatch;
         if (!currentMatch) return;
 
+        // Stop the game loop immediately
+        if (this.gameLoopInterval) {
+            clearInterval(this.gameLoopInterval);
+            this.gameLoopInterval = null;
+            console.log('Tournament game loop stopped');
+        }
+
         // Convert winner number to player name
         const winnerName = winner === 1 ? currentMatch.player1 : currentMatch.player2;
         currentMatch.winner = winnerName;
+
+        // Update stats for the current user if they participated
+        if (this.currentUser && (currentMatch.player1 === this.currentUser.username || currentMatch.player2 === this.currentUser.username)) {
+            const userWon = winnerName === this.currentUser.username;
+            console.log('Updating tournament stats for user:', this.currentUser.username, 'Won:', userWon);
+            this.updateUserStats(userWon);
+        } else {
+            console.log('Current user not participating in this tournament match, skipping stats update');
+        }
 
         // Update bracket display
         this.displayBracket();
@@ -2745,7 +2858,70 @@ class SimpleAuth {
             }
         }
 
-        this.showStatus(`${winnerName} wins the match!`, 'success');
+        // Don't show status popup for tournament games to avoid spam
+        // this.showStatus(`${winnerName} wins the match!`, 'success');
+    }
+
+    private handleTournamentPlayerLeave(playerName: string): void {
+        const currentMatch = this.currentTournamentMatch;
+        if (!currentMatch) return;
+
+        console.log(`Player ${playerName} left the tournament match`);
+
+        // Stop the game loop immediately
+        if (this.gameLoopInterval) {
+            clearInterval(this.gameLoopInterval);
+            this.gameLoopInterval = null;
+            console.log('Tournament game loop stopped due to player leaving');
+        }
+
+        // Determine the winner (the player who didn't leave)
+        const winnerName = currentMatch.player1 === playerName ? currentMatch.player2 : currentMatch.player1;
+        currentMatch.winner = winnerName;
+
+        console.log(`Winner by default: ${winnerName} (${playerName} left)`);
+
+        // Update stats for both players
+        if (this.currentUser) {
+            if (currentMatch.player1 === this.currentUser.username || currentMatch.player2 === this.currentUser.username) {
+                const userWon = winnerName === this.currentUser.username;
+                console.log('Updating tournament stats for user who stayed:', this.currentUser.username, 'Won:', userWon);
+                this.updateUserStats(userWon);
+            }
+        }
+
+        // Update bracket display
+        this.displayBracket();
+
+        // Go directly to tournament section
+        this.showSection('localTournamentSection');
+
+        // Hide game section
+        const gameSection = document.getElementById('gameSection');
+        if (gameSection) gameSection.classList.remove('active');
+
+        // Show match results section for current round
+        const matchResults = document.getElementById('matchResults');
+        if (matchResults) matchResults.classList.remove('hidden');
+
+        // Show results with bigger font
+        const resultsInfo = document.getElementById('resultsInfo');
+        if (resultsInfo) {
+            resultsInfo.innerHTML = `
+                <div class="text-4xl font-bold text-powerpuff-green mb-4">🏆 Winner: ${winnerName}</div>
+                <div class="text-2xl text-white mb-4">${currentMatch.player1} vs ${currentMatch.player2}</div>
+                <div class="text-lg text-gray-300">Match ${this.tournamentState.currentMatch + 1} completed</div>
+                <div class="text-sm text-red-400 mt-2">${playerName} left the match</div>
+            `;
+        }
+
+        // Check if this was the last match in the current round
+        if (this.tournamentState.currentMatch >= this.tournamentState.matches.length - 1) {
+            // Round is complete, automatically advance to next round
+            setTimeout(() => {
+                this.nextMatch();
+            }, 2000); // Show result briefly, then advance
+        }
     }
 
     private showTournamentMatchResults(match: {player1: string, player2: string, winner?: string}, winner: string): void {
@@ -2794,8 +2970,11 @@ class SimpleAuth {
         const currentRound = this.tournamentState.bracket[this.tournamentState.currentRound];
         const winners = currentRound.map(match => match.winner).filter(Boolean) as string[];
         
+        console.log(`Generating next round from ${winners.length} winners:`, winners);
+        
         // Only end tournament if we have exactly 1 winner
         if (winners.length === 1) {
+            console.log('Tournament complete - single winner found');
             // Tournament complete
             this.showTournamentResults();
             return;
@@ -2813,10 +2992,14 @@ class SimpleAuth {
             }
         }
 
+        console.log(`Generated ${nextRound.length} matches for next round:`, nextRound);
+
         this.tournamentState.bracket.push(nextRound);
         this.tournamentState.matches = [...nextRound];
         this.tournamentState.currentRound++;
         this.tournamentState.currentMatch = 0;
+
+        console.log(`Tournament state updated - Round: ${this.tournamentState.currentRound}, Match: ${this.tournamentState.currentMatch}`);
 
         this.displayBracket();
         this.showNextMatch();
@@ -2852,7 +3035,6 @@ class SimpleAuth {
                 
                 <div class="bg-white/20 rounded-lg p-4 mb-6">
                     <div class="text-lg font-bold text-white mb-2">Tournament Summary</div>
-                    <div class="text-sm text-gray-300 mb-2">Number of Players: ${playerCount}</div>
                     <div class="text-sm text-gray-300 mb-2">Players: ${allPlayers}</div>
                     <div class="text-sm text-powerpuff-green font-bold">Winner: ${winner}</div>
                 </div>
@@ -2869,12 +3051,19 @@ class SimpleAuth {
         // Add "Go Home" button
         const buttonContainer = document.querySelector('#tournamentResults .text-center');
         if (buttonContainer) {
+            // Remove any existing Go Home button
+            const existingGoHomeBtn = buttonContainer.querySelector('button[data-action="go-home"]');
+            if (existingGoHomeBtn) {
+                existingGoHomeBtn.remove();
+            }
+            
             const goHomeBtn = document.createElement('button');
             goHomeBtn.className = 'bg-powerpuff-pink hover:bg-pink-600 text-white font-bold py-3 px-8 rounded-lg transition-colors text-lg ml-4';
             goHomeBtn.textContent = '🏠 Go Home';
+            goHomeBtn.setAttribute('data-action', 'go-home');
             goHomeBtn.addEventListener('click', () => {
-                this.showSection('homeSection');
-                this.resetTournament();
+                console.log('Tournament results Go Home clicked');
+                this.goHome();
             });
             buttonContainer.appendChild(goHomeBtn);
         }
@@ -2914,7 +3103,6 @@ class SimpleAuth {
         // Set up the online game canvas and controls for remote game
         const canvas = document.getElementById('onlineGameCanvas') as HTMLCanvasElement;
         const ctx = canvas.getContext('2d');
-        const startButton = document.getElementById('onlineStartButton');
         const gameOverlay = document.getElementById('onlineGameOverlay');
         const gameMessage = document.getElementById('onlineGameMessage');
         const player1Name = document.getElementById('onlinePlayer1Name');
@@ -2924,7 +3112,6 @@ class SimpleAuth {
         console.log('Remote game elements found:', {
             canvas: !!canvas,
             ctx: !!ctx,
-            startButton: !!startButton,
             gameOverlay: !!gameOverlay,
             gameMessage: !!gameMessage,
             player1Name: !!player1Name,
@@ -2932,7 +3119,7 @@ class SimpleAuth {
             customizeButton: !!customizeButton
         });
 
-        if (!canvas || !ctx || !startButton || !gameOverlay || !gameMessage || !player1Name || !player2Name || !customizeButton) {
+        if (!canvas || !ctx || !gameOverlay || !gameMessage || !player1Name || !player2Name || !customizeButton) {
             console.error('Remote game elements not found');
             return;
         }
@@ -2942,7 +3129,7 @@ class SimpleAuth {
 
         // Set player names
         player1Name.textContent = this.currentUser.username || 'Player 1';
-        player2Name.textContent = 'Remote Player';
+        player2Name.textContent = 'Waiting for opponent...';
 
         // Reset scores
         const player1Score = document.getElementById('onlinePlayer1Score');
@@ -2963,10 +3150,8 @@ class SimpleAuth {
         }
 
         // Show the score display
-        const scoreDisplay = document.querySelector('#onlineGameSection .text-center.text-white.mb-8:nth-child(3)') as HTMLElement;
-        if (scoreDisplay) {
-            scoreDisplay.style.display = 'block';
-        }
+        console.log('🎮 Showing score display immediately');
+        this.showScoreDisplay();
 
         // Initialize remote game state
         this.initializeRemoteGameState();
@@ -2977,8 +3162,10 @@ class SimpleAuth {
         // Initialize remote game canvas
         this.initializeRemoteGameCanvas();
 
-        // Connect to remote game
-        this.connectToRemoteGame();
+        // Only auto-connect if not already connected
+        if (!this.onlineGameState.isConnected && !this.onlineGameState.gameSocket) {
+            this.connectToRemoteGame();
+        }
 
         // Set up input handling
         this.setupRemoteGameInput();
@@ -2990,7 +3177,7 @@ class SimpleAuth {
         this.onlineGameState = {
             matchmakingSocket: null,
             gameSocket: null,
-            matchId: 1, // Default match ID for remote game
+            matchId: '1', // Default match ID for remote game
             playerNumber: null,
             isConnected: false,
             isInMatch: false,
@@ -3009,18 +3196,7 @@ class SimpleAuth {
     }
 
     private setupRemoteGameControls(): void {
-        const startButton = document.getElementById('onlineStartButton');
         const customizeButton = document.getElementById('onlineCustomizeBtn');
-
-        if (startButton) {
-            startButton.addEventListener('click', () => {
-                console.log('Remote game start button clicked');
-                const gameOverlay = document.getElementById('onlineGameOverlay');
-                if (gameOverlay) {
-                    gameOverlay.style.display = 'none';
-                }
-            });
-        }
 
         if (customizeButton) {
             customizeButton.addEventListener('click', () => {
@@ -3060,8 +3236,8 @@ class SimpleAuth {
 
         if (!canvas || !ctx) return;
 
-        // Clear canvas
-        ctx.fillStyle = '#0f0f23';
+        // Clear canvas with custom table color
+        ctx.fillStyle = this.customizationSettings.tableColor;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         // Draw center line
@@ -3078,11 +3254,11 @@ class SimpleAuth {
         const myPaddleColor = this.customizationSettings.myPaddleColor;
         const opponentPaddleColor = this.customizationSettings.opponentPaddleColor;
         
-        // Left paddle
+        // Left paddle (15x100 to match local game)
         ctx.fillStyle = (this.onlineGameState.playerNumber === 1) ? myPaddleColor : opponentPaddleColor;
         ctx.fillRect(50, this.onlineGameState.gameState.leftPaddleY, 15, 100);
         
-        // Right paddle
+        // Right paddle (15x100 to match local game)
         ctx.fillStyle = (this.onlineGameState.playerNumber === 2) ? myPaddleColor : opponentPaddleColor;
         ctx.fillRect(735, this.onlineGameState.gameState.rightPaddleY, 15, 100);
 
@@ -3119,11 +3295,23 @@ class SimpleAuth {
     private connectToRemoteGame(): void {
         console.log('Connecting to remote game...');
         
-        const matchId = this.onlineGameState.matchId;
+        // Use a shared match ID for all players to join the same match
+        const matchId = '1'; // All players join match ID 1
+        this.onlineGameState.matchId = matchId;
+        
         const username = this.currentUser?.username || 'Anonymous';
-        const wsUrl = `ws://localhost/simple-remote/${matchId}?username=${encodeURIComponent(username)}`;
+        // Use nginx proxy for WebSocket connections
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/simple-remote/${matchId}?username=${encodeURIComponent(username)}`;
         
         console.log('Connecting to:', wsUrl);
+        console.log('Generated match ID:', matchId);
+        console.log('Current location:', window.location.href);
+        console.log('Protocol:', window.location.protocol);
+        console.log('Host:', window.location.host);
+
+        // Update status to show we're connecting
+        this.updateRemoteGameStatus('Connecting', 'Establishing connection...', true);
 
         try {
             this.onlineGameState.gameSocket = new WebSocket(wsUrl);
@@ -3143,24 +3331,38 @@ class SimpleAuth {
                     switch(data.type) {
                         case 'success':
                             this.onlineGameState.playerNumber = data.playerNumber;
-                            this.updateRemoteGameStatus(`Connected as Player ${data.playerNumber}`, 'Waiting for opponent...');
+                            this.updateRemoteGameStatus(`Connected as Player ${data.playerNumber}`, 'Searching for opponent...', true);
                             this.updatePlayerNames(data.player1Username, data.player2Username);
                             console.log(`🎮 Assigned as Player ${data.playerNumber}`);
                             break;
                             
                         case 'waiting':
                             console.log('⏳ Waiting for opponent...');
+                            this.updateRemoteGameStatus('Searching', 'Looking for an opponent to join...', true);
                             this.showWaitingForOpponent();
                             break;
                             
                         case 'ready':
                             console.log('🎯 Game ready! Both players connected.');
                             this.hideWaitingForOpponent();
+                            this.updateRemoteGameStatus('Match Found!', `Playing against ${data.player2Username || data.player1Username || 'opponent'}`, true);
                             this.showRemoteGameMessage('Both players ready! Game starting...');
+                            // Show score display when opponent is found
+                            this.showScoreDisplay();
                             // Update player names with the final usernames
                             if (data.player1Username && data.player2Username) {
                                 this.updatePlayerNames(data.player1Username, data.player2Username);
                             }
+                            // Initialize score display with 0-0
+                            this.onlineGameState.gameState.player1Score = 0;
+                            this.onlineGameState.gameState.player2Score = 0;
+                            this.updateRemoteScore();
+                            console.log('🎮 Game ready - score display should be visible');
+                            break;
+                            
+                        case 'ready-to-play':
+                            console.log('🎮 Ready to play message received');
+                            this.showRemoteGameMessage('Ready to play?');
                             break;
                             
                         case 'countdown':
@@ -3171,7 +3373,11 @@ class SimpleAuth {
                         case 'game-start':
                             console.log('🚀 Game started!');
                             this.hideCountdown();
+                            this.updateRemoteGameStatus('Playing', 'Game in progress', true);
                             this.startRemoteGame();
+                            // Make sure score display is visible and updated
+                            this.showScoreDisplay();
+                            this.updateRemoteScore();
                             break;
                             
                         case 'game-state':
@@ -3222,12 +3428,51 @@ class SimpleAuth {
                             this.refreshUserData();
                             break;
                             
+                        case 'game-restart':
+                            console.log('🔄 Game restart received:', data);
+                            this.hideRemoteGameMessage();
+                            this.hideScoreDisplay();
+                            this.updateRemoteGameStatus('Restarting', 'Both players agreed to play again!');
+                            break;
+                            
+                        case 'play-again-waiting':
+                            console.log('⏳ Play again waiting:', data);
+                            this.updateRemoteGameStatus('Waiting', 'Waiting for other player to agree...');
+                            break;
+                            
+                        case 'opponent-disconnected':
+                            console.log('🔌 Opponent disconnected:', data.message);
+                            this.onlineGameState.gameFinished = true;
+                            this.showRemoteGameMessage('Opponent disconnected. Game ended.');
+                            this.updateRemoteGameStatus('Disconnected', data.message);
+                            // Stop any ongoing game loop
+                            if (this.gameLoopInterval) {
+                                clearInterval(this.gameLoopInterval);
+                                this.gameLoopInterval = null;
+                            }
+                            break;
+                            
                         case 'disconnect':
                             console.log(`❌ ${data.message}`);
                             break;
                             
                         case 'error':
                             console.log(`🚨 Server Error: ${data.message}`);
+                            if (data.message === 'You are already in this match!') {
+                                this.updateRemoteGameStatus('Error', 'You are already in this match! Please wait for another player.');
+                                // Close the connection
+                                if (this.onlineGameState.gameSocket) {
+                                    this.onlineGameState.gameSocket.close();
+                                }
+                                // Retry connection after a delay
+                                console.log('🔄 Will retry connection in 3 seconds...');
+                                setTimeout(() => {
+                                    console.log('🔄 Retrying connection...');
+                                    this.connectToRemoteGame();
+                                }, 3000);
+                            } else {
+                                this.updateRemoteGameStatus('Error', data.message);
+                            }
                             break;
                             
                         default:
@@ -3263,12 +3508,14 @@ class SimpleAuth {
         }
     }
 
-    private updateRemoteGameStatus(status: string, info: string): void {
+    private updateRemoteGameStatus(status: string, info: string, hideConnectButton: boolean = false): void {
         const statusElement = document.getElementById('matchmakingStatus');
+        const connectBtn = document.getElementById('connectRemoteBtn');
+        
         if (statusElement) {
             const showSpinner = info.includes('Waiting') || info.includes('Searching');
-            const icon = status === 'Connected' ? '✅' : status === 'Error' ? '❌' : '🔌';
-            const color = status === 'Connected' ? 'text-powerpuff-green' : status === 'Error' ? 'text-powerpuff-red' : 'text-white';
+            const icon = status === 'Connected' ? '✅' : status === 'Error' ? '❌' : status === 'Searching' ? '🔍' : '🔌';
+            const color = status === 'Connected' ? 'text-powerpuff-green' : status === 'Error' ? 'text-powerpuff-red' : status === 'Searching' ? 'text-powerpuff-blue' : 'text-white';
             
             statusElement.innerHTML = `
                 <div class="text-center">
@@ -3280,29 +3527,31 @@ class SimpleAuth {
             `;
             statusElement.style.display = 'block';
         }
+        
+        if (connectBtn) {
+            if (hideConnectButton) {
+                connectBtn.style.display = 'none';
+            } else {
+                connectBtn.style.display = 'block';
+            }
+        }
     }
 
     private updateRemoteScore(): void {
         const player1Score = document.getElementById('onlinePlayer1Score');
         const player2Score = document.getElementById('onlinePlayer2Score');
         
-        // Show scores based on player number (Player 1 is left paddle, Player 2 is right paddle)
-        if (this.onlineGameState.playerNumber === 1) {
-            // Player 1 sees: [MyScore] VS [OpponentScore]
-            if (player1Score) {
-                player1Score.textContent = this.onlineGameState.gameState.player1Score.toString();
-            }
-            if (player2Score) {
-                player2Score.textContent = this.onlineGameState.gameState.player2Score.toString();
-            }
-        } else if (this.onlineGameState.playerNumber === 2) {
-            // Player 2 sees: [OpponentScore] VS [MyScore]
-            if (player1Score) {
-                player1Score.textContent = this.onlineGameState.gameState.player2Score.toString();
-            }
-            if (player2Score) {
-                player2Score.textContent = this.onlineGameState.gameState.player1Score.toString();
-            }
+        console.log(`🎮 Updating remote score - Player ${this.onlineGameState.playerNumber}:`);
+        console.log(`   Player1Score: ${this.onlineGameState.gameState.player1Score}, Player2Score: ${this.onlineGameState.gameState.player2Score}`);
+        console.log('Score elements found:', { player1Score: !!player1Score, player2Score: !!player2Score });
+        
+        // Use the same simple approach as the working backend/public/index.html
+        if (player1Score && player2Score) {
+            player1Score.textContent = this.onlineGameState.gameState.player1Score.toString();
+            player2Score.textContent = this.onlineGameState.gameState.player2Score.toString();
+            console.log(`   Updated scores: ${this.onlineGameState.gameState.player1Score} - ${this.onlineGameState.gameState.player2Score}`);
+        } else {
+            console.error('❌ Score elements not found!');
         }
     }
 
@@ -3384,23 +3633,16 @@ class SimpleAuth {
         const player1NameElement = document.getElementById('onlinePlayer1Name');
         const player2NameElement = document.getElementById('onlinePlayer2Name');
         
-        // Show names based on player number (Player 1 is left paddle, Player 2 is right paddle)
-        if (this.onlineGameState.playerNumber === 1) {
-            // Player 1 sees: [MyName] VS [OpponentName]
-            if (player1NameElement) {
-                player1NameElement.textContent = player1Name;
-            }
-            if (player2NameElement) {
-                player2NameElement.textContent = player2Name;
-            }
-        } else if (this.onlineGameState.playerNumber === 2) {
-            // Player 2 sees: [OpponentName] VS [MyName]
-            if (player1NameElement) {
-                player1NameElement.textContent = player2Name;
-            }
-            if (player2NameElement) {
-                player2NameElement.textContent = player1Name;
-            }
+        console.log(`🎮 Updating player names - Player ${this.onlineGameState.playerNumber}:`);
+        console.log(`   Player1Name: ${player1Name}, Player2Name: ${player2Name}`);
+        
+        // Simply update the names directly like the working backend/public/index.html
+        if (player1NameElement && player2NameElement) {
+            player1NameElement.textContent = player1Name;
+            player2NameElement.textContent = player2Name;
+            console.log(`   Updated names: ${player1Name} vs ${player2Name}`);
+        } else {
+            console.error('❌ Player name elements not found!');
         }
     }
 
@@ -3480,52 +3722,89 @@ class SimpleAuth {
         console.log('🎮 Remote game started successfully');
     }
 
-    private showGameOverScreen(data: any): void {
-        const gameMessage = document.getElementById('onlineGameMessage');
-        const gameOverlay = document.getElementById('onlineGameOverlay');
-        
-        if (gameMessage) {
-            gameMessage.innerHTML = `
-                <div class="text-center">
-                    <h2 class="text-3xl font-bold mb-4 text-white drop-shadow-lg">🏆 Game Over!</h2>
-                    <p class="text-xl mb-4 text-white">${data.winner} wins!</p>
-                </div>
-            `;
+    private showScoreDisplay(): void {
+        console.log('🎮 showScoreDisplay called');
+        const scoreDisplay = document.getElementById('onlineScoreDisplay');
+        console.log('🎮 Score display element found:', !!scoreDisplay);
+        if (scoreDisplay) {
+            console.log('🎮 Current display style:', scoreDisplay.style.display);
+            scoreDisplay.style.display = 'block';
+            console.log('🎮 Set display to block');
+            console.log('🎮 Score display shown');
+        } else {
+            console.error('❌ Score display element not found');
         }
+    }
+
+    private hideScoreDisplay(): void {
+        const scoreDisplay = document.getElementById('onlineScoreDisplay');
+        if (scoreDisplay) {
+            scoreDisplay.style.display = 'none';
+            console.log('🎮 Score display hidden');
+        }
+    }
+
+    private showGameOverScreen(data: any): void {
+        // Show the game over modal
+        const gameOverModal = document.getElementById('gameOverModal');
+        const gameOverIcon = document.getElementById('gameOverIcon');
+        const gameOverTitle = document.getElementById('gameOverTitle');
+        const gameOverMessage = document.getElementById('gameOverMessage');
+        const gameOverPlayer1Name = document.getElementById('gameOverPlayer1Name');
+        const gameOverPlayer2Name = document.getElementById('gameOverPlayer2Name');
+        const gameOverPlayer1Score = document.getElementById('gameOverPlayer1Score');
+        const gameOverPlayer2Score = document.getElementById('gameOverPlayer2Score');
         
-        if (gameOverlay) {
-            gameOverlay.style.display = 'flex';
+        if (gameOverModal && gameOverIcon && gameOverTitle && gameOverMessage) {
+            // Set winner icon and title
+            gameOverIcon.textContent = '🏆';
+            gameOverTitle.textContent = 'Game Over!';
+            gameOverMessage.textContent = `${data.winner} wins!`;
             
-            // Remove any existing buttons to prevent duplicates
-            const existingButtons = gameOverlay.querySelectorAll('button');
-            existingButtons.forEach(button => button.remove());
+            // Set player names and scores
+            if (gameOverPlayer1Name && gameOverPlayer2Name && gameOverPlayer1Score && gameOverPlayer2Score) {
+                gameOverPlayer1Name.textContent = data.player1Username || 'Player 1';
+                gameOverPlayer2Name.textContent = data.player2Username || 'Player 2';
+                gameOverPlayer1Score.textContent = data.winnerScore.toString();
+                gameOverPlayer2Score.textContent = data.loserScore.toString();
+            }
             
-            // Create button container
-            const buttonContainer = document.createElement('div');
-            buttonContainer.className = 'flex justify-center space-x-4 mt-6';
+            // Show the modal
+            gameOverModal.classList.remove('hidden');
             
-            // Add "Play Again" button
-            const playAgainButton = document.createElement('button');
-            playAgainButton.className = 'bg-powerpuff-green hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full text-lg transition-colors shadow-lg';
-            playAgainButton.textContent = '🎮 Play Again';
-            playAgainButton.onclick = () => {
-                this.restartRemoteGame();
-            };
+            // Set up button event listeners
+            const playAgainBtn = document.getElementById('playAgainBtn');
+            const goHomeBtn = document.getElementById('goHomeBtn');
             
-            // Add "Go Home" button
-            const goHomeButton = document.createElement('button');
-            goHomeButton.className = 'bg-powerpuff-red hover:bg-red-600 text-white font-bold py-3 px-6 rounded-full text-lg transition-colors shadow-lg';
-            goHomeButton.textContent = '🏠 Go Home';
-            goHomeButton.onclick = () => {
-                this.goHome();
-            };
+            if (playAgainBtn) {
+                playAgainBtn.onclick = () => {
+                    // Send play again request to server
+                    if (this.onlineGameState.gameSocket && this.onlineGameState.gameSocket.readyState === 1) {
+                        const playAgainMessage = JSON.stringify({
+                            type: 'play-again'
+                        });
+                        this.onlineGameState.gameSocket.send(playAgainMessage);
+                        console.log('Sent play again request to server');
+                    }
+                    
+                    // Hide the modal
+                    gameOverModal.classList.add('hidden');
+                };
+            }
             
-            // Add buttons to container
-            buttonContainer.appendChild(playAgainButton);
-            buttonContainer.appendChild(goHomeButton);
-            
-            // Add container to overlay
-            gameOverlay.appendChild(buttonContainer);
+            if (goHomeBtn) {
+                // Remove existing listeners by cloning the button
+                const newGoHomeBtn = goHomeBtn.cloneNode(true) as HTMLButtonElement;
+                goHomeBtn.parentNode?.replaceChild(newGoHomeBtn, goHomeBtn);
+                
+                // Add unique identifier to prevent multiple handlers
+                newGoHomeBtn.setAttribute('data-handler-attached', 'true');
+                
+                newGoHomeBtn.onclick = () => {
+                    console.log('Remote game Go to Home clicked');
+                    this.goHome();
+                };
+            }
         }
     }
 
@@ -3547,8 +3826,9 @@ class SimpleAuth {
         // Update score display
         this.updateRemoteScore();
         
-        // Hide game over screen
+        // Hide game over screen and score display
         this.hideRemoteGameMessage();
+        this.hideScoreDisplay();
         
         // Reconnect to game
         if (this.onlineGameState.gameSocket) {
@@ -3561,18 +3841,25 @@ class SimpleAuth {
     }
 
     private goHome(): void {
+        // Prevent multiple calls
+        if (this.isGoingHome) {
+            console.log('Already going home, ignoring duplicate call');
+            return;
+        }
+        
+        this.isGoingHome = true;
         console.log('Going home...');
         
-        // Close game connection
+        // Close remote game connection if active
         if (this.onlineGameState.gameSocket) {
             this.onlineGameState.gameSocket.close();
         }
         
-        // Reset game state
+        // Reset remote game state
         this.onlineGameState = {
             matchmakingSocket: null,
             gameSocket: null,
-            matchId: 1,
+            matchId: '1',
             playerNumber: null,
             isConnected: false,
             isInMatch: false,
@@ -3589,8 +3876,41 @@ class SimpleAuth {
             }
         };
         
+        // Reset local game state
+        if (this.gameLoopInterval) {
+            clearInterval(this.gameLoopInterval);
+            this.gameLoopInterval = null;
+        }
+        this.resetGameState();
+        
+        // Clear tournament match reference
+        this.currentTournamentMatch = null;
+        
+        // Hide all game overlays and modals
+        this.hideScoreDisplay();
+        const gameOverModal = document.getElementById('gameOverModal');
+        if (gameOverModal) {
+            gameOverModal.classList.add('hidden');
+        }
+        
+        // Close customization modal if open
+        this.hideCustomizationModal();
+        
+        // Hide game section
+        const gameSection = document.getElementById('gameSection');
+        if (gameSection) {
+            gameSection.classList.remove('active');
+        }
+        
         // Show home section
         this.showSection('homeSection');
+        
+        // Reset the flag after a short delay
+        setTimeout(() => {
+            this.isGoingHome = false;
+        }, 1000);
+        
+        console.log('Successfully returned to home');
     }
 
     // REMOVED: Old matchmaking method - replaced by initializeRemoteGame

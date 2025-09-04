@@ -132,15 +132,7 @@
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-powerpuff-pink via-powerpuff-blue to-powerpuff-green min-h-screen">
-    <!-- Balanced Animated Hearts Background -->
-    <div class="fixed inset-0 -z-10 opacity-35 pointer-events-none">
-        <img src="hearts.gif" alt="Animated Hearts" class="w-full h-full object-cover">
-    </div>
-    
-    <!-- Subtle Colorful Gradient Overlay -->
-    <div class="fixed inset-0 bg-gradient-to-br from-powerpuff-pink/25 via-powerpuff-blue/20 to-powerpuff-green/25 pointer-events-none"></div>
-
+<body class="min-h-screen">
     <div id="app">
         <!-- Modern Pop-up Notification System -->
         <div id="notificationOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-[9999] hidden flex items-center justify-center" style="position: fixed !important; z-index: 9999 !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; filter: none !important;">
@@ -166,11 +158,10 @@
             <div class="container mx-auto px-4 py-8">
                 <div class="text-center mb-8">
                     <img src="logo.png" alt="Powerpuff Girls Logo" class="mx-auto h-32 mb-4">
-                    <h1 class="text-6xl font-logo text-white mb-4 animate-bounce-slow">Welcome to Powerpuff Pong!</h1>
-                    <p class="text-2xl text-white mb-8">Sugar, Spice, and Everything Pong!</p>
+                    <h1 class="text-6xl font-logo text-white mb-4 animate-bounce-slow">Welcome to pong!</h1>
                 </div>
 
-                <div class="max-w-md mx-auto bg-white/20 rounded-2xl p-8 backdrop-blur-md border border-white/30 shadow-2xl">
+                <div class="max-w-md mx-auto bg-gray-600/50 rounded-2xl p-8 border border-white/30 shadow-2xl">
                     <h2 class="text-4xl font-logo text-powerpuff-pink mb-6 text-center drop-shadow-lg">Create Your Account</h2>
                     
                     <form id="registrationForm" class="space-y-6">
@@ -237,11 +228,10 @@
             <div class="container mx-auto px-4 py-8">
                 <div class="text-center mb-8">
                     <img src="logo.png" alt="Powerpuff Girls Logo" class="mx-auto h-32 mb-4">
-                    <h1 class="text-6xl font-logo text-white mb-4 animate-bounce-slow">Welcome Back!</h1>
-                    <p class="text-2xl text-white mb-8">Ready to play some Pong?</p>
+                    <h1 class="text-6xl font-logo text-white mb-4 animate-bounce-slow">Ready to play some Pong?</h1>
                 </div>
 
-                <div class="max-w-md mx-auto bg-white/20 rounded-2xl p-8 backdrop-blur-md border border-white/30 shadow-2xl">
+                <div class="max-w-md mx-auto bg-gray-600/50 rounded-2xl p-8 border border-white/30 shadow-2xl">
                     <h2 class="text-4xl font-logo text-powerpuff-blue mb-6 text-center drop-shadow-lg">Login</h2>
                     
                     <form id="loginForm" class="space-y-6">
@@ -276,9 +266,11 @@
         </div>
 
         <!-- Main App (After Authentication) -->
-        <div id="mainApp" class="page">
+        <div id="mainApp" class="page" style="background-image: url('/avatars/PPG_20th_Still_Xiya_01-1200x675.webp'); background-size: cover; background-position: center; background-repeat: no-repeat; background-attachment: fixed; min-height: 100vh; position: relative;">
+            <!-- Subtle overlay to improve text readability -->
+            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255, 255, 255, 0.2); z-index: 0; pointer-events: none;"></div>
             <!-- Navigation Bar -->
-            <nav class="flex items-center justify-between px-8 py-4 bg-white/25 backdrop-blur-md border-b border-white/30 shadow-lg mb-4">
+            <nav class="flex items-center justify-between px-8 py-4 bg-gray-600/70 backdrop-blur-sm border-b border-white/30 shadow-lg mb-4" style="position: relative; z-index: 10;">
                 <div class="flex items-center space-x-4">
                     <img src="logo.png" alt="Powerpuff Girls Logo" class="h-12 w-auto" id="mainLogo">
                     <span class="text-3xl font-logo text-powerpuff-pink">Powerpuff Pong</span>
@@ -292,7 +284,7 @@
             </nav>
 
             <!-- Home Section -->
-            <div id="homeSection" class="section active">
+            <div id="homeSection" class="section active" style="position: relative; z-index: 10;">
                 <div class="container mx-auto px-4 py-8">
                     <!-- Welcome Message -->
                     <div class="text-center mb-12">
@@ -302,68 +294,68 @@
                         <p class="text-xl text-white opacity-90 mb-8">Ready to play the ultimate Pong experience?</p>
                         
                         <!-- Game Statistics -->
-                        <div class="bg-white/30 rounded-2xl p-6 backdrop-blur-md border border-white/40 shadow-xl max-w-2xl mx-auto mb-8">
-                            <h3 class="text-xl font-bold text-white mb-3 text-center">Your Stats</h3>
+                        <div class="bg-gray-700/60 rounded-2xl p-12 border border-white/20 shadow-xl max-w-4xl mx-auto mb-8">
+                            <h3 class="text-3xl font-bold text-white mb-6 text-center">Your Stats</h3>
                             <div class="flex justify-center space-x-8">
                                 <div class="text-center">
-                                    <div class="text-2xl font-bold text-powerpuff-pink" id="homeGamesPlayed">0</div>
-                                    <div class="text-white text-xs">Games</div>
+                                    <div class="text-4xl font-bold text-powerpuff-pink" id="homeGamesPlayed">0</div>
+                                    <div class="text-white text-lg">Games</div>
                                 </div>
-                                <div class="text-center">
-                                    <div class="text-2xl font-bold text-powerpuff-green" id="homeWins">0</div>
-                                    <div class="text-white text-xs">Wins</div>
-                                </div>
-                                <div class="text-center">
-                                    <div class="text-2xl font-bold text-powerpuff-blue" id="homeLosses">0</div>
-                                    <div class="text-white text-xs">Losses</div>
+                                                                    <div class="text-center">
+                                        <div class="text-4xl font-bold text-powerpuff-green" id="homeWins">0</div>
+                                        <div class="text-white text-lg">Wins</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-4xl font-bold text-powerpuff-blue" id="homeLosses">0</div>
+                                        <div class="text-white text-lg">Losses</div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Game Options Grid -->
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-2xl mx-auto">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
                         <!-- 1 vs 1 Local Game -->
-                        <div class="bg-white/25 rounded-xl p-4 backdrop-blur-md border border-white/35 transition-all duration-300 cursor-pointer transform hover:scale-105 hover:bg-white/35 hover:shadow-xl group" data-game-type="1v1">
+                        <div class="bg-gray-600/50 rounded-xl p-10 border border-white/20 transition-all duration-300 cursor-pointer transform hover:scale-105 hover:bg-gray-700/70 hover:shadow-xl group" data-game-type="1v1">
                             <div class="text-center">
                                 <div class="w-8 h-8 bg-powerpuff-pink rounded-lg mx-auto mb-2 flex items-center justify-center transition-all duration-300 group-hover:scale-125 group-hover:rotate-6 group-hover:bg-white group-hover:shadow-md">
                                     <span class="text-sm group-hover:text-powerpuff-pink transition-colors">🎮</span>
                                 </div>
-                                <h3 class="text-xs font-bold text-white mb-1 group-hover:text-powerpuff-pink transition-colors">1 vs 1</h3>
-                                <p class="text-white text-xs opacity-80 group-hover:opacity-100 transition-opacity">Local</p>
+                                <h3 class="text-lg font-bold text-white mb-2 group-hover:text-powerpuff-pink transition-colors">1 vs 1</h3>
+                                <p class="text-white text-base opacity-80 group-hover:opacity-100 transition-opacity">Local</p>
                             </div>
                         </div>
 
                         <!-- 1 vs AI -->
-                        <div class="bg-white/35 rounded-xl p-4 backdrop-blur-md border border-white/40 transition-all duration-300 cursor-pointer transform hover:scale-105 hover:bg-white/45 hover:shadow-xl group" data-game-type="1vAI">
+                        <div class="bg-gray-600/50 rounded-xl p-10 border border-white/20 transition-all duration-300 cursor-pointer transform hover:scale-105 hover:bg-gray-700/70 hover:shadow-xl group" data-game-type="1vAI">
                             <div class="text-center">
                                 <div class="w-8 h-8 bg-powerpuff-blue rounded-lg mx-auto mb-2 flex items-center justify-center transition-all duration-300 group-hover:scale-125 group-hover:-rotate-6 group-hover:bg-white group-hover:shadow-md">
                                     <span class="text-sm group-hover:text-powerpuff-blue transition-colors">🤖</span>
                                 </div>
-                                <h3 class="text-xs font-bold text-white mb-1 group-hover:text-powerpuff-blue transition-colors">1 vs AI</h3>
-                                <p class="text-white text-xs opacity-80 group-hover:opacity-100 transition-opacity">Computer</p>
+                                <h3 class="text-lg font-bold text-white mb-2 group-hover:text-powerpuff-blue transition-colors">1 vs AI</h3>
+                                <p class="text-white text-base opacity-80 group-hover:opacity-100 transition-opacity">Computer</p>
                             </div>
                         </div>
 
                         <!-- Online Game -->
-                        <div class="bg-white/35 rounded-xl p-4 backdrop-blur-md border border-white/40 transition-all duration-300 cursor-pointer transform hover:scale-105 hover:bg-white/45 hover:shadow-xl group" data-game-type="online">
+                        <div class="bg-gray-600/50 rounded-xl p-10 border border-white/20 transition-all duration-300 cursor-pointer transform hover:scale-105 hover:bg-gray-700/70 hover:shadow-xl group" data-game-type="online">
                             <div class="text-center">
                                 <div class="w-8 h-8 bg-powerpuff-green rounded-lg mx-auto mb-2 flex items-center justify-center transition-all duration-300 group-hover:scale-125 group-hover:rotate-6 group-hover:bg-white group-hover:shadow-md">
                                     <span class="text-sm group-hover:text-powerpuff-green transition-colors">🔗</span>
                                 </div>
-                                <h3 class="text-xs font-bold text-white mb-1 group-hover:text-powerpuff-green transition-colors">Remote Game</h3>
-                                <p class="text-white text-xs opacity-80 group-hover:opacity-100 transition-opacity">Direct Connect</p>
+                                <h3 class="text-lg font-bold text-white mb-2 group-hover:text-powerpuff-green transition-colors">Remote Game</h3>
+                                <p class="text-white text-base opacity-80 group-hover:opacity-100 transition-opacity">Direct Connect</p>
                             </div>
                         </div>
 
                         <!-- Tournament -->
-                        <div class="bg-white/35 rounded-xl p-4 backdrop-blur-md border border-white/40 transition-all duration-300 cursor-pointer transform hover:scale-105 hover:bg-white/45 hover:shadow-xl group" data-game-type="tournament">
+                        <div class="bg-gray-600/50 rounded-xl p-10 border border-white/20 transition-all duration-300 cursor-pointer transform hover:scale-105 hover:bg-gray-700/70 hover:shadow-xl group" data-game-type="tournament">
                             <div class="text-center">
                                 <div class="w-8 h-8 bg-powerpuff-purple rounded-lg mx-auto mb-2 flex items-center justify-center transition-all duration-300 group-hover:scale-125 group-hover:-rotate-6 group-hover:bg-white group-hover:shadow-md animate-pulse">
                                     <span class="text-xs group-hover:text-powerpuff-purple transition-colors">🏆</span>
                                 </div>
-                                <h3 class="text-xs font-bold text-white mb-1 group-hover:text-powerpuff-purple transition-colors">Tournament</h3>
-                                <p class="text-white text-xs opacity-80 group-hover:opacity-100 transition-opacity">Competitive</p>
+                                <h3 class="text-lg font-bold text-white mb-2 group-hover:text-powerpuff-purple transition-colors">Tournament</h3>
+                                <p class="text-white text-base opacity-80 group-hover:opacity-100 transition-opacity">Competitive</p>
                             </div>
                         </div>
                     </div>
@@ -371,16 +363,16 @@
                     <!-- Game Instructions -->
                     <div class="mt-12 text-center">
                         <h2 class="text-3xl font-logo text-white mb-4">How to Play</h2>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-                            <div class="bg-white bg-opacity-10 rounded-lg p-4">
-                                <h3 class="text-lg font-bold text-white mb-2">Local Game (1v1)</h3>
-                                <p class="text-white text-sm">You play with W/S keys</p>
-                                <p class="text-white text-sm">Other player uses Up/Down arrow keys</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+                            <div class="bg-gray-600/50 rounded-lg p-10">
+                                <h3 class="text-2xl font-bold text-white mb-4">Local Game (1v1)</h3>
+                                <p class="text-white text-lg">You play with W/S keys</p>
+                                <p class="text-white text-lg">Other player uses Up/Down arrow keys</p>
                             </div>
-                            <div class="bg-white bg-opacity-10 rounded-lg p-4">
-                                <h3 class="text-lg font-bold text-white mb-2">Remote Game</h3>
-                                <p class="text-white text-sm">Direct connection to specific match</p>
-                                <p class="text-white text-sm">Use W/S or Arrow keys</p>
+                            <div class="bg-gray-600/50 rounded-lg p-10">
+                                <h3 class="text-2xl font-bold text-white mb-4">Remote Game</h3>
+                                <p class="text-white text-lg">Direct connection to specific match</p>
+                                <p class="text-white text-lg">Use W/S or Arrow keys</p>
                             </div>
                         </div>
                     </div>
@@ -398,12 +390,11 @@
                         <h2 class="text-4xl font-logo text-powerpuff-purple mb-6 text-center">🏆 Local Tournament</h2>
                         
                         <!-- Tournament Setup -->
-                        <div class="bg-white/25 rounded-2xl p-8 backdrop-blur-md border border-white/35 shadow-xl mb-6">
+                        <div class="bg-gray-600/50 rounded-2xl p-8 border border-white/30 shadow-xl mb-6">
                             <h3 class="text-2xl font-bold text-white mb-4 text-center">Tournament Setup</h3>
                             
                             <!-- Player Count Selection -->
                             <div class="mb-6">
-                                <label class="block text-white text-lg mb-3">Number of Players:</label>
                                 <div class="flex justify-center space-x-4">
                                     <button type="button" id="tournament4Players" class="bg-powerpuff-pink hover:bg-powerpuff-purple text-white font-bold py-3 px-6 rounded-lg transition-colors border-2 border-white/30">
                                         4 Players
@@ -429,7 +420,7 @@
                         </div>
 
                         <!-- Tournament Bracket -->
-                        <div id="tournamentBracket" class="bg-white/25 rounded-2xl p-8 backdrop-blur-md border border-white/35 shadow-xl mb-6 hidden">
+                        <div id="tournamentBracket" class="bg-gray-600/50 rounded-2xl p-8 border border-white/30 shadow-xl mb-6 hidden">
                             <h3 class="text-2xl font-bold text-white mb-4 text-center">Tournament Bracket</h3>
                             <div id="bracketContainer" class="flex justify-center">
                                 <!-- Bracket will be generated here -->
@@ -437,7 +428,7 @@
                         </div>
 
                         <!-- Current Match -->
-                        <div id="currentMatch" class="bg-white/25 rounded-2xl p-8 backdrop-blur-md border border-white/35 shadow-xl mb-6 hidden">
+                        <div id="currentMatch" class="bg-gray-600/50 rounded-2xl p-8 border border-white/30 shadow-xl mb-6 hidden">
                             <h3 class="text-2xl font-bold text-white mb-4 text-center">Current Match</h3>
                             <div id="matchInfo" class="text-center text-white text-lg mb-4">
                                 <!-- Match info will be displayed here -->
@@ -450,7 +441,7 @@
                         </div>
 
                         <!-- Match Results -->
-                        <div id="matchResults" class="bg-white/25 rounded-2xl p-8 backdrop-blur-md border border-white/35 shadow-xl mb-6 hidden">
+                        <div id="matchResults" class="bg-gray-600/50 rounded-2xl p-8 border border-white/30 shadow-xl mb-6 hidden">
                             <h3 class="text-2xl font-bold text-white mb-4 text-center">Match Results</h3>
                             <div id="resultsInfo" class="text-center text-white text-lg mb-4">
                                 <!-- Results will be displayed here -->
@@ -463,7 +454,7 @@
                         </div>
 
                         <!-- Tournament Results -->
-                        <div id="tournamentResults" class="bg-white/25 rounded-2xl p-8 backdrop-blur-md border border-white/35 shadow-xl hidden">
+                        <div id="tournamentResults" class="bg-gray-600/50 rounded-2xl p-8 border border-white/30 shadow-xl hidden">
                             <h3 class="text-2xl font-bold text-white mb-4 text-center">🏆 Tournament Champion</h3>
                             <div id="championInfo" class="text-center text-white text-lg mb-4">
                                 <!-- Champion will be displayed here -->
@@ -487,7 +478,7 @@
                     <div class="max-w-6xl mx-auto">
                         
                         <!-- Search Users Section -->
-                        <div class="bg-white/30 rounded-2xl p-6 backdrop-blur-md border border-white/40 shadow-xl mb-6">
+                        <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl mb-6">
                             <h3 class="text-2xl font-bold text-white mb-4">🔍 Search Users</h3>
                             <div class="mb-4">
                                 <input type="text" id="searchUsersInput" placeholder="Search users by username..." 
@@ -502,7 +493,7 @@
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             
                             <!-- My Friends -->
-                            <div class="bg-white/30 rounded-2xl p-6 backdrop-blur-md border border-white/40 shadow-xl">
+                            <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl">
                                 <h3 class="text-2xl font-bold text-white mb-4">👥 My Friends</h3>
                                 <div id="friendsList" class="space-y-3">
                                     <div class="text-center text-white">
@@ -513,7 +504,7 @@
                             </div>
 
                             <!-- Friend Requests -->
-                            <div class="bg-white/30 rounded-2xl p-6 backdrop-blur-md border border-white/40 shadow-xl">
+                            <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl">
                                 <h3 class="text-2xl font-bold text-white mb-4">📨 My Requests</h3>
                                 <div id="friendRequests" class="space-y-3">
                                     <div class="text-center text-white">
@@ -533,11 +524,11 @@
             <!-- Tournaments Section -->
             <div id="tournamentsSection" class="section">
                 <div class="container mx-auto px-4 py-8">
-                    <div class="max-w-4xl mx-auto bg-white/15 rounded-2xl p-6 backdrop-blur-md border border-white/20 shadow-xl">
+                    <div class="max-w-4xl mx-auto bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl">
                         <h2 class="text-4xl font-logo text-powerpuff-green mb-6 text-center">Tournaments</h2>
                         
                         <!-- Create Tournament -->
-                        <div class="mb-6 p-4 bg-white/20 rounded-xl backdrop-blur-md border border-white/20">
+                        <div class="mb-6 p-4 bg-gray-600/50 rounded-xl border border-white/30">
                             <h3 class="text-xl font-bold text-white mb-4">Create Tournament</h3>
                             <form id="createTournamentForm" class="space-y-4">
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -565,7 +556,7 @@
                         </div>
 
                         <!-- Join Tournament -->
-                        <div class="mb-6 p-4 bg-white/20 rounded-xl backdrop-blur-md border border-white/20">
+                        <div class="mb-6 p-4 bg-gray-600/50 rounded-xl border border-white/30">
                             <h3 class="text-xl font-bold text-white mb-4">Join Tournament</h3>
                             <form id="joinTournamentForm" class="flex gap-2">
                                 <input type="text" id="tournamentId" placeholder="Enter Tournament ID" required 
@@ -587,7 +578,7 @@
                 <div class="container mx-auto px-4 py-8">
                     <div class="max-w-2xl mx-auto">
                         <!-- Profile Header -->
-                        <div class="bg-white/15 rounded-2xl p-6 backdrop-blur-md border border-white/20 shadow-xl text-center mb-6">
+                        <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl text-center mb-6">
                             <div class="relative inline-block">
                                 <img id="profileAvatar" src="https://ui-avatars.com/api/?name=Player" alt="Avatar" class="mx-auto h-24 w-24 rounded-full mb-4 border-4 border-white border-opacity-30 object-cover">
                                 <div class="absolute -bottom-2 -right-2">
@@ -625,7 +616,7 @@
                         </div>
                         
                         <!-- Profile Settings -->
-                        <div class="bg-white/15 rounded-2xl p-6 backdrop-blur-md border border-white/20 shadow-xl">
+                        <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl">
                             <h3 class="text-2xl font-bold text-white mb-6 text-center">Profile Settings</h3>
                             
                             <!-- Change Username -->
@@ -705,7 +696,7 @@
                             
                             <canvas id="gameCanvas" width="800" height="600" class="rounded-lg"></canvas>
                             
-                            <!-- Game Overlay - Just Start Button -->
+                            <!-- Game Overlay -->
                             <div id="gameOverlay" class="absolute inset-0 flex items-center justify-center rounded-lg z-10" style="display: flex !important; align-items: center; justify-content: center; flex-direction: column;">
                                 <div class="text-center w-full flex flex-col items-center justify-center">
                                     <h2 id="gameMessage" class="text-3xl font-bold mb-6 text-white drop-shadow-lg"></h2>
@@ -725,39 +716,20 @@
                     <!-- Matchmaking Status -->
                     <div class="text-center text-white mb-8">
                         <h2 class="text-4xl font-logo text-powerpuff-green mb-4">🔗 Remote Game</h2>
-                        <p class="text-xl mb-6">Connect directly to match #1</p>
-                        
-                        <!-- Matchmaking Status Display -->
-                        <div class="bg-white bg-opacity-10 rounded-lg p-6 backdrop-blur-sm max-w-md mx-auto mb-6">
-                            <div id="matchmakingStatus" class="text-center">
-                                <div class="text-3xl mb-4">🔍</div>
-                                <h3 class="text-xl font-bold mb-2">Searching for opponent...</h3>
-                                <div class="mt-4">
-                                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-powerpuff-green mx-auto"></div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Matchmaking Controls -->
-                        <div class="flex justify-center space-x-4">
-                            <button id="cancelMatchmakingBtn" class="bg-powerpuff-red hover:bg-red-600 text-white font-bold py-3 px-6 rounded-full text-lg transition-colors shadow-lg">
-                                ❌ Disconnect
-                            </button>
-                        </div>
                     </div>
 
-                    <!-- Online Score Display -->
-                    <div class="text-center text-white mb-8" style="display: none;">
+                    <!-- Online Score Display - At the top -->
+                    <div id="onlineScoreDisplay" class="text-center text-white mb-8" style="display: block;">
                         <div class="flex justify-center space-x-4">
                             <div class="bg-powerpuff-pink bg-opacity-50 rounded-lg p-4">
                                 <h3 class="text-lg font-bold">Score</h3>
                                 <div class="flex justify-center space-x-8">
                                     <div>
-                                        <p class="text-sm" id="onlinePlayer1Name">Player 1</p>
+                                        <p class="text-sm" id="onlinePlayer1Name">Waiting...</p>
                                         <p id="onlinePlayer1Score" class="text-2xl font-bold">0</p>
                                     </div>
                                     <div>
-                                        <p class="text-sm" id="onlinePlayer2Name">Player 2</p>
+                                        <p class="text-sm" id="onlinePlayer2Name">Waiting...</p>
                                         <p id="onlinePlayer2Score" class="text-2xl font-bold">0</p>
                                     </div>
                                 </div>
@@ -779,9 +751,6 @@
                             <div id="onlineGameOverlay" class="absolute inset-0 flex items-center justify-center rounded-lg z-10" style="display: none;">
                                 <div class="text-center">
                                     <h2 id="onlineGameMessage" class="text-3xl font-bold mb-6 text-white drop-shadow-lg"></h2>
-                                    <button id="onlineStartButton" class="bg-powerpuff-green hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full text-xl transition-colors shadow-lg">
-                                        Start Online Game
-                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -823,6 +792,41 @@
                     <div class="text-center">
                         <button id="closeCustomizeBtn" class="bg-gradient-to-r from-gray-400 to-gray-600 hover:from-gray-500 hover:to-gray-700 text-white font-bold py-3 px-8 rounded-full transition-all transform hover:scale-105">
                             ✨ Done
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Over Modal -->
+            <div id="gameOverModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+                <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+                    <div class="text-center mb-6">
+                        <div id="gameOverIcon" class="text-6xl mb-4">🏆</div>
+                        <h3 id="gameOverTitle" class="text-2xl font-bold text-gray-800 mb-2">Game Over!</h3>
+                        <p id="gameOverMessage" class="text-gray-600 mb-4">The game has ended</p>
+                        
+                        <!-- Score Display -->
+                        <div class="bg-gray-100 rounded-lg p-4 mb-6">
+                            <div class="flex justify-center space-x-8">
+                                <div class="text-center">
+                                    <p class="text-sm text-gray-600" id="gameOverPlayer1Name">Player 1</p>
+                                    <p id="gameOverPlayer1Score" class="text-2xl font-bold text-gray-800">0</p>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-sm text-gray-600" id="gameOverPlayer2Name">Player 2</p>
+                                    <p id="gameOverPlayer2Score" class="text-2xl font-bold text-gray-800">0</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex space-x-4">
+                        <button id="playAgainBtn" class="flex-1 bg-powerpuff-green hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">
+                            🎮 Play Again
+                        </button>
+                        <button id="goHomeBtn" class="flex-1 bg-powerpuff-blue hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">
+                            🏠 Go Home
                         </button>
                     </div>
                 </div>
