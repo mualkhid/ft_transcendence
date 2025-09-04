@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Powerpuff Girls Pong - Remote Game Client</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'powerpuff-pink': '#ff69b4',
+                        'powerpuff-blue': '#87ceeb',
+                        'powerpuff-green': '#90ee90',
+                        'powerpuff-purple': '#9370db'
+                    },
+                    fontFamily: {
+                        'logo': ['Comic Sans MS', 'cursive']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-900 via-blue-900 to-pink-900 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center text-white mb-8">
+            <h1 class="text-5xl font-logo text-powerpuff-green mb-4">🌐 Powerpuff Pong</h1>
+            <p class="text-xl mb-6">Remote Game Client</p>
+        </div>
+
+        <!-- Connection Status -->
+        <div class="bg-white/25 rounded-2xl p-8 backdrop-blur-md border border-white/35 shadow-xl mb-6 max-w-2xl mx-auto">
+            <div class="text-center">
+                <h2 class="text-2xl font-bold text-white mb-4">🔌 Connection Status</h2>
+                
+                <div class="mb-4">
+                    <label class="block text-white text-lg mb-2">Server URL:</label>
+                    <input type="text" id="serverUrl" 
+                           value="ws://localhost:3000/api/remote-game/1" 
+                           class="w-full px-4 py-2 rounded-lg border-2 border-powerpuff-blue bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:border-powerpuff-purple">
+                </div>
+                
+                <div class="mb-4">
+                    <span class="text-lg text-white">Status: </span>
+                    <span id="connectionStatus" class="text-lg font-bold text-powerpuff-red">Disconnected</span>
+                </div>
+                
+                <div id="connectionInfo" class="text-sm text-gray-300 mb-4">Ready to connect...</div>
+                
+                <div class="flex justify-center space-x-4">
+                    <button id="connectBtn" class="bg-powerpuff-green hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full text-lg transition-colors shadow-lg">
+                        🔌 Connect
+                    </button>
+                    <button id="disconnectBtn" disabled class="bg-powerpuff-red hover:bg-red-600 text-white font-bold py-3 px-6 rounded-full text-lg transition-colors shadow-lg opacity-50">
+                        ❌ Disconnect
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Player Info -->
+        <div class="bg-white/25 rounded-2xl p-6 backdrop-blur-md border border-white/35 shadow-xl mb-6 max-w-2xl mx-auto">
+            <div class="text-center">
+                <h3 class="text-xl font-bold text-white mb-4">👤 Player Information</h3>
+                <div id="playerNumber" class="text-lg text-powerpuff-green font-bold">You are: Not connected</div>
+                <div class="flex justify-center space-x-8 mt-4">
+                    <div class="bg-powerpuff-pink bg-opacity-50 rounded-lg p-4">
+                        <p class="text-sm text-white">Player 1 (Left)</p>
+                        <p id="player1Name" class="text-lg font-bold">Waiting...</p>
+                    </div>
+                    <div class="bg-powerpuff-blue bg-opacity-50 rounded-lg p-4">
+                        <p class="text-sm text-white">Player 2 (Right)</p>
+                        <p id="player2Name" class="text-lg font-bold">Waiting...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Score Display -->
+        <div class="bg-white/25 rounded-2xl p-6 backdrop-blur-md border border-white/35 shadow-xl mb-6 max-w-2xl mx-auto">
+            <div class="text-center">
+                <h3 class="text-xl font-bold text-white mb-4">🏆 Score</h3>
+                <div id="scoreDisplay" class="text-3xl font-bold text-powerpuff-green">Player 1: 0 - Player 2: 0</div>
+            </div>
+        </div>
+
+        <!-- Game Canvas -->
+        <div class="flex justify-center mb-6">
+            <div class="relative bg-black rounded-lg shadow-2xl border-4 border-powerpuff-green">
+                <canvas id="gameCanvas" width="800" height="600" class="rounded-lg"></canvas>
+                
+                <!-- Game Overlay -->
+                <div id="gameOverlay" class="absolute inset-0 flex items-center justify-center rounded-lg z-10" style="display: none;">
+                    <div class="text-center">
+                        <h2 id="gameMessage" class="text-3xl font-bold mb-6 text-white drop-shadow-lg"></h2>
+                        <button id="startGameBtn" class="bg-powerpuff-green hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full text-xl transition-colors shadow-lg">
+                            🎮 Start Game
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="bg-white/25 rounded-2xl p-6 backdrop-blur-md border border-white/35 shadow-xl mb-6 max-w-2xl mx-auto">
+            <div class="text-center">
+                <h3 class="text-xl font-bold text-white mb-4">🎮 Game Controls</h3>
+                <div class="flex justify-center space-x-4">
+                    <button id="upBtn" disabled class="bg-powerpuff-blue hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full text-lg transition-colors shadow-lg opacity-50">
+                        ⬆️ Up
+                    </button>
+                    <button id="downBtn" disabled class="bg-powerpuff-blue hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full text-lg transition-colors shadow-lg opacity-50">
+                        ⬇️ Down
+                    </button>
+                </div>
+                <p class="text-sm text-gray-300 mt-2">Use Arrow Keys or W/S keys to control your paddle</p>
+            </div>
+        </div>
+
+        <!-- Game Log -->
+        <div class="bg-white/25 rounded-2xl p-6 backdrop-blur-md border border-white/35 shadow-xl max-w-2xl mx-auto">
+            <h3 class="text-xl font-bold text-white mb-4 text-center">📝 Game Log</h3>
+            <div id="gameLog" class="bg-black bg-opacity-50 border border-gray-600 rounded-lg h-48 overflow-y-auto p-4 font-mono text-sm text-green-400"></div>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        let ws = null;
+        let playerNumber = null;
+        let gameState = {
+            ballX: 400,
+            ballY: 300,
+            leftPaddleY: 250,
+            rightPaddleY: 250,
+            player1Score: 0,
+            player2Score: 0,
+            speedX: 5,
+            speedY: 3
+        };
+
+        // Canvas setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // DOM elements
+        const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const upBtn = document.getElementById('upBtn');
+        const downBtn = document.getElementById('downBtn');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const connectionInfo = document.getElementById('connectionInfo');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const playerNumberDisplay = document.getElementById('playerNumber');
+        const player1Name = document.getElementById('player1Name');
+        const player2Name = document.getElementById('player2Name');
+        const gameLog = document.getElementById('gameLog');
+        const serverUrl = document.getElementById('serverUrl');
+        const gameOverlay = document.getElementById('gameOverlay');
+        const gameMessage = document.getElementById('gameMessage');
+        const startGameBtn = document.getElementById('startGameBtn');
+
+        // Input states
+        let inputStates = {
+            up: false,
+            down: false
+        };
+
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            gameLog.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            gameLog.scrollTop = gameLog.scrollHeight;
+            console.log(message);
+        }
+
+        function updateConnectionStatus(status, info = '') {
+            connectionStatus.textContent = status;
+            connectionInfo.textContent = info;
+            
+            // Update status color
+            switch(status) {
+                case 'Connected':
+                    connectionStatus.className = 'text-lg font-bold text-powerpuff-green';
+                    break;
+                case 'Connecting...':
+                    connectionStatus.className = 'text-lg font-bold text-powerpuff-blue';
+                    break;
+                case 'Disconnected':
+                    connectionStatus.className = 'text-lg font-bold text-powerpuff-red';
+                    break;
+                case 'Error':
+                    connectionStatus.className = 'text-lg font-bold text-red-500';
+                    break;
+            }
+        }
+
+        function updateScore() {
+            scoreDisplay.textContent = `Player 1: ${gameState.player1Score} - Player 2: ${gameState.player2Score}`;
+        }
+
+        function drawGame() {
+            // Clear canvas
+            ctx.fillStyle = '#0f0f23';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw center line
+            ctx.strokeStyle = '#533483';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 15]);
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw paddles
+            ctx.fillStyle = '#e94560';
+            
+            // Left paddle
+            ctx.fillRect(50, gameState.leftPaddleY, 15, 100);
+            
+            // Right paddle
+            ctx.fillRect(735, gameState.rightPaddleY, 15, 100);
+
+            // Draw ball
+            ctx.fillStyle = '#f5f5f5';
+            ctx.beginPath();
+            ctx.arc(gameState.ballX, gameState.ballY, 10, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Highlight current player's paddle
+            if (playerNumber === 1) {
+                ctx.strokeStyle = '#7209b7';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(48, gameState.leftPaddleY - 2, 19, 104);
+            } else if (playerNumber === 2) {
+                ctx.strokeStyle = '#7209b7';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(733, gameState.rightPaddleY - 2, 19, 104);
+            }
+        }
+
+        function sendInput(inputType, key) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const message = {
+                    type: 'input',
+                    inputType: inputType,
+                    key: key
+                };
+                ws.send(JSON.stringify(message));
+                log(`Sent: ${inputType} ${key}`);
+            }
+        }
+
+        function handleKeyDown(event) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            
+            switch(event.key) {
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    if (!inputStates.up) {
+                        inputStates.up = true;
+                        sendInput('keydown', 'up');
+                    }
+                    event.preventDefault();
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    if (!inputStates.down) {
+                        inputStates.down = true;
+                        sendInput('keydown', 'down');
+                    }
+                    event.preventDefault();
+                    break;
+            }
+        }
+
+        function handleKeyUp(event) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            
+            switch(event.key) {
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    if (inputStates.up) {
+                        inputStates.up = false;
+                        sendInput('keyup', 'up');
+                    }
+                    event.preventDefault();
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    if (inputStates.down) {
+                        inputStates.down = false;
+                        sendInput('keyup', 'down');
+                    }
+                    event.preventDefault();
+                    break;
+            }
+        }
+
+        function connect() {
+            const url = serverUrl.value.trim();
+            if (!url) {
+                log('Please enter a server URL');
+                return;
+            }
+
+            log(`Connecting to: ${url}`);
+            updateConnectionStatus('Connecting...', 'Attempting WebSocket connection...');
+
+            try {
+                ws = new WebSocket(url);
+
+                ws.onopen = (event) => {
+                    log('✅ Connected to game server!');
+                    updateConnectionStatus('Connected', 'WebSocket connection established');
+                    connectBtn.disabled = true;
+                    disconnectBtn.disabled = false;
+                    upBtn.disabled = false;
+                    downBtn.disabled = false;
+                };
+
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        
+                        switch(data.type) {
+                            case 'success':
+                                playerNumber = data.playerNumber;
+                                playerNumberDisplay.textContent = `You are: Player ${playerNumber}`;
+                                player1Name.textContent = data.player1Username || 'Player 1';
+                                player2Name.textContent = data.player2Username || 'Player 2';
+                                log(`🎮 Assigned as Player ${playerNumber}`);
+                                break;
+                                
+                            case 'ready':
+                                log('🎯 Game ready! Both players connected.');
+                                gameMessage.textContent = 'Both players ready! Game starting...';
+                                gameOverlay.style.display = 'flex';
+                                break;
+                                
+                            case 'game-state':
+                                // Update game state
+                                gameState.ballX = data.ballX;
+                                gameState.ballY = data.ballY;
+                                gameState.leftPaddleY = data.leftPaddleY;
+                                gameState.rightPaddleY = data.rightPaddleY;
+                                gameState.player1Score = data.player1Score;
+                                gameState.player2Score = data.player2Score;
+                                updateScore();
+                                gameOverlay.style.display = 'none';
+                                break;
+                                
+                            case 'game-over':
+                                log(`🏆 Game Over! Player ${data.winner} wins!`);
+                                log(`📊 Final Score - Player 1: ${data.player1Score}, Player 2: ${data.player2Score}`);
+                                gameMessage.textContent = `Game Over! Player ${data.winner} wins!`;
+                                gameOverlay.style.display = 'flex';
+                                break;
+                                
+                            case 'input-update':
+                                // Optional: Log input updates
+                                break;
+                                
+                            case 'disconnect':
+                                log(`❌ ${data.message}`);
+                                break;
+                                
+                            case 'error':
+                                log(`🚨 Server Error: ${data.message}`);
+                                break;
+                                
+                            default:
+                                log(`❓ Unknown message type: ${data.type}`);
+                        }
+                    } catch (e) {
+                        log(`📨 Received: ${event.data}`);
+                    }
+                };
+
+                ws.onclose = (event) => {
+                    log(`🔌 Connection closed (Code: ${event.code})`);
+                    updateConnectionStatus('Disconnected', `Connection closed: ${event.reason || 'No reason provided'}`);
+                    connectBtn.disabled = false;
+                    disconnectBtn.disabled = true;
+                    upBtn.disabled = true;
+                    downBtn.disabled = true;
+                    playerNumber = null;
+                    playerNumberDisplay.textContent = 'You are: Not connected';
+                    player1Name.textContent = 'Waiting...';
+                    player2Name.textContent = 'Waiting...';
+                    gameOverlay.style.display = 'none';
+                    ws = null;
+                };
+
+                ws.onerror = (error) => {
+                    log('🚨 WebSocket error occurred');
+                    updateConnectionStatus('Error', 'WebSocket connection failed');
+                    console.error('WebSocket error:', error);
+                };
+
+            } catch (error) {
+                log(`❌ Failed to create WebSocket: ${error.message}`);
+                updateConnectionStatus('Error', 'Failed to create WebSocket connection');
+            }
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close(1000, 'Manual disconnect');
+                log('🔌 Disconnecting...');
+            }
+        }
+
+        // Event listeners
+        connectBtn.addEventListener('click', connect);
+        disconnectBtn.addEventListener('click', disconnect);
+        startGameBtn.addEventListener('click', () => {
+            gameOverlay.style.display = 'none';
+            log('🎮 Game started!');
+        });
+
+        // Button controls
+        upBtn.addEventListener('mousedown', () => sendInput('keydown', 'up'));
+        upBtn.addEventListener('mouseup', () => sendInput('keyup', 'up'));
+        downBtn.addEventListener('mousedown', () => sendInput('keydown', 'down'));
+        downBtn.addEventListener('mouseup', () => sendInput('keyup', 'down'));
+
+        // Keyboard controls
+        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('keyup', handleKeyUp);
+
+        // Prevent button controls from getting stuck
+        upBtn.addEventListener('mouseleave', () => sendInput('keyup', 'up'));
+        downBtn.addEventListener('mouseleave', () => sendInput('keyup', 'down'));
+
+        // Game loop
+        function gameLoop() {
+            drawGame();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Initialize
+        updateScore();
+        drawGame();
+        gameLoop();
+
+        log('🎮 Powerpuff Pong client loaded!');
+        log('🎯 Use Arrow Keys or W/S to control your paddle');
+        log('🔌 Click Connect to join a game!');
+    </script>
+</body>
+</html>
