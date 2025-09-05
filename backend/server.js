@@ -18,10 +18,13 @@ import tournamentRoutes from './routes/tournament.js';
 import remoteGameRoutes from './routes/remoteGameRoutes.js';
 import friendsRoutes from './routes/friendsRoute.js';
 import profileRoutes from './routes/profileRoutes.js';
+import aiGameRoutes from './routes/aiGameRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
 
 import { globalErrorHandler } from './utils/errorHandler.js';
 import { trackUserActivity } from './services/lastSeenService.js';
 import { getSecrets } from './services/vaultService.js';
+import { handleAIGame } from './controller/aiGameController.js';
 import dotenv from 'dotenv';
 import cookie from '@fastify/cookie';
 import {prisma } from './prisma/prisma_lib.js';
@@ -363,7 +366,7 @@ function handlePlayerInput(matchId, playerNumber, inputType, key) {
 
 // 🔹 Register plugins BEFORE starting server
 fastify.register(fastifyCors, {
-  origin: ['http://localhost:8080', 'http://127.0.0.1:8080', 'http://localhost:3000', 'http://127.0.0.1:3000', 'https://localhost', 'https://127.0.0.1'],
+  origin: ['http://localhost:8080', 'http://127.0.0.1:8080', 'http://localhost:3000', 'http://127.0.0.1:3000', 'https://localhost', 'https://127.0.0.1', 'https://10.11.1.5'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
@@ -423,6 +426,8 @@ fastify.register(userRoutes, { prefix: '/api' });
 fastify.register(friendsRoutes, { prefix: '/api' });
 fastify.register(profileRoutes, { prefix: '/api' });
 fastify.register(remoteGameRoutes, { prefix: '/api' });
+fastify.register(aiGameRoutes, { prefix: '/api' });
+fastify.register(dashboardRoutes, { prefix: '/api' });
 
 // Also register without prefix for testing
 fastify.register(remoteGameRoutes);
@@ -620,7 +625,16 @@ try {
   wss.on('connection', (ws, request) => {
     console.log('🔌 WebSocket connection established!');
     const url = new URL(request.url, 'http://localhost:3001');
-    const matchId = url.pathname.split('/').pop();
+    const path = url.pathname;
+    
+    // Handle AI game WebSocket connection
+    if (path === '/ai-game') {
+      console.log('🤖 AI Game WebSocket connection');
+      handleAIGame(ws, request);
+      return;
+    }
+    
+    const matchId = path.split('/').pop();
     const username = url.searchParams.get('username') || 'Anonymous';
     
     console.log('📝 Player connected:', { matchId, username });
