@@ -1,0 +1,138 @@
+
+## Google OAuth Fastify Integration & Frontend Handling TODO
+
+1. Backend: Integrate Google OAuth with Fastify
+	 - Remove all Express code from server.js.
+	 - Use @fastify/passport and @fastify/secure-session plugins.
+	 - Register Google OAuth strategy with Fastify’s passport.
+	 - Create Fastify routes for /auth/google and /auth/google/callback.
+
+2. Frontend: Handle JWT and User Info
+	 - After Google login, backend redirects to a frontend route (e.g., /dashboard or /).
+	 - On page load, check for the JWT cookie.
+	 - If present, fetch user info from the backend and update the UI (show user’s name, avatar, etc.).
+	 - If login fails, show an error message.
+
+3. Provide user feedback for login success/failure
+	 - Add logic to display a notification or status message after login (success or error).
+	 - If redirected after Google login, show a welcome message or error.
+
+4. Ensure session/cookie handling is consistent
+	 - All authentication (including Google and local login) uses the same JWT cookie.
+	 - Set the cookie with httpOnly, secure, and SameSite attributes.
+	 - On logout, clear the cookie on both backend and frontend.
+
+---
+
+## Example File Changes
+
+1. backend/server.js
+	 - Remove Express and use Fastify plugins for passport and session.
+	 - Register Google OAuth routes with Fastify.
+
+2. backend/routes/googleAuthRoutes.js (optional, for cleaner code)
+	 - Define /auth/google and /auth/google/callback Fastify routes.
+
+3. frontend/index.html
+	 - Ensure the "Sign in with Google" button points to the correct Fastify route.
+
+4. frontend/src/main.ts
+	 - On page load, check for the JWT cookie.
+	 - If present, fetch user info and update the UI.
+	 - Show feedback messages for login success/failure.
+
+---
+
+## Example Backend Code Snippets
+
+// Register session and passport plugins:
+fastify.register(fastifySecureSession, {
+	key: Buffer.from(process.env.SECRET_SESSION_KEY, 'hex'), // 32 bytes hex string
+	cookie: { path: '/' }
+});
+fastify.register(fastifyPassport.initialize());
+fastify.register(fastifyPassport.secureSession());
+
+// Register Google strategy:
+fastifyPassport.use(new GoogleStrategy({
+	clientID: process.env.GOOGLE_CLIENT_ID,
+	clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+	callbackURL: process.env.GOOGLE_CALLBACK_URL
+}, async (accessToken, refreshToken, profile, done) => {
+	// ...user lookup/creation logic...
+}));
+fastifyPassport.registerUserSerializer(async (user, req) => user);
+fastifyPassport.registerUserDeserializer(async (user, req) => user);
+
+// Add Google OAuth routes:
+fastify.get('/auth/google',
+	{ preValidation: fastifyPassport.authenticate('google', { scope: ['profile', 'email'] }) },
+	async (req, reply) => {}
+);
+fastify.get('/auth/google/callback',
+	{ preValidation: fastifyPassport.authenticate('google', { failureRedirect: '/' }) },
+	async (req, reply) => {
+		// Generate JWT and set cookie
+		// reply.setCookie(...).redirect(...);
+	}
+);
+
+// Add /api/me route:
+fastify.get('/api/me', async (req, reply) => {
+	// ...token verification and user info response...
+});
+
+// On logout, clear the cookie:
+fastify.post('/api/auth/logout', async (req, reply) => {
+	reply.clearCookie('token').send({ message: 'Logged out' });
+});
+
+---
+
+## Example Frontend Code Snippets (main.ts)
+
+// Fetch user info after login:
+private async fetchUserInfo(): Promise<void> {
+		// ...fetch /api/me and update UI...
+}
+
+// On page load, check for JWT cookie and fetch user info:
+private checkAuthStatus(): void {
+		// ...getCookie logic and call fetchUserInfo() if token exists...
+}
+
+// Show feedback for login success/failure using showStatus.
+Let's start with the backend: integrating Google OAuth into Fastify (no Express), then move to the frontend for JWT/user info handling and feedback.
+
+1. Backend: Integrate Google OAuth with Fastify
+a. Install required packages (if not already)
+b. server.js (main changes)
+Remove all Express code.
+Register @fastify/passport and @fastify/secure-session.
+Register Google OAuth strategy and routes.
+Add near the top (after other imports):
+
+Register session and passport plugins:
+
+1 vulnerability
+Register Google strategy:
+
+Add Google OAuth routes:
+
+2. Frontend: Handle JWT and User Info
+a. main.ts
+Add a function to fetch user info after login:
+
+Call this function on page load if token cookie exists:
+
+Show feedback for login success/failure using showStatus (already present).
+
+3. Backend: Add /api/me route
+In server.js (or userRoutes):
+
+4. Ensure Consistent Session/Cookie Handling
+Always set the JWT cookie with httpOnly, secure, and sameSite attributes.
+On logout, clear the cookie:
+If you want, I can generate the exact code changes for each file. Let me know which file you want to start with, or if you want the full backend patch first!
+
+Similar code found with 3 license types - View matches

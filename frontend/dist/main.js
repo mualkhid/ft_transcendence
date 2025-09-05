@@ -93,7 +93,8 @@ class SimpleAuth {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ username, email, password })
+                body: JSON.stringify({ username, email, password }),
+                credentials: 'include'
             });
             const data = await response.json();
             if (response.ok) {
@@ -125,12 +126,10 @@ class SimpleAuth {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ email, password }),
-                credentials: 'include' // Include cookies
+                credentials: 'include'
             });
             const data = await response.json();
             if (response.ok) {
-                // The backend sets the token as a cookie, so we don't need to store it manually
-                // But we can store user info from the response if available
                 if (data.user) {
                     this.currentUser = data.user;
                     localStorage.setItem('user', JSON.stringify(data.user));
@@ -160,6 +159,23 @@ class SimpleAuth {
         else {
             this.showPage('registrationPage');
         }
+        // Always try to fetch user info from backend
+        this.fetchUserInfo();
+        // Check session validity on every page load
+        fetch('http://localhost:3000/api/protected', {
+            method: 'GET',
+            credentials: 'include'
+        })
+            .then(res => {
+            if (res.status === 401 || res.status === 403) {
+                const statusElem = document.getElementById('status');
+                if (statusElem) {
+                    statusElem.textContent = 'Session expired. Please log in again.';
+                    statusElem.style.display = 'block';
+                }
+            }
+            return res.json();
+        });
     }
     async handleLogout() {
         try {
@@ -168,16 +184,17 @@ class SimpleAuth {
                 method: 'POST',
                 credentials: 'include'
             });
+            this.currentUser = null;
+            localStorage.removeItem('user');
+            this.showStatus('Logged out successfully', 'success');
+            setTimeout(() => {
+                this.showPage('registrationPage');
+            }, 1000);
         }
         catch (error) {
             console.error('Logout error:', error);
+            this.showStatus('Logout failed. Please try again.', 'error');
         }
-        this.currentUser = null;
-        localStorage.removeItem('user');
-        this.showStatus('Logged out successfully', 'success');
-        setTimeout(() => {
-            this.showPage('registrationPage');
-        }, 1000);
     }
     showStatus(message, type = 'info') {
         const statusDiv = document.getElementById('status');
@@ -290,6 +307,27 @@ class SimpleAuth {
         // TODO: Implement actual game creation when backend endpoints are ready
         // This would typically connect to WebSocket endpoints for real-time gaming
         console.log('Game selection:', gameType);
+    }
+    async fetchUserInfo() {
+        try {
+            const res = await fetch('http://localhost:3000/api/me', { credentials: 'include' });
+            const data = await res.json();
+            if (data.user) {
+                this.currentUser = data.user;
+                localStorage.setItem('user', JSON.stringify(data.user));
+                this.showPage('mainApp');
+                this.showSection('homeSection');
+                this.showStatus(`Welcome, ${data.user.name || data.user.email}!`, 'success');
+            }
+            else {
+                this.showStatus('Not authenticated. Please log in.', 'error');
+                this.showPage('registrationPage');
+            }
+        }
+        catch (error) {
+            this.showStatus('Could not fetch user info. Please log in.', 'error');
+            this.showPage('registrationPage');
+        }
     }
 }
 // Initialize when DOM is loaded

@@ -6,7 +6,7 @@ export async function getSecrets() {
   // Try Vault first
   try {
     const vaultClient = vault({
-      endpoint: process.env.VAULT_ADDR || 'http://127.0.0.1:8200',
+      endpoint: process.env.VAULT_ADDR || 'https://127.0.0.1:8200',
       token: process.env.VAULT_TOKEN,
     });
     const result = await vaultClient.read('secret/ft_transcendence');

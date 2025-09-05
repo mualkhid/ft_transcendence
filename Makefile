@@ -17,35 +17,35 @@ up:
 # vault-init:
 # 	$(COMPOSE) up -d vault
 # # 	@echo "Waiting for Vault to be ready..."
-# # 	@until curl -s http://127.0.0.1:8200/v1/sys/health > /dev/null; do \
+# # 	@until curl -s https://127.0.0.1:8200/v1/sys/health > /dev/null; do \
 # # 		echo "Vault not ready, retrying in 2s..."; \
 # # 		sleep 2; \
 # # 	done
-# 	docker exec -e VAULT_ADDR='http://127.0.0.1:8200' -it $(VAULT_CONTAINER) vault operator init || true
+# 	docker exec -e VAULT_ADDR='https://127.0.0.1:8200' -it $(VAULT_CONTAINER) vault operator init || true
 vault-init:
 	$(COMPOSE) up -d vault
 	@echo "Waiting for Vault to be ready..."
-	@until curl -s http://127.0.0.1:8200/v1/sys/health > /dev/null 2>&1; do \
+	@until curl -s https://127.0.0.1:8200/v1/sys/health > /dev/null 2>&1; do \
 		echo "Vault not ready, retrying in 2s..."; \
 		sleep 2; \
 	done
 	@echo "Initializing Vault..."
-	docker exec -e VAULT_ADDR='http://127.0.0.1:8200' $(VAULT_CONTAINER) vault operator init || true
+	docker exec -e VAULT_ADDR='https://127.0.0.1:8200' $(VAULT_CONTAINER) vault operator init || true
 vault-unseal:
 	@if [ -z "$(KEY)" ]; then exit 1; fi
-	docker exec -e VAULT_ADDR='http://127.0.0.1:8200' -it $(VAULT_CONTAINER) vault operator unseal $(KEY) || true
+	docker exec -e VAULT_ADDR='https://127.0.0.1:8200' -it $(VAULT_CONTAINER) vault operator unseal $(KEY) || true
 
 vault-login:
 	@if [ -z "$(TOKEN)" ]; then exit 1; fi
-	docker exec -e VAULT_ADDR='http://127.0.0.1:8200' -it $(VAULT_CONTAINER) vault login $(TOKEN) || true
+	docker exec -e VAULT_ADDR='https://127.0.0.1:8200' -it $(VAULT_CONTAINER) vault login $(TOKEN) || true
 
 vault-put:
 	@if [ -z "$(PATH)" ] || [ -z "$(VALUE)" ]; then exit 1; fi
-	docker exec -e VAULT_ADDR='http://127.0.0.1:8200' -it $(VAULT_CONTAINER) vault kv put $(PATH) value=$(VALUE) || true
+	docker exec -e VAULT_ADDR='https://127.0.0.1:8200' -it $(VAULT_CONTAINER) vault kv put $(PATH) value=$(VALUE) || true
 
 vault-get:
 	@if [ -z "$(PATH)" ]; then exit 1; fi
-	docker exec -e VAULT_ADDR='http://127.0.0.1:8200' -it $(VAULT_CONTAINER) vault kv get $(PATH) || true
+	docker exec -e VAULT_ADDR='https://127.0.0.1:8200' -it $(VAULT_CONTAINER) vault kv get $(PATH) || true
 
 clean:
 	$(COMPOSE) down -v --remove-orphans

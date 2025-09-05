@@ -52,6 +52,10 @@ services:
     image: hashicorp/vault:1.15.2
     cap_add:
       - IPC_LOCK
-    command: server -dev -dev-listen-address=0.0.0.0:8200
+    command: server -config=/vault/config/vault.hcl
     ports:
       - "8200:8200"
+    volumes:
+      - ./security/ssl:/vault/ssl
+      - ./security/vault/config/vault.hcl:/vault/config/vault.hcl
+      - ./security/vault/data:/vault/data
