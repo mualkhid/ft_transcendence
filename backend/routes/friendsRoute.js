@@ -12,6 +12,6 @@ export default function friendsRoute(fastify, _opts, done) {
 	fastify.post('/friends/declineRequest', {requestOpts, preHandler: [authenticate, trackUserActivity]}, declineRequest);
 	fastify.post('/friends/removeFriend', {requestOpts, preHandler: [authenticate, trackUserActivity]}, removeFriend);
 	fastify.post('/friends/blockFriend', {requestOpts, preHandler: [authenticate, trackUserActivity]}, blockFriend);
-	fastify.get('/friends/searchUser', {preHandler: [authenticate, trackUserActivity]}, searchUser); // should create options
+	fastify.get('/friends/searchUser', {preHandler: [authenticate, trackUserActivity]}, searchUser);
 	done ()
 }

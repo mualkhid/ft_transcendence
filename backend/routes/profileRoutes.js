@@ -10,14 +10,6 @@ export default function profileRoutes(fastify, _opts, done) {
 	fastify.patch('/profile/password', {updatePasswordOpts, preHandler: [authenticate, trackUserActivity]}, updatePassword),
 	fastify.patch('/profile/avatar', {preHandler: [authenticate, trackUserActivity]}, updateAvatar),
 	fastify.post('/profile/update-stats', {preHandler: [authenticate, trackUserActivity]}, updateStats),
-	
-	// Test endpoint to check authentication
-	fastify.get('/profile/test-auth', {
-		preHandler: [authenticate, trackUserActivity]
-	}, (req, reply) => {
-		reply.send({ message: 'Authentication working!', user: req.user });
-	});
-	
 	done ()
 }
 

@@ -3,7 +3,10 @@ import {prisma} from '../prisma/prisma_lib.js'
 import path from 'path'
 import {pipeline} from 'stream'
 import { promisify } from 'util'
+import validator from 'validator'
+
 const pump = promisify(pipeline)
+
 
 import {ValidationError, AuthenticationError, notFoundError } from '../utils/errors.js'
 
@@ -40,9 +43,12 @@ export async function updateUsername (req, reply)
 	const id = req.user.id; // Get user ID from JWT token
 	const {newUsername} = req.body
 
+    if (!validator.isAlphanumeric(newUsername))
+        throw new ValidationError("username should consist of letters and digits")
+
 	const updatedUser = await prisma.user.update({
 		where: {id: id},
-		data: {username: newUsername.trim().toLowerCase()},
+		data: {username: newUsername.trim()},
 		select: {
 			id: true,
 			username: true,

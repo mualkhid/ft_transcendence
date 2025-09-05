@@ -13,7 +13,6 @@ import {
 } from '../schema/authSchema.js';
 import { authenticate } from '../services/jwtService.js';
 
-// Fastify ESM plugin: default export
 export default function authRoutes(fastify, _opts, done) {
   fastify.post('/auth/registerUser', registerUserOpts, registerUser);
   fastify.post('/auth/login', loginOpts, login);
