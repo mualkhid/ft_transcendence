@@ -1074,15 +1074,10 @@ class SimpleAuth {
                         searchInput.value = '';
                         this.clearUsersList();
                     }
-                    // Check URL parameters first, then saved section preference
-                    const urlSection = this.getUrlSection();
+                    // Check if we have a saved section preference
                     const savedSection = localStorage.getItem('lastActiveSection');
                     const activeSection = document.querySelector('.section.active');
-                    if (urlSection) {
-                        console.log('🌐 URL section parameter found:', urlSection);
-                        this.showSection(urlSection);
-                    }
-                    else if (savedSection && !activeSection) {
+                    if (savedSection && !activeSection) {
                         console.log('🔄 Restoring saved section:', savedSection);
                         this.showSection(savedSection);
                     }
@@ -1106,15 +1101,10 @@ class SimpleAuth {
                     searchInput.value = '';
                     this.clearUsersList();
                 }
-                // Check URL parameters first, then saved section preference
-                const urlSection = this.getUrlSection();
+                // Check if we have a saved section preference
                 const savedSection = localStorage.getItem('lastActiveSection');
                 const activeSection = document.querySelector('.section.active');
-                if (urlSection) {
-                    console.log('🌐 URL section parameter found:', urlSection);
-                    this.showSection(urlSection);
-                }
-                else if (savedSection && !activeSection) {
+                if (savedSection && !activeSection) {
                     console.log('🔄 Restoring saved section:', savedSection);
                     this.showSection(savedSection);
                 }
@@ -1154,15 +1144,10 @@ class SimpleAuth {
                 this.showPage('mainApp');
                 this.updateHomeDashboard();
                 this.updateProfileDisplay();
-                // Check URL parameters first, then saved section preference
-                const urlSection = this.getUrlSection();
+                // Check if we have a saved section preference
                 const savedSection = localStorage.getItem('lastActiveSection');
                 const activeSection = document.querySelector('.section.active');
-                if (urlSection) {
-                    console.log('🌐 URL section parameter found after token refresh:', urlSection);
-                    this.showSection(urlSection);
-                }
-                else if (savedSection && !activeSection) {
+                if (savedSection && !activeSection) {
                     console.log('🔄 Restoring saved section after token refresh:', savedSection);
                     this.showSection(savedSection);
                 }
@@ -1191,15 +1176,10 @@ class SimpleAuth {
             this.showPage('mainApp');
             this.updateHomeDashboard();
             this.updateProfileDisplay();
-            // Check URL parameters first, then saved section preference
-            const urlSection = this.getUrlSection();
+            // Check if we have a saved section preference
             const savedSection = localStorage.getItem('lastActiveSection');
             const activeSection = document.querySelector('.section.active');
-            if (urlSection) {
-                console.log('🌐 URL section parameter found after error:', urlSection);
-                this.showSection(urlSection);
-            }
-            else if (savedSection && !activeSection) {
+            if (savedSection && !activeSection) {
                 console.log('🔄 Restoring saved section after error:', savedSection);
                 this.showSection(savedSection);
             }
@@ -1258,25 +1238,6 @@ class SimpleAuth {
             console.error(`Page not found: ${pageId}`);
         }
     }
-    getUrlSection() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const section = urlParams.get('section');
-        if (section) {
-            // Map URL parameter to section ID
-            switch (section) {
-                case 'friends':
-                    return 'friendsSection';
-                case 'profile':
-                    return 'profileSection';
-                case 'home':
-                    return 'homeSection';
-                default:
-                    console.log('Unknown section parameter:', section);
-                    return null;
-            }
-        }
-        return null;
-    }
     showSection(sectionId) {
         const sections = document.querySelectorAll('.section');
         sections.forEach(section => {
@@ -1322,7 +1283,6 @@ class SimpleAuth {
         const navHome = document.getElementById('navHome');
         const navTournament = document.getElementById('navTournament');
         const navFriends = document.getElementById('navFriends');
-        const navAnalytics = document.getElementById('navAnalytics');
         const navProfile = document.getElementById('navProfile');
         const navLogout = document.getElementById('navLogout');
         if (navHome) {
@@ -1335,12 +1295,6 @@ class SimpleAuth {
             navFriends.addEventListener('click', (e) => {
                 e.preventDefault();
                 this.showSection('friendsSection');
-            });
-        }
-        if (navAnalytics) {
-            navAnalytics.addEventListener('click', (e) => {
-                e.preventDefault();
-                window.location.href = '/dashboard.html';
             });
         }
         if (navProfile) {
@@ -1429,7 +1383,7 @@ class SimpleAuth {
         else if (gameType === '1vAI') {
             // Redirect to AI pong game
             console.log('AI game selected, redirecting to AI pong...');
-            window.location.href = '/ai-pong.html';
+            window.open('/ai-pong.html', '_blank');
         }
         else if (gameType === 'tournament') {
             // Redirect to tournament section

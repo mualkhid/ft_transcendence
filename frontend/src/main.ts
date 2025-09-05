@@ -1130,19 +1130,23 @@ class SimpleAuth {
                         this.clearUsersList();
                     }
                     
-                    // Check if we have a saved section preference
-                    const savedSection = localStorage.getItem('lastActiveSection');
-                    const activeSection = document.querySelector('.section.active');
-                    
-                    if (savedSection && !activeSection) {
-                        console.log('🔄 Restoring saved section:', savedSection);
-                        this.showSection(savedSection);
-                    } else if (!activeSection) {
-                        console.log('🏠 No saved section, showing home');
-                        this.showSection('homeSection');
-                    } else {
-                        console.log('✅ Keeping current active section');
-                    }
+                                    // Check URL parameters first, then saved section preference
+                const urlSection = this.getUrlSection();
+                const savedSection = localStorage.getItem('lastActiveSection');
+                const activeSection = document.querySelector('.section.active');
+                
+                if (urlSection) {
+                    console.log('🌐 URL section parameter found:', urlSection);
+                    this.showSection(urlSection);
+                } else if (savedSection && !activeSection) {
+                    console.log('🔄 Restoring saved section:', savedSection);
+                    this.showSection(savedSection);
+                } else if (!activeSection) {
+                    console.log('🏠 No saved section, showing home');
+                    this.showSection('homeSection');
+                } else {
+                    console.log('✅ Keeping current active section');
+                }
                     
                     return;
                 }
@@ -1160,11 +1164,15 @@ class SimpleAuth {
                     this.clearUsersList();
                 }
                 
-                // Check if we have a saved section preference
+                // Check URL parameters first, then saved section preference
+                const urlSection = this.getUrlSection();
                 const savedSection = localStorage.getItem('lastActiveSection');
                 const activeSection = document.querySelector('.section.active');
                 
-                if (savedSection && !activeSection) {
+                if (urlSection) {
+                    console.log('🌐 URL section parameter found:', urlSection);
+                    this.showSection(urlSection);
+                } else if (savedSection && !activeSection) {
                     console.log('🔄 Restoring saved section:', savedSection);
                     this.showSection(savedSection);
                 } else if (!activeSection) {
@@ -1204,11 +1212,15 @@ class SimpleAuth {
                 this.updateHomeDashboard();
                 this.updateProfileDisplay();
                 
-                // Check if we have a saved section preference
+                // Check URL parameters first, then saved section preference
+                const urlSection = this.getUrlSection();
                 const savedSection = localStorage.getItem('lastActiveSection');
                 const activeSection = document.querySelector('.section.active');
                 
-                if (savedSection && !activeSection) {
+                if (urlSection) {
+                    console.log('🌐 URL section parameter found after token refresh:', urlSection);
+                    this.showSection(urlSection);
+                } else if (savedSection && !activeSection) {
                     console.log('🔄 Restoring saved section after token refresh:', savedSection);
                     this.showSection(savedSection);
                 } else if (!activeSection) {
@@ -1234,11 +1246,15 @@ class SimpleAuth {
             this.updateHomeDashboard();
             this.updateProfileDisplay();
             
-            // Check if we have a saved section preference
+            // Check URL parameters first, then saved section preference
+            const urlSection = this.getUrlSection();
             const savedSection = localStorage.getItem('lastActiveSection');
             const activeSection = document.querySelector('.section.active');
             
-            if (savedSection && !activeSection) {
+            if (urlSection) {
+                console.log('🌐 URL section parameter found after error:', urlSection);
+                this.showSection(urlSection);
+            } else if (savedSection && !activeSection) {
                 console.log('🔄 Restoring saved section after error:', savedSection);
                 this.showSection(savedSection);
             } else if (!activeSection) {
@@ -1302,6 +1318,28 @@ class SimpleAuth {
         }
     }
 
+    private getUrlSection(): string | null {
+        const urlParams = new URLSearchParams(window.location.search);
+        const section = urlParams.get('section');
+        
+        if (section) {
+            // Map URL parameter to section ID
+            switch (section) {
+                case 'friends':
+                    return 'friendsSection';
+                case 'profile':
+                    return 'profileSection';
+                case 'home':
+                    return 'homeSection';
+                default:
+                    console.log('Unknown section parameter:', section);
+                    return null;
+            }
+        }
+        
+        return null;
+    }
+
     private showSection(sectionId: string): void {
         const sections = document.querySelectorAll('.section');
         sections.forEach(section => {
@@ -1352,6 +1390,7 @@ class SimpleAuth {
         const navHome = document.getElementById('navHome');
         const navTournament = document.getElementById('navTournament');
         const navFriends = document.getElementById('navFriends');
+        const navAnalytics = document.getElementById('navAnalytics');
         const navProfile = document.getElementById('navProfile');
         const navLogout = document.getElementById('navLogout');
 
@@ -1366,6 +1405,13 @@ class SimpleAuth {
             navFriends.addEventListener('click', (e) => {
                 e.preventDefault();
                 this.showSection('friendsSection');
+            });
+        }
+
+        if (navAnalytics) {
+            navAnalytics.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.href = '/dashboard.html';
             });
         }
 
@@ -1420,13 +1466,16 @@ class SimpleAuth {
         gameOptions.forEach(option => {
             option.addEventListener('click', (e) => {
                 const gameType = (e.currentTarget as HTMLElement).getAttribute('data-game-type');
-                console.log('Game option clicked:', gameType);
+                console.log('🎯 Game option clicked:', gameType);
+                console.log('🎯 Element:', e.currentTarget);
+                console.log('🎯 All data attributes:', (e.currentTarget as HTMLElement).attributes);
                 this.handleGameSelection(gameType || '1v1');
             });
         });
     }
 
     private async handleGameSelection(gameType: string): Promise<void> {
+        console.log('🎮 handleGameSelection called with gameType:', gameType);
         if (!this.currentUser) {
             this.showStatus('Please log in to play games', 'error');
             return;
@@ -1459,6 +1508,10 @@ class SimpleAuth {
             setTimeout(() => {
                 this.initializeGame();
             }, 100); // Small delay to ensure DOM is ready
+        } else if (gameType === '1vAI') {
+            // Redirect to AI pong game
+            console.log('AI game selected, redirecting to AI pong...');
+            window.location.href = '/ai-pong.html';
         } else if (gameType === 'tournament') {
             // Redirect to tournament section
             this.showSection('localTournamentSection');

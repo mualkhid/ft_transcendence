@@ -3,6 +3,8 @@ FROM nginx:alpine
 # Copy the built files to nginx
 COPY dist/ /usr/share/nginx/html/dist/
 COPY index.html /usr/share/nginx/html/
+COPY ai-pong.html /usr/share/nginx/html/
+COPY dashboard.html /usr/share/nginx/html/
 COPY logo.png /usr/share/nginx/html/
 COPY hearts.gif /usr/share/nginx/html/
 COPY powerpuff-bg.webp /usr/share/nginx/html/
