@@ -179,17 +179,10 @@ class SimpleAuth {
     private setupTournamentEventListeners(): void {
         // Player count selection
         const tournament4Players = document.getElementById('tournament4Players');
-        const tournament8Players = document.getElementById('tournament8Players');
         
         if (tournament4Players) {
             tournament4Players.addEventListener('click', () => {
                 this.setupTournament(4);
-            });
-        }
-        
-        if (tournament8Players) {
-            tournament8Players.addEventListener('click', () => {
-                this.setupTournament(8);
             });
         }
 
@@ -2526,6 +2519,7 @@ class SimpleAuth {
         currentMatch: number;
         matches: Array<{player1: string, player2: string, winner?: string}>;
         bracket: Array<Array<{player1: string, player2: string, winner?: string}>>;
+        tournamentId?: number;
     } = {
         players: [],
         currentRound: 0,
@@ -2537,6 +2531,52 @@ class SimpleAuth {
     private currentTournamentMatch: {player1: string, player2: string, winner?: string} | null = null;
     private originalEndGame: ((winner: number) => Promise<void>) | null = null;
 
+    private async recordTournamentResult(winner: string, loser: string): Promise<void> {
+        console.log('=== RECORDING TOURNAMENT RESULT ===');
+        console.log('Winner:', winner, 'Loser:', loser);
+        console.log('Tournament ID:', this.tournamentState.tournamentId);
+        
+        if (!this.currentUser?.token) {
+            console.log('No authentication token, skipping backend recording');
+            return;
+        }
+    
+        try {
+            const url = 'http://localhost:3000/api/tournament/local-result';
+            const requestBody = {
+                winner,
+                loser,
+                tournamentName: 'Local Tournament',
+                tournamentId: this.tournamentState.tournamentId,
+                round: this.tournamentState.currentRound + 1 // Add round info
+            };
+            
+            console.log('Recording result with data:', requestBody);
+    
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.currentUser.token}`
+                },
+                body: JSON.stringify(requestBody)
+            });
+    
+            const result = await response.json();
+            console.log('Record result response:', result);
+            
+            if (!response.ok) {
+                console.error('Failed to record tournament result:', result.error);
+                return;
+            }
+    
+            console.log('Tournament result recorded successfully:', result.message);
+        } catch (error) {
+            console.error('Error recording tournament result:', error);
+        }
+    }
+
+    
     private setupTournament(playerCount: number): void {
         // Clear previous tournament state
         this.tournamentState = {
@@ -2549,9 +2589,7 @@ class SimpleAuth {
 
         // Hide player count selection
         const tournament4Players = document.getElementById('tournament4Players');
-        const tournament8Players = document.getElementById('tournament8Players');
         if (tournament4Players) tournament4Players.style.display = 'none';
-        if (tournament8Players) tournament8Players.style.display = 'none';
 
         // Show player names form
         const playerNamesForm = document.getElementById('playerNamesForm');
@@ -2575,7 +2613,7 @@ class SimpleAuth {
             playerInputs.appendChild(firstPlayerDiv);
             
             // Generate remaining player input fields
-            for (let i = 1; i < playerCount; i++) {
+            for (let i = 1; i < 4; i++) {
                 const inputDiv = document.createElement('div');
                 inputDiv.className = 'flex flex-col';
                 inputDiv.innerHTML = `
@@ -2587,23 +2625,34 @@ class SimpleAuth {
             }
         }
 
-        this.showStatus(`Tournament setup for ${playerCount} players`, 'info');
+        this.showStatus(`Tournament setup for 4 players`, 'info');
     }
 
-    private startTournament(): void {
+    private async startTournament(): Promise<void> {
         // Collect player names
-        const playerCount = this.tournamentState.players.length === 0 ? 4 : this.tournamentState.players.length;
         const players: string[] = [];
         
-        for (let i = 0; i < playerCount; i++) {
+        for (let i = 0; i < 4; i++) {
             const input = document.getElementById(`player${i}`) as HTMLInputElement;
             if (input && input.value.trim()) {
                 players.push(input.value.trim());
+            }else {
+            this.showStatus(`Please enter name for Player ${i + 1}`, 'error');
+            return;
             }
         }
 
-        if (players.length !== playerCount) {
-            this.showStatus(`Please enter all ${playerCount} player names`, 'error');
+        const uniqueNames = new Set(players);
+        if (uniqueNames.size !== players.length)
+        {
+            this.showStatus('Player names must be unique', 'error');
+            return;
+        }
+
+        await this.createTournamentInDatabase(players);
+
+        if (players.length !== 4) {
+            this.showStatus(`Please enter all 4 player names`, 'error');
             return;
         }
 
@@ -2628,10 +2677,91 @@ class SimpleAuth {
         this.showNextMatch();
     }
 
+    private async createTournamentInDatabase(players: string[]): Promise<void> {
+        console.log('=== DEBUGGING TOURNAMENT CREATION ===');
+        console.log('Current user:', this.currentUser);
+        console.log('Token exists:', !!this.currentUser?.token);
+        
+        if (!this.currentUser?.token) {
+            console.log('No authentication token, skipping tournament creation in database');
+            return;
+        }
+    
+        try {
+            // Use correct URL - adjust port/protocol as needed
+            const url = 'http://localhost:3000/api/tournament/create';
+            console.log('Making request to:', url);
+            
+            const requestBody = {
+                name: `Local Tournament - ${new Date().toLocaleDateString()}`,
+                players: players,
+                maxPlayers: 4
+            };
+            console.log('Request body:', requestBody);
+    
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.currentUser.token}`
+                },
+                body: JSON.stringify(requestBody)
+            });
+    
+            console.log('Response status:', response.status);
+            console.log('Response headers:', [...response.headers.entries()]);
+    
+            const result = await response.json();
+            console.log('Response body:', result);
+            
+            if (response.ok) {
+                this.tournamentState.tournamentId = result.tournamentId;
+                console.log('Tournament created in database with ID:', result.tournamentId);
+            } else {
+                console.error('Failed to create tournament in database:', result.error);
+            }
+        } catch (error) {
+            console.error('Error creating tournament in database:', error);
+        }
+    }
+
+    private async completeTournamentInDatabase(winnerId?: number): Promise<void>
+    {
+        if (!this.currentUser?.token || !this.tournamentState.tournamentId) {
+            console.log('No authentication token or tournament ID, skipping tournament completion');
+            return;
+        }
+    
+        try {
+            const response = await fetch(`https://localhost/api/tournament/${this.tournamentState.tournamentId}/complete`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.currentUser.token}`
+                },
+                body: JSON.stringify({
+                    winnerId: winnerId || null
+                })
+            });
+    
+            const result = await response.json();
+            
+            if (response.ok) {
+                console.log('Tournament completed in database:', result.message);
+            } else {
+                console.error('Failed to complete tournament in database:', result.error);
+            }
+        } catch (error) {
+            console.error('Error completing tournament in database:', error);
+        }
+    }
+    
+
     private generateBracket(): void {
         const players = [...this.tournamentState.players];
         const bracket: Array<Array<{player1: string, player2: string, winner?: string}>> = [];
         
+
         // Shuffle players for random seeding
         for (let i = players.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -2672,16 +2802,24 @@ class SimpleAuth {
         this.tournamentState.bracket.forEach((round, roundIndex) => {
             const roundDiv = document.createElement('div');
             // Make boxes bigger for 2-round tournaments
-            const isTwoRounds = this.tournamentState.bracket.length === 2;
-            roundDiv.className = isTwoRounds ? 'mr-12' : 'mr-8';
-            roundDiv.innerHTML = `
-                <h4 class="text-2xl font-bold text-white mb-4 text-center">Round ${roundIndex + 1}</h4>
-            `;
+           const totalPlayers = this.tournamentState.players.length;
+            const expectedRounds = Math.ceil(Math.log2(totalPlayers));
+            const isLastRound = roundIndex === this.tournamentState.bracket.length - 1;
+            const isFinalMatch = round.length === 1;
             
+            if (expectedRounds <= 2) {
+                // 4-player tournament - bigger boxes
+                roundDiv.className = 'mr-12';
+            }
+            let roundTitle = isFinalMatch ? 'Final' : 'Semifinal';
+            
+            roundDiv.innerHTML = `
+                <h4 class="text-2xl font-bold text-white mb-4 text-center">${roundTitle}</h4>
+            `;
             round.forEach((match, matchIndex) => {
                 const matchDiv = document.createElement('div');
                 // Bigger boxes for 2-round tournaments
-                const boxClass = isTwoRounds ? 'bg-white/20 rounded-lg p-6 mb-4 border border-white/30' : 'bg-white/20 rounded-lg p-3 mb-2 border border-white/30';
+                const boxClass = 'bg-white/20 rounded-lg border border-white/30 mb-3';
                 matchDiv.className = boxClass;
                 matchDiv.innerHTML = `
                     <div class="text-white text-base">
@@ -2855,7 +2993,7 @@ class SimpleAuth {
         };
     }
 
-    private handleTournamentGameEnd(winner: number): void {
+    private async handleTournamentGameEnd(winner: number): Promise<void> {
         const currentMatch = this.currentTournamentMatch;
         if (!currentMatch) return;
 
@@ -2868,13 +3006,14 @@ class SimpleAuth {
 
         // Convert winner number to player name
         const winnerName = winner === 1 ? currentMatch.player1 : currentMatch.player2;
+        const loserName = winner === 1 ? currentMatch.player2 : currentMatch.player1;
         currentMatch.winner = winnerName;
 
+        await this.recordTournamentResult(winnerName, loserName);
         // Update stats for the current user if they participated
         if (this.currentUser && (currentMatch.player1 === this.currentUser.username || currentMatch.player2 === this.currentUser.username)) {
             const userWon = winnerName === this.currentUser.username;
             console.log('Updating tournament stats for user:', this.currentUser.username, 'Won:', userWon);
-            this.updateUserStats(userWon);
         } else {
             console.log('Current user not participating in this tournament match, skipping stats update');
         }
@@ -3064,6 +3203,8 @@ class SimpleAuth {
 
         if (!winner) return;
 
+        this.completeTournamentInDatabase();
+        
         // Hide all other sections
         const sections = ['playerNamesForm', 'tournamentBracket', 'currentMatch', 'matchResults'];
         sections.forEach(id => {
@@ -3136,9 +3277,7 @@ class SimpleAuth {
 
         // Show player count selection again
         const tournament4Players = document.getElementById('tournament4Players');
-        const tournament8Players = document.getElementById('tournament8Players');
         if (tournament4Players) tournament4Players.style.display = 'block';
-        if (tournament8Players) tournament8Players.style.display = 'block';
 
         // Hide all sections
         const sections = ['playerNamesForm', 'tournamentBracket', 'currentMatch', 'matchResults', 'tournamentResults'];

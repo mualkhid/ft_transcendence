@@ -3,7 +3,7 @@ networks:
 
 
 services:
-  # Nginx with SSL termination and WAF (ModSecurity)
+  # Nginx with SSL
   nginx:
     build: ./security
     ports:
@@ -30,31 +30,22 @@ services:
     restart: unless-stopped
     
   
+  # frontend service
   backend:
     build: ./backend
     environment:
-      - NODE_ENV=production
-      - JWT_SECRET=1234
+      - NODE_ENV=${NODE_ENV}
+      - JWT_SECRET=${JWT_SECRET}
+      - DATABASE_URL=${DATABASE_URL}
     expose:
       - "3000"
     networks: [webapp]
+    volumes:
+      - ./persist/sqlite:/app/data
+      - ./persist/avatars:/app/public/avatars
     restart: unless-stopped
-    # depends_on:
-    #   - vault
 
 
-  # (Optional) Frontend service
-  # Uncomment and configure if/when frontend is ready
 
-
-  # HashiCorp Vault for secrets management
-  # vault:
-  #   image: hashicorp/vault:1.15.2
-  #   cap_add:
-  #     - IPC_LOCK
-  #   command: server -config=/vault/config/vault.hcl
-  #   volumes:
-  #     - ./security/vault/config:/vault/config
-  #     - ./security/vault/data:/vault/data
-  #   ports:
-  #     - "18300:18300"
+volumes:
+  database: {}
