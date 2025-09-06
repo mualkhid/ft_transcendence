@@ -124,7 +124,7 @@ export async function login(req, reply) {
         sameSite: 'lax', // Allow cross-origin requests
         path: '/',
         maxAge: 3600,
-        domain: 'localhost' // Explicitly set domain for cross-origin
+        // domain: 'localhost' // Explicitly set domain for cross-origin
     });
     
     await prisma.user.update({where: { id: user.id }, data: { lastSeen: new Date() } });
