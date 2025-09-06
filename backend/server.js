@@ -616,6 +616,7 @@ console.log('🔌 All routes registered successfully');
 
 // 🔹 Start server LAST
 try {
+    setupGracefulShutdown(fastify, prisma);
   console.log('Attempting to start server...');
   const address = await fastify.listen({ port: 3000, host: '0.0.0.0' });
   console.log(`Server running at ${address}`);
