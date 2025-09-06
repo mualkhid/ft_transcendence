@@ -3,6 +3,7 @@ import { authenticate } from '../services/jwtService.js';
 import { trackUserActivity } from '../services/lastSeenService.js';
 
 async function remoteGameRoutes(fastify, options) {
+    // Main remote game route using the sophisticated state service
     fastify.get('/remote-game/:matchId', { websocket: true }, async (connection, request) => {
         console.log('🔌 WebSocket connection attempt:', {
             matchId: request?.params?.matchId || 'undefined',
@@ -40,6 +41,34 @@ async function remoteGameRoutes(fastify, options) {
         }
     });
     
+    // Simple remote game route (alternative implementation)
+    fastify.get('/simple-remote/:matchId', { websocket: true }, async (connection, request) => {
+        console.log('🔌 Simple remote game connection attempt');
+        
+        if (!connection.socket) {
+            console.error('❌ No WebSocket connection available');
+            return;
+        }
+        
+        try {
+            const matchId = request.params.matchId;
+            const username = request.query?.username || 'Anonymous';
+            
+            console.log('✅ Simple WebSocket connection established');
+            console.log('📝 Match ID:', matchId, 'Username:', username);
+            
+            // Import the simple handler from controller
+            const { handleSimpleRemoteGame } = await import('../controller/remoteGameController.js');
+            handleSimpleRemoteGame(connection.socket, request);
+            
+        } catch (error) {
+            console.error('❌ Error in simple remote game:', error);
+            if (connection.socket && connection.socket.readyState === 1) {
+                connection.socket.close(1011, 'Internal server error');
+            }
+        }
+    });
+
     // Add a simple test route to verify WebSocket is working
     fastify.get('/test-ws', { websocket: true }, async (connection, request) => {
         console.log('🧪 Test WebSocket connection');

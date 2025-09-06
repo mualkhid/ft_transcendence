@@ -2536,13 +2536,13 @@ class SimpleAuth {
         console.log('Winner:', winner, 'Loser:', loser);
         console.log('Tournament ID:', this.tournamentState.tournamentId);
         
-        if (!this.currentUser?.token) {
+        if (!this.currentUser) {
             console.log('No authentication token, skipping backend recording');
             return;
         }
     
         try {
-            const url = 'http://localhost:3000/api/tournament/local-result';
+            const url = 'https://localhost/api/tournament/local-result';
             const requestBody = {
                 winner,
                 loser,
@@ -2557,9 +2557,9 @@ class SimpleAuth {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.currentUser.token}`
                 },
-                body: JSON.stringify(requestBody)
+                body: JSON.stringify(requestBody),
+                credentials: 'include'
             });
     
             const result = await response.json();
@@ -2677,19 +2677,17 @@ class SimpleAuth {
         this.showNextMatch();
     }
 
-    private async createTournamentInDatabase(players: string[]): Promise<void> {
-        console.log('=== DEBUGGING TOURNAMENT CREATION ===');
-        console.log('Current user:', this.currentUser);
-        console.log('Token exists:', !!this.currentUser?.token);
+    private async createTournamentInDatabase(players: string[]): Promise<void>
+    {
         
-        if (!this.currentUser?.token) {
+        if (!this.currentUser) {
             console.log('No authentication token, skipping tournament creation in database');
             return;
         }
     
         try {
             // Use correct URL - adjust port/protocol as needed
-            const url = 'http://localhost:3000/api/tournament/create';
+            const url = 'https://localhost/api/tournament/create';
             console.log('Making request to:', url);
             
             const requestBody = {
@@ -2703,9 +2701,9 @@ class SimpleAuth {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.currentUser.token}`
                 },
-                body: JSON.stringify(requestBody)
+                body: JSON.stringify(requestBody),
+                credentials: 'include'
             });
     
             console.log('Response status:', response.status);
@@ -2727,7 +2725,7 @@ class SimpleAuth {
 
     private async completeTournamentInDatabase(winnerId?: number): Promise<void>
     {
-        if (!this.currentUser?.token || !this.tournamentState.tournamentId) {
+        if (!this.currentUser|| !this.tournamentState.tournamentId) {
             console.log('No authentication token or tournament ID, skipping tournament completion');
             return;
         }
@@ -2737,11 +2735,11 @@ class SimpleAuth {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.currentUser.token}`
                 },
                 body: JSON.stringify({
                     winnerId: winnerId || null
-                })
+                }),
+                credentials: 'include'
             });
     
             const result = await response.json();
