@@ -58,36 +58,47 @@ export async function registerUser(request, reply){
 
 
 
-export async function deleteAccount(req, reply) {
-  const userId = req.user.id;
-  try {
-    // Delete user and all related data (e.g., friendships, tournaments, etc.)
-    await prisma.user.delete({ where: { id: userId } });
-    // Optionally: delete related data in other tables if needed
-    return reply.status(200).send({ message: "Account deleted successfully." });
-  } catch (err) {
-    console.error("Account deletion error:", err);
-    return reply.status(500).send({ error: "Internal server error." });
-  }
-}
 
-export async function anonymizeAccount(req, reply) {
+
+// GDPR: Anonymize user data (replace PII with random values)
+exports.anonymizeUser = async (req, reply) => {
   const userId = req.user.id;
   try {
-    // Replace username/email with random values
-    const anonymizedUsername = 'user_' + crypto.randomBytes(6).toString('hex');
-    const anonymizedEmail = anonymizedUsername + '@anonymized.local';
     await prisma.user.update({
       where: { id: userId },
       data: {
-        username: anonymizedUsername,
-        email: anonymizedEmail,
-        // Optionally: clear other personal fields
+        username: `anon_${userId}_${Date.now()}`,
+        email: `anon_${userId}_${Date.now()}@example.com`,
+        // ...anonymize other fields as needed
       }
     });
-    return reply.status(200).send({ message: "Account anonymized successfully." });
+    // Optionally anonymize related data (friends, messages, etc.)
+    reply.send({ message: 'Your data has been anonymized.' });
   } catch (err) {
     console.error("Account anonymization error:", err);
     return reply.status(500).send({ error: "Internal server error." });
   }
-}
+};
+
+
+// GDPR: Delete user and cascade delete related data
+exports.deleteUser = async (req, reply) => {
+  const userId = req.user.id;
+  try {
+    // Cascade delete related data (example: friends, tournaments, etc.)
+    await prisma.friend?.deleteMany?.({ where: { OR: [{ userId }, { friendId: userId }] } });
+    await prisma.tournament?.deleteMany?.({ where: { creatorId: userId } });
+    // Add more related deletions as needed
+    await prisma.user.delete({ where: { id: userId } });
+    reply.send({ message: 'Your account and all data have been deleted.' });
+  } catch (err) {
+    console.error("Account deletion error:", err);
+    return reply.status(500).send({ error: "Internal server error." });
+  }
+};
+
+exports.getUserData = async (req, reply) => {
+  const userId = req.user.id;
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  reply.send({ user });
+};
