@@ -61,7 +61,8 @@ export async function registerUser(request, reply){
 
 
 // GDPR: Anonymize user data (replace PII with random values)
-exports.anonymizeUser = async (req, reply) => {
+export async function anonymizeUser(req, reply)
+{
   const userId = req.user.id;
   try {
     await prisma.user.update({
@@ -82,7 +83,8 @@ exports.anonymizeUser = async (req, reply) => {
 
 
 // GDPR: Delete user and cascade delete related data
-exports.deleteUser = async (req, reply) => {
+export async function deleteUser (req, reply)
+{
   const userId = req.user.id;
   try {
     // Cascade delete related data (example: friends, tournaments, etc.)
@@ -97,7 +99,8 @@ exports.deleteUser = async (req, reply) => {
   }
 };
 
-exports.getUserData = async (req, reply) => {
+export async function getUserData(req, reply)
+{
   const userId = req.user.id;
   const user = await prisma.user.findUnique({ where: { id: userId } });
   reply.send({ user });
