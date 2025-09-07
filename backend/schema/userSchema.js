@@ -1,4 +1,4 @@
-const registerSchema = {
+export const registerSchema = {
     body: {
         type: 'object',
         required: ['alias'],
@@ -18,7 +18,7 @@ const registerSchema = {
     }
 };
 
-const getAliasSchema = {
+export const getAliasSchema = {
     response: {
     200: {
         type: 'array',
@@ -31,9 +31,20 @@ const getAliasSchema = {
         }
         }
     }
-}
+};
 
-module.exports = { 
-    registerSchema,
-    getAliasSchema
+export const anonymizeAccountSchema = {
+  body: {
+    type: 'object',
+    properties: {}, // No body expected, but you can add fields if needed
+    additionalProperties: false
+  }
+};
+
+export const deleteAccountSchema = {
+  body: {
+    type: 'object',
+    properties: {}, // No body expected, but you can add fields if needed
+    additionalProperties: false
+  }
 };

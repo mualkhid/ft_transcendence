@@ -1,118 +1,232 @@
-const {
-    createNewTournament,
-    getTournament,
-    currentTournament,
-    resetTournament
-  } = require('../services/tournamentService');
-  
-const { users, matches, generateMatchId } = require('../services/userService');
+import { PrismaClient } from '@prisma/client';
 
-async function createTournament(request, reply)
+const prisma = new PrismaClient();
+
+export async function createTournament(request, reply)
 {
-    const tournament = createNewTournament("Tournament");
-  
-    return reply.status(201).send({
-      ...tournament,
-      message: 'Tournament created successfully!'
+    const { name, players, maxPlayers = 4 } = request.body;
+    const userId = request.user?.id;
+
+    if (!name || !players || !Array.isArray(players)) {
+        return reply.status(400).send({ 
+            error: 'Tournament name and players array are required' 
+        });
+    }
+
+    if (players.length !== 4) {
+        return reply.status(400).send({ 
+            error: 'Tournament must have exactly 4 players' 
+        });
+    }
+
+    const tournament = await prisma.tournament.create({
+        data: {
+            name,
+            maxPlayers,
+            createdBy: userId,
+            status: 'ACTIVE'
+        }
     });
-}
 
-async function getTournamentRequest(request, reply)
-{
-    const tournament = getTournament();
-  
-    if (!tournament){
-        return reply.status(404).send({ error: 'No tournament found' });
-    }
-    return reply.send(tournament);
-}
+    const tournamentPlayers = await Promise.all(
+        players.map(async (playerName) => {
+            const existingUser = await prisma.user.findFirst({
+                where: { username: playerName }
+            });
 
-async function joinTournament(request, reply)
-{
-    const { userId } = request.body;
-  
-    if (!userId || typeof userId !== 'number') {
-    return reply.status(400).send({ error: 'Missing or invalid userId' });
-    }
+            return prisma.tournamentPlayer.create({
+                data: {
+                    tournamentId: tournament.id,
+                    name: playerName,
+                    userId: existingUser?.id || null
+                }
+            });
+        })
+    );
 
-    const user = users.get(userId);
-    if (!user) {
-    return reply.status(404).send({ error: 'User not found' });
-    }
-
-    const tournament = getTournament();
-    if (!tournament) {
-    return reply.status(404).send({ error: 'No tournament found' });
-    }
-
-    if (tournament.status !== 'registration') {
-    return reply.status(403).send({ error: 'Tournament is not accepting new players' });
-    }
-
-    if (tournament.participantIds.includes(userId)) {
-    return reply.status(409).send({ error: 'User already joined' });
-    }
-
-    tournament.participantIds.push(userId);
-
-    return reply.status(200).send({
-    message: `${user.alias} joined the tournament.`
-    });
-}
-
-async function nextMatch(request, reply)
-{
-    const tournament = getTournament();
-    if(!tournament)
-        return reply.status(404).send({error: 'No tournament'});
-    const participants = tournament.participantIds;
-    if(!participants)
-      return reply.status(404).send({error: 'No participants in tournament'});
-
-    const matchedUsers = new Set();
-    for(const match of matches.values())
-    {
-      matchedUsers.add(match.player1Id);
-      matchedUsers.add(match.player2Id);
-    }
-
-    const available = participants.filter(id => !matchedUsers.has(id));
-    if (available.length < 2)
-      return reply.status(400).send({ error: 'Not enough players' });
-
-    const [player1Id, player2Id] = available;
-    const matchId = generateMatchId();
-
-    const match = {
-      id : matchId,
-      tournamentId : tournament.id,
-      player1Id,
-      player2Id,
-      status : 'pending'
+    const response = {
+        success: true,
+        message: 'Tournament created successfully',
+        tournamentId: tournament.id,
+        tournament: {
+            id: tournament.id,
+            name: tournament.name,
+            maxPlayers: tournament.maxPlayers,
+            players: tournamentPlayers.map(p => p.name)
+        }
     };
 
-    matches.set(matchId, match);
-    const player1 = users.get(player1Id);
-    const player2 = users.get(player2Id);
+    return reply.status(201).send(response);
+}
+
+export async function recordLocalTournamentResult(request, reply)
+{
+    const { winner, loser, tournamentName = 'Local Tournament', tournamentId, round = 1 } = request.body;
+
+    if (!winner || !loser)
+        return reply.status(400).send({ error: 'Winner and loser are required' });
+
+    if (!tournamentId)
+        return reply.status(400).send({ error: 'Tournament ID is required' });
+
+    const updates = [];
+    const [winnerUser, loserUser] = await Promise.all([
+        prisma.user.findFirst({ where: { username: winner } }),
+        prisma.user.findFirst({ where: { username: loser } })
+    ]);
+
+    if (winnerUser) {
+        updates.push(
+            prisma.user.update({
+                where: { id: winnerUser.id },
+                data: { 
+                    wins: { increment: 1 },
+                    gamesPlayed: { increment: 1 }
+                }
+            })
+        );
+    }
+
+    if (loserUser) {
+        updates.push(
+            prisma.user.update({
+                where: { id: loserUser.id },
+                data: { 
+                    losses: { increment: 1 },
+                    gamesPlayed: { increment: 1 }
+                }
+            })
+        );
+    }
+    
+    const tournament = await prisma.tournament.findUnique({
+        where: { id: parseInt(tournamentId) }
+    });
+    
+    if (!tournament)
+        return reply.status(404).send({ error: 'Tournament not found' });
+
+    let winnerPlayer = await prisma.tournamentPlayer.findFirst({
+        where: { 
+            tournamentId: parseInt(tournamentId),
+            name: winner 
+        }
+    });
+    
+    let loserPlayer = await prisma.tournamentPlayer.findFirst({
+        where: { 
+            tournamentId: parseInt(tournamentId),
+            name: loser 
+        }
+    });
+
+    if (!winnerPlayer || !loserPlayer) {
+        if (!winnerPlayer) {
+            winnerPlayer = await prisma.tournamentPlayer.findFirst({
+                where: { 
+                    tournamentId: parseInt(tournamentId),
+                    name: winner.trim()
+                }
+            });
+        }
+        
+        if (!loserPlayer) {
+            loserPlayer = await prisma.tournamentPlayer.findFirst({
+                where: { 
+                    tournamentId: parseInt(tournamentId),
+                    name: loser.trim()
+                }
+            });
+        }
+    }
+
+    if (winnerPlayer && loserPlayer) {
+        const matchData = {
+            tournamentId: parseInt(tournamentId),
+            round: round,
+            player1Id: winnerPlayer.id,
+            player2Id: loserPlayer.id,
+            winnerId: winnerPlayer.id,
+            completed: true,
+            completedAt: new Date()
+        };
+        
+        updates.push(
+            prisma.tournamentMatch.create({
+                data: matchData
+            })
+        );
+    }
+
+    if (updates.length > 0) {
+        await prisma.$transaction(updates);
+    }
 
     return reply.status(200).send({
-      matchId,
-      player1: {id : player1Id, alias : player1.alias},
-      player2: {id : player2Id, alias : player2.alias},
+        success: true,
+        message: `Tournament result recorded: ${winner} beats ${loser}`,
+        statsUpdated: updates.length > 0,
+        updatesCount: updates.length,
+        tournamentMatchCreated: !!(winnerPlayer && loserPlayer)
     });
 }
 
-async function resetTournamentRequest(request, reply)
+export async function getTournament(request, reply)
 {
-    resetTournament();
-    matches.clear();
-    return reply.status(200).send({message: 'Tournament and matches reset successfully.'});
+    const { id } = request.params;
+
+    const tournament = await prisma.tournament.findUnique({
+        where: { id: parseInt(id) },
+        include: {
+            players: {
+                include: {
+                    user: {
+                        select: { id: true, username: true }
+                    }
+                }
+            },
+            matches: {
+                include: {
+                    player1: true,
+                    player2: true,
+                    winner: true
+                }
+            },
+            creator: {
+                select: { id: true, username: true }
+            }
+        }
+    });
+
+    if (!tournament)
+        return reply.status(404).send({ error: 'Tournament not found' });
+
+    return reply.status(200).send({
+        success: true,
+        tournament
+    });
 }
 
-module.exports = {
-    createTournament,
-    getTournamentRequest,
-    joinTournament,
-    nextMatch,
-    resetTournamentRequest
+export async function completeTournament(request, reply)
+{
+    const { id } = request.params;
+    const { winnerId } = request.body;
+
+    const tournament = await prisma.tournament.update({
+        where: { id: parseInt(id) },
+        data: {
+            status: 'COMPLETED',
+            completedAt: new Date()
+        },
+        include: {
+            players: true,
+            matches: true
+        }
+    });
+
+    return reply.status(200).send({
+        success: true,
+        message: 'Tournament completed',
+        tournament
+    });
 }

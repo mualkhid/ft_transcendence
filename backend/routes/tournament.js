@@ -1,19 +1,16 @@
-const { createTournament, getTournamentRequest, joinTournament, nextMatch, resetTournamentRequest } = require('../controller/tournamentController');
-const { createTournamentSchema, getTournamentSchema, joinTournamentSchema, nextMatchSchema, resetTournamentSchema  } = require('../schema/tournamentSchema');
+import { recordLocalTournamentResult, completeTournament, getTournament, createTournament } from '../controller/tournamentController.js';
+import { authenticate } from '../services/jwtService.js';
+import { trackUserActivity } from '../services/lastSeenService.js';
 
+async function tournamentRoutes(fastify, options) {
+  fastify.post('/tournament/create', { preHandler: [authenticate, trackUserActivity] }, createTournament);
 
-  async function tournamentRoutes(fastify, options)
-  {
-    fastify.post('/tournament/create', {schema: createTournamentSchema}, createTournament);
+  fastify.post('/tournament/local-result', { preHandler: [authenticate, trackUserActivity]}, recordLocalTournamentResult);
+
+  fastify.get('/tournament/:id', { preHandler: [authenticate, trackUserActivity] }, getTournament);
+
+  fastify.patch('/tournament/:id/complete', { preHandler: [authenticate, trackUserActivity] }, completeTournament);
   
-    fastify.get('/tournament', {schema: getTournamentSchema}, getTournamentRequest);
+}
 
-    fastify.post('/tournament/join', {schema: joinTournamentSchema}, joinTournament);
-
-    fastify.get('/tournament/next-match', {schema : nextMatchSchema}, nextMatch);
-
-    fastify.post('/tournament/reset', {schema: resetTournamentSchema}, resetTournamentRequest);
-    
-  }
-  
-  module.exports = tournamentRoutes;
+export default tournamentRoutes;

@@ -1,10 +1,10 @@
-const { registerUser, getAliases } = require('../controller/userController');
-const { registerSchema, getAliasSchema } = require('../schema/userSchema');
+import { deleteUser, anonymizeUser, getUserData } from '../controller/userController.js';
+import { registerSchema, deleteAccountSchema, anonymizeAccountSchema } from '../schema/userSchema.js';
+import { authenticate } from '../services/jwtService.js';
 
-async function userRoutes(fastify, options)
-{
-    fastify.post('/register', {schema : registerSchema}, registerUser);
-    fastify.get('/aliases', { schema : getAliasSchema }, getAliases);
+export default function userRoutes(fastify, options) {
+    // Removed conflicting /register route - using /auth/registerUser instead
+    fastify.delete('/user/delete', {preHandler: authenticate}, deleteUser);
+    fastify.post('/user/anonymize', {preHandler: authenticate}, anonymizeUser);
+    fastify.get('/user/data', {preHandler: authenticate}, getUserData);
 }
-
-module.exports = userRoutes;
