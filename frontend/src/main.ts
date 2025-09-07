@@ -3586,6 +3586,7 @@ class SimpleAuth {
                             // Fallback: Check for game over if server doesn't send game-over message
                             if (data.player1Score >= 5 || data.player2Score >= 5) {
                                 console.log('🎯 Fallback: Game over detected in game-state message');
+                                this.onlineGameState.gameFinished = true;
                                 const winner = data.player1Score >= 5 ? data.player1Username : data.player2Username;
                                 const winnerScore = data.player1Score >= 5 ? data.player1Score : data.player2Score;
                                 const loserScore = data.player1Score >= 5 ? data.player2Score : data.player1Score;
@@ -3623,6 +3624,23 @@ class SimpleAuth {
                             this.hideRemoteGameMessage();
                             this.hideScoreDisplay();
                             this.updateRemoteGameStatus('Restarting', 'Both players agreed to play again!');
+                             this.onlineGameState.gameFinished = false;
+                            this.onlineGameState.gameState = {
+                                ballX: 400,
+                                ballY: 300,
+                                leftPaddleY: 250,
+                                rightPaddleY: 250,
+                                player1Score: 0,
+                                player2Score: 0,
+                                speedX: 5,
+                                speedY: 3
+                            };
+                            
+                            // ✅ ADD: Hide game over modal
+                            const gameOverModal = document.getElementById('gameOverModal');
+                            if (gameOverModal) {
+                                gameOverModal.classList.add('hidden');
+                            }
                             break;
                             
                         case 'play-again-waiting':
@@ -3678,7 +3696,19 @@ class SimpleAuth {
                 this.onlineGameState.isConnected = false;
                 
                 // Only show disconnect message if game wasn't finished
-                if (!this.onlineGameState.gameFinished) {
+                if (this.onlineGameState.gameFinished) {
+                    console.log('Game finished normally, not showing disconnect message');
+                    return;
+                }
+                
+                // Check for normal closure codes
+                if (event.code === 1000 && (event.reason === 'Game completed normally' || event.reason === 'Match is full')) {
+                    console.log('WebSocket closed normally:', event.reason);
+                    return;
+                }
+                
+                // Only show disconnect message for unexpected closures
+                if (event.code !== 1000) {
                     this.updateRemoteGameStatus('Disconnected', `Connection closed: ${event.reason || 'No reason provided'}`);
                     
                     // Show a message that the game was abandoned

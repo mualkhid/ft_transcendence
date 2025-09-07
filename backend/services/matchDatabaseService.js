@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export async function createCasualMatch(player1Alias, player2Alias, customId = null)
+export async function createMatch(player1Alias, player2Alias, customId = null)
 {
     const matchData = {
         tournamentId: null,
