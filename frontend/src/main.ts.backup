@@ -2,7 +2,47 @@
 class SimpleAuth {
     private currentUser: any = null;
     private authToken: string | null = null;
-
+    
+    // AI Game properties
+    private aiGameInitialized: boolean = false;
+    private aiGameConfig = {
+        CANVAS: {
+            WIDTH: 800,
+            HEIGHT: 600
+        },
+        PADDLE: {
+            WIDTH: 15,
+            HEIGHT: 100,
+            SPEED: 4
+        },
+        BALL: {
+            RADIUS: 10,
+            SPEED_X: 5,
+            SPEED_Y: 3
+        },
+        GAME: {
+            WINNING_SCORE: 5
+        }
+    };
+    private aiGameState = {
+        ballX: 400,
+        ballY: 300,
+        ballSpeedX: 5,
+        ballSpeedY: 3,
+        ballRadius: 10,
+        playerPaddleY: 250,
+        aiPaddleY: 250,
+        playerScore: 0,
+        aiScore: 0,
+        gameStarted: false,
+        gameOver: false,
+        winningScore: 5,
+        currentDifficulty: 'MEDIUM'
+    };
+    private aiGameKeys = { w: false, s: false };
+    private aiGameAnimationId: number | null = null;
+    private aiGameWs: WebSocket | null = null;
+    private aiGameAvailableDifficulties: any = {};
 
     constructor() {
         console.log('SimpleAuth constructor called');
@@ -1114,9 +1154,7 @@ class SimpleAuth {
                     
                     // Show the main app with cached data even without cookie
                     this.showPage('mainApp');
-                    this.updateHomeDashboard().catch(error => {
-                        console.error('Error updating home dashboard:', error);
-                    });
+                    this.updateHomeDashboard();
                     this.updateProfileDisplay();
                     
                     // Clear search input when restoring from localStorage
@@ -1348,14 +1386,10 @@ class SimpleAuth {
                     this.loadFriendsData();
                 }, 100);
             } else if (sectionId === 'dashboardSection') {
-                console.log('Dashboard section shown, loading comprehensive dashboard data...');
-                // Load comprehensive dashboard data and synchronize with home stats
+                console.log('Dashboard section shown, loading dashboard data...');
+                // Load dashboard data even if user is not logged in (for demo purposes)
                 setTimeout(() => {
                     this.loadDashboardData();
-                    // Also refresh home stats to ensure they're in sync
-                    this.updateHomeDashboard().catch(error => {
-                        console.error('Error synchronizing home stats with dashboard:', error);
-                    });
                 }, 100);
             } else if (sectionId === 'aiPongSection') {
                 console.log('AI Pong section shown, initializing AI game...');
@@ -1404,19 +1438,6 @@ class SimpleAuth {
                 e.preventDefault();
                 console.log('Refresh stats button clicked');
                 this.loadUserProfile();
-            });
-        }
-
-        // Add refresh dashboard button listener
-        const refreshDashboardBtn = document.getElementById('refreshDashboardBtn');
-        if (refreshDashboardBtn) {
-            refreshDashboardBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                console.log('Refresh dashboard button clicked');
-                this.loadDashboardData();
-                this.updateHomeDashboard().catch(error => {
-                    console.error('Error refreshing home dashboard:', error);
-                });
             });
         }
     }
@@ -1471,7 +1492,7 @@ class SimpleAuth {
         
         // Handle special cases
         if (section === 'logout') {
-                this.handleLogout();
+            this.handleLogout();
             return;
         }
 
@@ -1589,7 +1610,7 @@ class SimpleAuth {
 
     private async loadDashboardData(): Promise<void> {
         try {
-            console.log('Loading comprehensive dashboard data...');
+            console.log('Loading dashboard data...');
             const response = await fetch('/api/dashboard', {
                 method: 'GET',
                 credentials: 'include',
@@ -1600,163 +1621,49 @@ class SimpleAuth {
 
             if (response.ok) {
                 const data = await response.json();
-                this.renderComprehensiveDashboardData(data.data);
+                this.renderDashboardData(data);
             } else {
                 console.error('Failed to load dashboard data');
-                this.renderBasicDashboardStats();
             }
         } catch (error) {
             console.error('Error loading dashboard data:', error);
-            this.renderBasicDashboardStats();
         }
     }
 
-    private renderComprehensiveDashboardData(dashboardData: any): void {
-        if (!dashboardData) return;
+    private renderDashboardData(data: any): void {
+        if (!data || !data.data) return;
+
+        const dashboardData = data.data;
         
-        console.log('Rendering comprehensive dashboard data:', dashboardData);
-        
-        // Update overview stats (same as home page)
-        const overallWinRate = document.getElementById('overall-win-rate');
-        const totalGames = document.getElementById('total-games');
-        const skillLevel = document.getElementById('skill-level');
-        const currentStreak = document.getElementById('current-streak');
+        // Update overview stats
+        document.getElementById('overall-win-rate')!.textContent = `${dashboardData.summary.overallWinRate}%`;
+        document.getElementById('total-games')!.textContent = dashboardData.summary.totalGames;
+        document.getElementById('skill-level')!.textContent = dashboardData.summary.skillLevel.level;
+        document.getElementById('current-streak')!.textContent = '3'; // Would come from actual data
 
-        if (overallWinRate) {
-            overallWinRate.textContent = `${dashboardData.summary.overallWinRate}%`;
-        }
-        if (totalGames) {
-            totalGames.textContent = dashboardData.summary.totalGames.toString();
-        }
-        if (skillLevel) {
-            skillLevel.textContent = dashboardData.summary.skillLevel?.level || 'Beginner';
-        }
-        if (currentStreak) {
-            currentStreak.textContent = dashboardData.summary.currentStreak?.toString() || '0';
-        }
+        // Update AI games stats
+        document.getElementById('ai-games-won')!.textContent = dashboardData.aiGameStats.wins;
+        document.getElementById('ai-win-rate')!.textContent = `${dashboardData.aiGameStats.winRate}%`;
+        document.getElementById('ai-best-score')!.textContent = dashboardData.aiGameStats.bestScore;
+        document.getElementById('ai-avg-score')!.textContent = dashboardData.aiGameStats.averageScore;
 
-        // Update AI games stats (comprehensive)
-        const aiGamesWon = document.getElementById('ai-games-won');
-        const aiWinRate = document.getElementById('ai-win-rate');
-        const aiBestScore = document.getElementById('ai-best-score');
-        const aiAvgScore = document.getElementById('ai-avg-score');
+        // Update multiplayer stats
+        document.getElementById('mp-wins')!.textContent = dashboardData.multiplayerStats.wins;
+        document.getElementById('mp-win-rate')!.textContent = `${dashboardData.multiplayerStats.winRate}%`;
+        document.getElementById('best-opponent')!.textContent = 'Player123';
+        document.getElementById('mp-total')!.textContent = dashboardData.multiplayerStats.totalGames;
 
-        if (aiGamesWon) {
-            aiGamesWon.textContent = dashboardData.aiGameStats.wins.toString();
-        }
-        if (aiWinRate) {
-            aiWinRate.textContent = `${dashboardData.aiGameStats.winRate}%`;
-        }
-        if (aiBestScore) {
-            aiBestScore.textContent = dashboardData.aiGameStats.bestScore?.toString() || '0';
-        }
-        if (aiAvgScore) {
-            aiAvgScore.textContent = dashboardData.aiGameStats.averageScore?.toString() || '0';
-        }
-
-        // Update local games stats (comprehensive)
-        const localGamesWon = document.getElementById('local-games-won');
-        const localWinRate = document.getElementById('local-win-rate');
-        const localBestScore = document.getElementById('local-best-score');
-        const localAvgScore = document.getElementById('local-avg-score');
-
-        if (localGamesWon) {
-            localGamesWon.textContent = dashboardData.localGameStats.wins.toString();
-        }
-        if (localWinRate) {
-            localWinRate.textContent = `${dashboardData.localGameStats.winRate}%`;
-        }
-        if (localBestScore) {
-            localBestScore.textContent = dashboardData.localGameStats.bestScore?.toString() || '0';
-        }
-        if (localAvgScore) {
-            localAvgScore.textContent = dashboardData.localGameStats.averageScore?.toString() || '0';
-        }
-
-        // Update multiplayer stats (comprehensive)
-        const mpWins = document.getElementById('mp-wins');
-        const mpWinRate = document.getElementById('mp-win-rate');
-        const bestOpponent = document.getElementById('best-opponent');
-        const mpTotal = document.getElementById('mp-total');
-
-        if (mpWins) {
-            mpWins.textContent = dashboardData.multiplayerStats.wins.toString();
-        }
-        if (mpWinRate) {
-            mpWinRate.textContent = `${dashboardData.multiplayerStats.winRate}%`;
-        }
-        if (bestOpponent) {
-            bestOpponent.textContent = dashboardData.multiplayerStats.bestOpponent || 'N/A';
-        }
-        if (mpTotal) {
-            mpTotal.textContent = dashboardData.multiplayerStats.totalGames.toString();
-        }
-
-        // Update tournament stats (comprehensive)
-        const tournamentsWon = document.getElementById('tournaments-won');
-        const tournamentWinRate = document.getElementById('tournament-win-rate');
-        const bestFinish = document.getElementById('best-finish');
-        const tournamentMatches = document.getElementById('tournament-matches');
-
-        if (tournamentsWon) {
-            tournamentsWon.textContent = dashboardData.tournamentStats.tournamentsWon?.toString() || '0';
-        }
-        if (tournamentWinRate) {
-            tournamentWinRate.textContent = `${dashboardData.tournamentStats.winRate}%`;
-        }
-        if (bestFinish) {
-            bestFinish.textContent = dashboardData.tournamentStats.bestFinish || 'N/A';
-        }
-        if (tournamentMatches) {
-            tournamentMatches.textContent = dashboardData.tournamentStats.totalMatches?.toString() || '0';
-        }
+        // Update tournament stats
+        document.getElementById('tournaments-won')!.textContent = dashboardData.tournamentStats.tournamentsWon;
+        document.getElementById('tournament-win-rate')!.textContent = `${dashboardData.tournamentStats.winRate}%`;
+        document.getElementById('best-finish')!.textContent = '1st Place';
+        document.getElementById('tournament-matches')!.textContent = dashboardData.tournamentStats.totalMatches;
 
         // Render recent games
-        this.renderRecentGames(dashboardData.recentGames || []);
+        this.renderRecentGames(dashboardData.recentGames);
         
         // Render achievements
-        this.renderAchievements(dashboardData.achievements || []);
-    }
-
-    private renderBasicDashboardStats(): void {
-        // Fallback to basic stats if comprehensive data is not available
-        console.log('Rendering basic dashboard stats as fallback');
-        
-        const overallWinRate = document.getElementById('overall-win-rate');
-        const totalGames = document.getElementById('total-games');
-        const skillLevel = document.getElementById('skill-level');
-        const currentStreak = document.getElementById('current-streak');
-
-        if (overallWinRate) {
-            overallWinRate.textContent = '--';
-        }
-        if (totalGames) {
-            totalGames.textContent = (this.currentUser?.gamesPlayed || 0).toString();
-        }
-        if (skillLevel) {
-            skillLevel.textContent = 'Beginner';
-        }
-        if (currentStreak) {
-            currentStreak.textContent = '0';
-        }
-
-        // Set all other stats to default values
-        const defaultStats = [
-            'ai-games-won', 'ai-win-rate', 'ai-best-score', 'ai-avg-score',
-            'mp-wins', 'mp-win-rate', 'best-opponent', 'mp-total',
-            'tournaments-won', 'tournament-win-rate', 'best-finish', 'tournament-matches'
-        ];
-
-        defaultStats.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.textContent = '--';
-            }
-        });
-
-        // Show empty states for recent games and achievements
-        this.renderRecentGames([]);
-        this.renderAchievements([]);
+        this.renderAchievements(dashboardData.achievements);
     }
 
     private renderRecentGames(games: any[]): void {
@@ -1803,43 +1710,390 @@ class SimpleAuth {
     }
 
     private initializeAIGame(): void {
-        console.log('🎮 Initializing AI Pong game...');
-        console.log('🎮 Window object available:', typeof window !== 'undefined');
+        console.log('Initializing AI Pong game...');
         
-        // Try multiple ways to access the function
-        let aiGameFunction = null;
-        
-        if (typeof window !== 'undefined') {
-            // Try direct access
-            aiGameFunction = (window as any).initializeAIGame;
-            console.log('🎮 Direct function available:', typeof aiGameFunction);
-            
-            // Try through simpleAuth object
-            if (!aiGameFunction && (window as any).simpleAuth) {
-                aiGameFunction = (window as any).simpleAuth.initializeAIGame;
-                console.log('🎮 SimpleAuth function available:', typeof aiGameFunction);
-            }
+        // Initialize AI game variables if not already initialized
+        if (!this.aiGameInitialized) {
+            this.setupAIGame();
+            this.aiGameInitialized = true;
         }
         
-        // Call the global AI game initialization function
-        if (aiGameFunction && typeof aiGameFunction === 'function') {
-            console.log('🎮 Calling AI game initialization function...');
-            try {
-                aiGameFunction();
-                console.log('🎮 AI game initialization function called successfully!');
-            } catch (error) {
-                console.error('❌ Error calling AI game function:', error);
-            }
-        } else {
-            console.error('❌ AI game initialization function not found');
-            console.error('❌ Available window properties:', Object.keys(window).filter(k => k.includes('AI') || k.includes('Game') || k.includes('simpleAuth')));
-        }
-        
-        console.log('🎮 AI Pong game initialization completed!');
+        console.log('AI Pong game initialized successfully!');
     }
 
 
+    private setupAIGameEventListeners(): void {
+        // Connect button
+        const connectBtn = document.getElementById('aiConnectBtn');
+        if (connectBtn) {
+            connectBtn.addEventListener('click', () => this.connectAIGame());
+        }
 
+        // Disconnect button
+        const disconnectBtn = document.getElementById('aiDisconnectBtn');
+        if (disconnectBtn) {
+            disconnectBtn.addEventListener('click', () => this.disconnectAIGame());
+        }
+
+        // Start button
+        const startBtn = document.getElementById('aiStartBtn');
+        if (startBtn) {
+            startBtn.addEventListener('click', () => this.startAIGame());
+        }
+
+        // Pause button
+        const pauseBtn = document.getElementById('aiPauseBtn');
+        if (pauseBtn) {
+            pauseBtn.addEventListener('click', () => this.pauseAIGame());
+        }
+
+        // Restart button
+        const restartBtn = document.getElementById('aiRestartBtn');
+        if (restartBtn) {
+            restartBtn.addEventListener('click', () => this.restartAIGame());
+        }
+
+        // Difficulty buttons
+        const easyBtn = document.getElementById('aiEasyBtn');
+        if (easyBtn) {
+            easyBtn.addEventListener('click', () => this.changeAIDifficulty('EASY'));
+        }
+
+        const mediumBtn = document.getElementById('aiMediumBtn');
+        if (mediumBtn) {
+            mediumBtn.addEventListener('click', () => this.changeAIDifficulty('MEDIUM'));
+        }
+
+        const hardBtn = document.getElementById('aiHardBtn');
+        if (hardBtn) {
+            hardBtn.addEventListener('click', () => this.changeAIDifficulty('HARD'));
+        }
+
+        const expertBtn = document.getElementById('aiExpertBtn');
+        if (expertBtn) {
+            expertBtn.addEventListener('click', () => this.changeAIDifficulty('EXPERT'));
+        }
+
+        // Game overlay buttons
+        const replayBtn = document.getElementById('replayBtn');
+        if (replayBtn) {
+            replayBtn.addEventListener('click', () => {
+                const gameOverlay = document.getElementById('gameOverlay');
+                if (gameOverlay) {
+                    gameOverlay.classList.add('hidden');
+                }
+                this.restartAIGame();
+            });
+        }
+
+        const backBtn = document.getElementById('backBtn');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                this.navigateToSection('home');
+            });
+        }
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'w') this.aiGameKeys.w = true;
+            if (e.key === 's') this.aiGameKeys.s = true;
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'w') this.aiGameKeys.w = false;
+            if (e.key === 's') this.aiGameKeys.s = false;
+        });
+    }
+
+    private initializeAIGameLoop(): void {
+        this.updateAIScore();
+        this.drawAIGame();
+        this.playerControlLoop();
+    }
+
+    private connectAIGame(): void {
+        try {
+            this.aiGameWs = new WebSocket('wss://localhost/ai-game');
+            
+            this.aiGameWs.onopen = () => {
+                this.logAIGame('Connected to AI Pong Game!');
+                this.updateAIConnectionStatus('Connected');
+                this.updateAIGameButtons(true, false, false, true);
+            };
+
+            this.aiGameWs.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    this.handleAIGameMessage(data);
+                } catch (e) {
+                    this.logAIGame(`Error parsing message: ${e instanceof Error ? e.message : 'Unknown error'}`);
+                }
+            };
+
+            this.aiGameWs.onclose = (event) => {
+                this.logAIGame(`Connection closed: ${event.reason || 'No reason provided'}`);
+                this.updateAIConnectionStatus('Disconnected');
+                this.updateAIGameButtons(false, true, true, true);
+                this.stopAIGameLoop();
+                this.aiGameWs = null;
+            };
+
+            this.aiGameWs.onerror = (error) => {
+                this.logAIGame('WebSocket error occurred');
+                this.updateAIConnectionStatus('Error');
+                console.error('WebSocket error:', error);
+            };
+
+        } catch (error) {
+            this.logAIGame(`Failed to create WebSocket: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            this.updateAIConnectionStatus('Error');
+        }
+    }
+
+    private disconnectAIGame(): void {
+        if (this.aiGameWs) {
+            this.aiGameWs.close(1000, 'Manual disconnect');
+            this.logAIGame('Disconnecting...');
+        }
+    }
+
+    private startAIGame(): void {
+        if (this.aiGameWs && this.aiGameWs.readyState === WebSocket.OPEN) {
+            this.aiGameWs.send(JSON.stringify({ type: 'start-game' }));
+            this.logAIGame('Starting game...');
+        }
+    }
+
+    private pauseAIGame(): void {
+        if (this.aiGameWs && this.aiGameWs.readyState === WebSocket.OPEN) {
+            this.aiGameWs.send(JSON.stringify({ type: 'pause-game' }));
+        }
+    }
+
+    private restartAIGame(): void {
+        if (this.aiGameWs && this.aiGameWs.readyState === WebSocket.OPEN) {
+            this.aiGameWs.send(JSON.stringify({ type: 'restart-game' }));
+            this.logAIGame('Restarting game...');
+        }
+    }
+
+    private changeAIDifficulty(difficulty: string): void {
+        if (this.aiGameWs && this.aiGameWs.readyState === WebSocket.OPEN) {
+            this.aiGameWs.send(JSON.stringify({ type: 'change-difficulty', difficulty: difficulty }));
+            this.logAIGame(`Changing difficulty to ${difficulty}...`);
+        }
+    }
+
+    private handleAIGameMessage(data: any): void {
+        switch (data.type) {
+            case 'connected':
+                this.logAIGame(data.message);
+                break;
+                
+            case 'game-state':
+                this.aiGameState = { ...this.aiGameState, ...data.gameState };
+                if (data.availableDifficulties) {
+                    this.aiGameAvailableDifficulties = data.availableDifficulties.reduce((acc: any, diff: any) => {
+                        acc[diff.key] = diff;
+                        return acc;
+                    }, {});
+                }
+                this.updateAIScore();
+                if (this.aiGameState.currentDifficulty && this.aiGameAvailableDifficulties[this.aiGameState.currentDifficulty]) {
+                    this.updateAIDifficultyDisplay(this.aiGameState.currentDifficulty, this.aiGameAvailableDifficulties[this.aiGameState.currentDifficulty]);
+                }
+                break;
+                
+            case 'difficulty-changed':
+                this.aiGameState.currentDifficulty = data.difficulty;
+                this.updateAIDifficultyDisplay(data.difficulty, data.aiConfig);
+                this.logAIGame(data.message);
+                break;
+                
+            case 'game-started':
+                this.logAIGame(data.message);
+                this.updateAIGameStatus('Game Running');
+                this.updateAIGameButtons(true, true, false, false);
+                this.startAIGameLoop();
+                break;
+                
+            case 'game-update':
+                this.aiGameState = { ...this.aiGameState, ...data.gameState };
+                this.updateAIScore();
+                break;
+                
+            case 'game-paused':
+                this.logAIGame(data.message);
+                this.updateAIGameStatus('Game Paused');
+                this.updateAIGamePauseButton('▶️ Resume');
+                this.stopAIGameLoop();
+                break;
+                
+            case 'game-resumed':
+                this.logAIGame(data.message);
+                this.updateAIGameStatus('Game Running');
+                this.updateAIGamePauseButton('⏸️ Pause');
+                this.startAIGameLoop();
+                break;
+                
+            case 'game-over':
+                this.logAIGame(`Game Over! ${data.winner === 'player' ? 'You win!' : 'AI wins!'} (Difficulty: ${data.difficulty})`);
+                this.updateAIGameStatus('Game Over');
+                this.showAIGameOverlay(data.winner === 'player' ? '🏆 Victory! You Beat the AI!' : '🤖 Game Over! AI Wins!');
+                this.stopAIGameLoop();
+                this.updateAIGameButtons(false, true, true, false);
+                this.logAIGame('Game result will be saved automatically');
+                break;
+                
+            case 'error':
+                this.logAIGame(`Error: ${data.message}`);
+                break;
+                
+            default:
+                this.logAIGame(`Received: ${data.type}`);
+        }
+    }
+
+    private drawAIGame(): void {
+        const canvas = document.getElementById('gameCanvas') as HTMLCanvasElement;
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // Clear canvas
+        ctx.fillStyle = '#0f0f23';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw center line
+        ctx.strokeStyle = '#533483';
+        ctx.setLineDash([5, 15]);
+        ctx.beginPath();
+        ctx.moveTo(canvas.width / 2, 0);
+        ctx.lineTo(canvas.width / 2, canvas.height);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Draw player paddle (left)
+        ctx.fillStyle = '#60a5fa';
+        ctx.fillRect(this.aiGameConfig.PADDLE.WIDTH, this.aiGameState.playerPaddleY, this.aiGameConfig.PADDLE.WIDTH, this.aiGameConfig.PADDLE.HEIGHT);
+
+        // Draw AI paddle (right) with difficulty-based color
+        const aiColor = this.aiGameAvailableDifficulties[this.aiGameState.currentDifficulty]?.color || '#f87171';
+        ctx.fillStyle = aiColor;
+        ctx.fillRect(this.aiGameConfig.CANVAS.WIDTH - this.aiGameConfig.PADDLE.WIDTH * 2, this.aiGameState.aiPaddleY, this.aiGameConfig.PADDLE.WIDTH, this.aiGameConfig.PADDLE.HEIGHT);
+
+        // Draw ball
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.arc(this.aiGameState.ballX, this.aiGameState.ballY, this.aiGameState.ballRadius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    private aiGameLoop(): void {
+        this.drawAIGame();
+        this.aiGameAnimationId = requestAnimationFrame(() => this.aiGameLoop());
+    }
+
+    private startAIGameLoop(): void {
+        if (!this.aiGameAnimationId) {
+            this.aiGameLoop();
+        }
+    }
+
+    private stopAIGameLoop(): void {
+        if (this.aiGameAnimationId) {
+            cancelAnimationFrame(this.aiGameAnimationId);
+            this.aiGameAnimationId = null;
+        }
+    }
+
+    private updatePlayerPaddle(): void {
+        if (this.aiGameKeys.w && this.aiGameState.playerPaddleY > 0) {
+            this.aiGameState.playerPaddleY -= this.aiGameConfig.PADDLE.SPEED;
+            if (this.aiGameWs && this.aiGameWs.readyState === WebSocket.OPEN) {
+                this.aiGameWs.send(JSON.stringify({ type: 'player-input', action: 'up' }));
+            }
+        }
+        if (this.aiGameKeys.s && this.aiGameState.playerPaddleY < this.aiGameConfig.CANVAS.HEIGHT - this.aiGameConfig.PADDLE.HEIGHT) {
+            this.aiGameState.playerPaddleY += this.aiGameConfig.PADDLE.SPEED;
+            if (this.aiGameWs && this.aiGameWs.readyState === WebSocket.OPEN) {
+                this.aiGameWs.send(JSON.stringify({ type: 'player-input', action: 'down' }));
+            }
+        }
+    }
+
+    private playerControlLoop(): void {
+        this.updatePlayerPaddle();
+        requestAnimationFrame(() => this.playerControlLoop());
+    }
+
+    private updateAIScore(): void {
+        const scoreDisplay = document.getElementById('aiScoreDisplay');
+        if (scoreDisplay) {
+            scoreDisplay.textContent = `Player: ${this.aiGameState.playerScore} - AI: ${this.aiGameState.aiScore}`;
+        }
+    }
+
+    private updateAIConnectionStatus(status: string): void {
+        const connectionStatus = document.getElementById('aiConnectionStatus');
+        if (connectionStatus) {
+            connectionStatus.textContent = status;
+        }
+    }
+
+    private updateAIGameStatus(status: string): void {
+        const gameStatus = document.getElementById('aiGameStatus');
+        if (gameStatus) {
+            gameStatus.textContent = status;
+        }
+    }
+
+    private updateAIGameButtons(connectDisabled: boolean, disconnectDisabled: boolean, startDisabled: boolean, pauseDisabled: boolean): void {
+        const connectBtn = document.getElementById('aiConnectBtn') as HTMLButtonElement;
+        const disconnectBtn = document.getElementById('aiDisconnectBtn') as HTMLButtonElement;
+        const startBtn = document.getElementById('aiStartBtn') as HTMLButtonElement;
+        const pauseBtn = document.getElementById('aiPauseBtn') as HTMLButtonElement;
+
+        if (connectBtn) connectBtn.disabled = connectDisabled;
+        if (disconnectBtn) disconnectBtn.disabled = disconnectDisabled;
+        if (startBtn) startBtn.disabled = startDisabled;
+        if (pauseBtn) pauseBtn.disabled = pauseDisabled;
+    }
+
+    private updateAIGamePauseButton(text: string): void {
+        const pauseBtn = document.getElementById('aiPauseBtn');
+        if (pauseBtn) {
+            pauseBtn.textContent = text;
+        }
+    }
+
+    private updateAIDifficultyDisplay(difficulty: string, aiConfig: any): void {
+        const difficultyName = document.querySelector('.difficulty-name');
+        const difficultyDescription = document.querySelector('.difficulty-description');
+        
+        if (difficultyName) difficultyName.textContent = aiConfig.name;
+        if (difficultyDescription) difficultyDescription.textContent = aiConfig.description;
+        
+        // Update active button
+        document.querySelectorAll('.difficulty-btn').forEach(btn => btn.classList.remove('active'));
+        const activeBtn = document.getElementById(`${difficulty.toLowerCase()}Btn`);
+        if (activeBtn) activeBtn.classList.add('active');
+    }
+
+    private showAIGameOverlay(message: string): void {
+        const gameOverlay = document.getElementById('gameOverlay');
+        const gameOverMessage = document.getElementById('gameOverMessage');
+        
+        if (gameOverMessage) gameOverMessage.textContent = message;
+        if (gameOverlay) gameOverlay.classList.remove('hidden');
+    }
+
+    private logAIGame(message: string): void {
+        // Log to console for now since there's no game log element in the HTML
+        const timestamp = new Date().toLocaleTimeString();
+        console.log(`[${timestamp}] ${message}`);
+    }
 
     private setupGameOptions(): void {
         // Add click handlers for game options
@@ -2523,15 +2777,6 @@ class SimpleAuth {
             // Show the modal
             gameOverModal.classList.remove('hidden');
             
-            // Refresh stats after local game completion
-            console.log('🎮 Local game completed, refreshing stats...');
-            this.updateHomeDashboard().catch(error => {
-                console.error('Error refreshing home dashboard after local game:', error);
-            });
-            this.loadDashboardData().catch(error => {
-                console.error('Error refreshing dashboard after local game:', error);
-            });
-            
             // Set up button event listeners
             const playAgainBtn = document.getElementById('playAgainBtn');
             const goHomeBtn = document.getElementById('goHomeBtn');
@@ -2546,9 +2791,7 @@ class SimpleAuth {
                 
                 newPlayAgainBtn.onclick = async () => {
                     console.log('Play Again clicked, updating stats...');
-                    const player1Score = this.gameState?.scorePlayer1 || 0;
-                    const player2Score = this.gameState?.scorePlayer2 || 0;
-                    await this.updateUserStats(winner === 1, 'LOCAL', player1Score, player2Score, 'Local Player');
+                    await this.updateUserStats(winner === 1);
                     gameOverModal.classList.add('hidden');
                     this.startNewGame();
                 };
@@ -2564,9 +2807,7 @@ class SimpleAuth {
                 
                 newGoHomeBtn.onclick = async () => {
                     console.log('Go to Home clicked, updating stats...');
-                    const player1Score = this.gameState?.scorePlayer1 || 0;
-                    const player2Score = this.gameState?.scorePlayer2 || 0;
-                    await this.updateUserStats(winner === 1, 'LOCAL', player1Score, player2Score, 'Local Player');
+                    await this.updateUserStats(winner === 1);
                     gameOverModal.classList.add('hidden');
                     this.goHome();
                 };
@@ -2745,160 +2986,26 @@ class SimpleAuth {
             if (profileLosses) console.log('Losses displayed:', profileLosses.textContent);
         }, 100);
 
-        // Also update home dashboard and synchronize dashboard stats
-        this.updateHomeDashboard().catch(error => {
-            console.error('Error updating home dashboard:', error);
-        });
-        
-        // Synchronize dashboard stats if dashboard section is currently visible
-        const dashboardSection = document.getElementById('dashboardSection');
-        if (dashboardSection && dashboardSection.classList.contains('active')) {
-            this.loadDashboardData().catch(error => {
-                console.error('Error synchronizing dashboard stats:', error);
-            });
-        }
+        // Also update home dashboard
+        this.updateHomeDashboard();
     }
 
-    private async updateHomeDashboard(): Promise<void> {
+    private updateHomeDashboard(): void {
         if (!this.currentUser) return;
 
-        try {
-            // Load comprehensive dashboard data
-            const response = await fetch('/api/dashboard', {
-                method: 'GET',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            });
+        const homeGamesPlayed = document.getElementById('homeGamesPlayed');
+        const homeWins = document.getElementById('homeWins');
+        const homeLosses = document.getElementById('homeLosses');
 
-            if (response.ok) {
-                const data = await response.json();
-                this.renderHomeDashboardData(data.data);
-            } else {
-                // Fallback to basic user stats if dashboard fails
-                this.renderBasicHomeStats();
-            }
-        } catch (error) {
-            console.error('Error loading home dashboard data:', error);
-            // Fallback to basic user stats
-            this.renderBasicHomeStats();
+        if (homeGamesPlayed) {
+            homeGamesPlayed.textContent = (this.currentUser.gamesPlayed || 0).toString();
         }
-    }
-
-    private renderHomeDashboardData(dashboardData: any): void {
-        console.log('🏠 Rendering home dashboard data:', dashboardData);
-        
-        // Update overall stats
-        const homeTotalGames = document.getElementById('homeTotalGames');
-        const homeTotalWins = document.getElementById('homeTotalWins');
-        const homeWinRate = document.getElementById('homeWinRate');
-
-        if (homeTotalGames) {
-            homeTotalGames.textContent = dashboardData.summary.totalGames.toString();
+        if (homeWins) {
+            homeWins.textContent = (this.currentUser.wins || 0).toString();
         }
-        if (homeTotalWins) {
-            homeTotalWins.textContent = dashboardData.summary.totalWins.toString();
+        if (homeLosses) {
+            homeLosses.textContent = (this.currentUser.losses || 0).toString();
         }
-        if (homeWinRate) {
-            homeWinRate.textContent = `${dashboardData.summary.overallWinRate}%`;
-        }
-
-        // Update AI Games stats
-        console.log('🤖 AI Game Stats:', dashboardData.aiGameStats);
-        const homeAIGames = document.getElementById('homeAIGames');
-        const homeAIWins = document.getElementById('homeAIWins');
-        const homeAIWinRate = document.getElementById('homeAIWinRate');
-
-        if (homeAIGames) {
-            homeAIGames.textContent = dashboardData.aiGameStats.totalGames.toString();
-        }
-        if (homeAIWins) {
-            homeAIWins.textContent = dashboardData.aiGameStats.wins.toString();
-        }
-        if (homeAIWinRate) {
-            homeAIWinRate.textContent = `${dashboardData.aiGameStats.winRate}%`;
-        }
-
-        // Update Local Games stats
-        console.log('🎮 Local Game Stats:', dashboardData.localGameStats);
-        const homeLocalGames = document.getElementById('homeLocalGames');
-        const homeLocalWins = document.getElementById('homeLocalWins');
-        const homeLocalWinRate = document.getElementById('homeLocalWinRate');
-
-        if (homeLocalGames) {
-            homeLocalGames.textContent = dashboardData.localGameStats.totalGames.toString();
-        }
-        if (homeLocalWins) {
-            homeLocalWins.textContent = dashboardData.localGameStats.wins.toString();
-        }
-        if (homeLocalWinRate) {
-            homeLocalWinRate.textContent = `${dashboardData.localGameStats.winRate}%`;
-        }
-
-        // Update Multiplayer stats
-        const homeMPGames = document.getElementById('homeMPGames');
-        const homeMPWins = document.getElementById('homeMPWins');
-        const homeMPWinRate = document.getElementById('homeMPWinRate');
-
-        if (homeMPGames) {
-            homeMPGames.textContent = dashboardData.multiplayerStats.totalGames.toString();
-        }
-        if (homeMPWins) {
-            homeMPWins.textContent = dashboardData.multiplayerStats.wins.toString();
-        }
-        if (homeMPWinRate) {
-            homeMPWinRate.textContent = `${dashboardData.multiplayerStats.winRate}%`;
-        }
-
-        // Update Tournament stats
-        const homeTournamentGames = document.getElementById('homeTournamentGames');
-        const homeTournamentWins = document.getElementById('homeTournamentWins');
-        const homeTournamentWinRate = document.getElementById('homeTournamentWinRate');
-
-        if (homeTournamentGames) {
-            homeTournamentGames.textContent = dashboardData.tournamentStats.totalGames.toString();
-        }
-        if (homeTournamentWins) {
-            homeTournamentWins.textContent = dashboardData.tournamentStats.wins.toString();
-        }
-        if (homeTournamentWinRate) {
-            homeTournamentWinRate.textContent = `${dashboardData.tournamentStats.winRate}%`;
-        }
-    }
-
-    private renderBasicHomeStats(): void {
-        // Fallback to basic user stats if dashboard data is not available
-        const homeTotalGames = document.getElementById('homeTotalGames');
-        const homeTotalWins = document.getElementById('homeTotalWins');
-        const homeWinRate = document.getElementById('homeWinRate');
-
-        if (homeTotalGames) {
-            homeTotalGames.textContent = (this.currentUser?.gamesPlayed || 0).toString();
-        }
-        if (homeTotalWins) {
-            homeTotalWins.textContent = (this.currentUser?.wins || 0).toString();
-        }
-        if (homeWinRate) {
-            const totalGames = this.currentUser?.gamesPlayed || 0;
-            const wins = this.currentUser?.wins || 0;
-            const winRate = totalGames > 0 ? (wins / totalGames * 100).toFixed(1) : 0;
-            homeWinRate.textContent = `${winRate}%`;
-        }
-
-        // Set all game type stats to 0 as fallback
-        const gameTypeStats = [
-            'homeAIGames', 'homeAIWins', 'homeAIWinRate',
-            'homeMPGames', 'homeMPWins', 'homeMPWinRate',
-            'homeTournamentGames', 'homeTournamentWins', 'homeTournamentWinRate'
-        ];
-
-        gameTypeStats.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.textContent = id.includes('WinRate') ? '0%' : '0';
-            }
-        });
     }
 
     private async refreshUserData(): Promise<void> {
@@ -3004,7 +3111,7 @@ class SimpleAuth {
         // Removed - no longer needed
     }
 
-        private async updateUserStats(userWon: boolean, gameType: string = 'LOCAL', player1Score?: number, player2Score?: number, opponentName?: string): Promise<void> {
+        private async updateUserStats(userWon: boolean): Promise<void> {
         // Update stats for all games including tournament games
         if (!this.currentUser) {
             console.log('No current user found, cannot update stats');
@@ -3013,34 +3120,20 @@ class SimpleAuth {
 
         console.log('=== UPDATING USER STATS ===');
         console.log('User won:', userWon);
-        console.log('Game type:', gameType);
-        console.log('Player 1 score:', player1Score);
-        console.log('Player 2 score:', player2Score);
-        console.log('Opponent name:', opponentName);
         console.log('Current user ID:', this.currentUser.id);
         console.log('Current cookies:', document.cookie);
         console.log('Tournament game:', !!this.currentTournamentMatch);
 
         try {
-            const requestBody: any = {
-                userId: this.currentUser.id,
-                won: userWon,
-                gameType: gameType
-            };
-
-            // Add game details for local games
-            if (gameType === 'LOCAL' && player1Score !== undefined && player2Score !== undefined) {
-                requestBody.player1Score = player1Score;
-                requestBody.player2Score = player2Score;
-                requestBody.opponentName = opponentName || 'Local Player';
-            }
-
             const response = await fetch('https://localhost/api/profile/update-stats', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(requestBody),
+                body: JSON.stringify({
+                    userId: this.currentUser.id,
+                    won: userWon
+                }),
                 credentials: 'include'
             });
 
@@ -3570,23 +3663,6 @@ class SimpleAuth {
         if (this.currentUser && (currentMatch.player1 === this.currentUser.username || currentMatch.player2 === this.currentUser.username)) {
             const userWon = winnerName === this.currentUser.username;
             console.log('Updating tournament stats for user:', this.currentUser.username, 'Won:', userWon);
-            
-            // Update user stats for tournament game
-            const userScore = userWon ? 5 : 0; // Tournament games are first to 5
-            const opponentScore = userWon ? 0 : 5;
-            const opponentName = userWon ? loserName : winnerName;
-            
-            this.updateUserStats(userWon, 'TOURNAMENT', userScore, opponentScore, opponentName).catch(error => {
-                console.error('Error updating user stats after tournament game:', error);
-            });
-            
-            // Refresh dashboards
-            this.updateHomeDashboard().catch(error => {
-                console.error('Error refreshing home dashboard after tournament game:', error);
-            });
-            this.loadDashboardData().catch(error => {
-                console.error('Error refreshing dashboard after tournament game:', error);
-            });
         } else {
             console.log('Current user not participating in this tournament match, skipping stats update');
         }
@@ -4536,29 +4612,6 @@ class SimpleAuth {
             
             // Show the modal
             gameOverModal.classList.remove('hidden');
-            
-            // Refresh stats after online game completion
-            console.log('🎮 Online game completed, refreshing stats...');
-            this.updateHomeDashboard().catch(error => {
-                console.error('Error refreshing home dashboard after online game:', error);
-            });
-            this.loadDashboardData().catch(error => {
-                console.error('Error refreshing dashboard after online game:', error);
-            });
-            
-            // Update user stats for remote multiplayer game
-            if (this.currentUser) {
-                const userWon = data.winner === this.currentUser.username;
-                const userScore = data.winner === this.currentUser.username ? data.winnerScore : data.loserScore;
-                const opponentScore = data.winner === this.currentUser.username ? data.loserScore : data.winnerScore;
-                const opponentName = data.winner === this.currentUser.username ? 
-                    (data.player1Username === this.currentUser.username ? data.player2Username : data.player1Username) :
-                    (data.player1Username === this.currentUser.username ? data.player2Username : data.player1Username);
-                
-                this.updateUserStats(userWon, 'MULTIPLAYER', userScore, opponentScore, opponentName).catch(error => {
-                    console.error('Error updating user stats after remote game:', error);
-                });
-            }
             
             // Set up button event listeners
             const playAgainBtn = document.getElementById('playAgainBtn');

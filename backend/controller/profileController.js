@@ -138,7 +138,7 @@ export async function updateAvatar(req, reply)
 
 export async function updateStats(req, reply) {
     const userId = req.user.id; // Get user ID from JWT token
-    const { won } = req.body;
+    const { won, gameType = 'LOCAL', player1Score, player2Score, opponentName } = req.body;
 
     if (typeof won !== 'boolean') {
         return reply.status(400).send({ error: 'won field must be a boolean' });
@@ -163,6 +163,48 @@ export async function updateStats(req, reply) {
 
         if (!user) {
             throw new notFoundError('User not found');
+        }
+
+        // Save game result as a match record for local, multiplayer, and tournament games
+        if ((gameType === 'LOCAL' || gameType === 'MULTIPLAYER' || gameType === 'TOURNAMENT') && player1Score !== undefined && player2Score !== undefined) {
+            try {
+                const match = await prisma.match.create({
+                    data: {
+                        tournamentId: gameType === 'TOURNAMENT' ? 1 : null, // Set tournament ID for tournament games
+                        roundNumber: 1,
+                        matchNumber: 1,
+                        status: 'FINISHED',
+                        player1Alias: user.username,
+                        player2Alias: opponentName || (gameType === 'LOCAL' ? 'Local Player' : 'Opponent'),
+                        winnerAlias: won ? user.username : (opponentName || (gameType === 'LOCAL' ? 'Local Player' : 'Opponent')),
+                        startedAt: new Date(),
+                        finishedAt: new Date()
+                    }
+                });
+
+                // Create match players with scores
+                await prisma.matchPlayer.createMany({
+                    data: [
+                        {
+                            matchId: match.id,
+                            alias: user.username,
+                            score: won ? player1Score : player2Score,
+                            result: won ? 'WIN' : 'LOSS'
+                        },
+                        {
+                            matchId: match.id,
+                            alias: opponentName || (gameType === 'LOCAL' ? 'Local Player' : 'Opponent'),
+                            score: won ? player2Score : player1Score,
+                            result: won ? 'LOSS' : 'WIN'
+                        }
+                    ]
+                });
+
+                console.log(`${gameType} game result saved to database:`, match.id);
+            } catch (error) {
+                console.error(`Failed to save ${gameType} game result:`, error);
+                // Continue with stats update even if match saving fails
+            }
         }
 
         // Update user stats in database
