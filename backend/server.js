@@ -70,6 +70,18 @@ fastify.register(fastifyStatic, {
   prefix: '/', 
 });
 
+// SPA fallback - serve index.html for all non-API routes
+fastify.setNotFoundHandler((request, reply) => {
+  // If it's an API route, return 404
+  if (request.url.startsWith('/api/')) {
+    reply.code(404).send({ error: 'API endpoint not found' });
+    return;
+  }
+  
+  // For all other routes, serve the SPA
+  reply.sendFile('index.html');
+});
+
 await fastify.register(fastifyWebsocket);
 
 fastify.register(swagger, {

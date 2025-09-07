@@ -130,20 +130,132 @@
         input:focus {
             box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
         }
+        
+        /* Dashboard Navigation Styles */
+        .dashboard-nav-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .dashboard-nav-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .dashboard-nav-btn.active {
+            background: linear-gradient(45deg, #60a5fa, #a855f7);
+            border-color: transparent;
+        }
+        
+        .dashboard-subsection {
+            display: block;
+        }
+        
+        .dashboard-subsection.hidden {
+            display: none;
+        }
+        
+        /* Main Navigation Styles from AI Pong */
+        .main-nav {
+            background: linear-gradient(135deg, #ff6b9d, #c44569, #f8b500, #6c5ce7);
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .main-nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .main-nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .main-nav-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+
+        .main-nav-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .main-nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+            margin: 0;
+            padding: 0;
+        }
+
+        .main-nav-link {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .main-nav-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .main-nav-link.home:hover { background: rgba(255, 107, 157, 0.3); }
+        .main-nav-link.friends:hover { background: rgba(196, 69, 105, 0.3); }
+        .main-nav-link.analytics:hover { background: rgba(248, 181, 0, 0.3); }
+        .main-nav-link.profile:hover { background: rgba(108, 92, 231, 0.3); }
+        .main-nav-link.logout:hover { background: rgba(255, 107, 157, 0.3); }
+        /* Powerpuff Girls Background */
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+        
+        /* Ensure proper contrast for all elements */
+        .bg-white {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            backdrop-filter: blur(10px);
+        }
+        
+        .text-black {
+            color: white !important;
+        }
     </style>
 </head>
 <body class="min-h-screen">
     <div id="app">
         <!-- Modern Pop-up Notification System -->
         <div id="notificationOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-[9999] hidden flex items-center justify-center" style="position: fixed !important; z-index: 9999 !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; filter: none !important;">
-            <div id="notificationCard" class="bg-white rounded-lg shadow-2xl p-6 max-w-md mx-4 transform scale-95 opacity-0 transition-all duration-300 relative z-[10000]" style="position: relative !important; z-index: 10000 !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; filter: none !important; background: white !important; color: black !important;">
+            <div id="notificationCard" class="bg-gray-800 rounded-lg shadow-2xl p-6 max-w-md mx-4 transform scale-95 opacity-0 transition-all duration-300 relative z-[10000]" style="position: relative !important; z-index: 10000 !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; filter: none !important; background: rgba(31, 41, 55, 0.95) !important; color: white !important;">
                 <div class="flex items-center mb-4">
                     <div id="notificationIcon" class="w-8 h-8 rounded-full mr-3 flex items-center justify-center">
                         <!-- Icon will be set by JavaScript -->
                     </div>
-                    <h3 id="notificationTitle" class="text-lg font-bold text-gray-800"></h3>
+                    <h3 id="notificationTitle" class="text-lg font-bold text-white"></h3>
                 </div>
-                <p id="notificationMessage" class="text-gray-600 mb-4"></p>
+                <p id="notificationMessage" class="text-gray-300 mb-4"></p>
                 <button id="notificationClose" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
                     OK
                 </button>
@@ -270,17 +382,20 @@
             <!-- Subtle overlay to improve text readability -->
             <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255, 255, 255, 0.2); z-index: 0; pointer-events: none;"></div>
             <!-- Navigation Bar -->
-            <nav class="flex items-center justify-between px-8 py-4 bg-gray-600/70 backdrop-blur-sm border-b border-white/30 shadow-lg mb-4" style="position: relative; z-index: 10;">
-                <div class="flex items-center space-x-4">
-                    <img src="logo.png" alt="Powerpuff Girls Logo" class="h-12 w-auto" id="mainLogo">
-                    <span class="text-3xl font-logo text-powerpuff-pink">Powerpuff Pong</span>
+            <nav class="main-nav" style="position: relative; z-index: 10;">
+                <div class="main-nav-content">
+                    <div class="main-nav-brand">
+                        <img src="/logo.png" alt="Powerpuff Girls Logo" class="main-nav-logo" id="mainLogo">
+                        <span class="main-nav-title">Powerpuff Pong</span>
+                    </div>
+                    <ul class="main-nav-links">
+                        <li><a href="#" id="navHome" class="main-nav-link home nav-link" data-section="home">🏠 Home</a></li>
+                        <li><a href="#" id="navFriends" class="main-nav-link friends nav-link" data-section="friends">👥 Friends</a></li>
+                        <li><a href="#" id="navAnalytics" class="main-nav-link analytics nav-link" data-section="dashboard">📊 Dashboard</a></li>
+                        <li><a href="#" id="navProfile" class="main-nav-link profile nav-link" data-section="profile">👤 Profile</a></li>
+                        <li><a href="#" id="navLogout" class="main-nav-link logout nav-link" data-section="logout">🚪 Logout</a></li>
+                    </ul>
                 </div>
-                <ul class="flex space-x-6 text-lg font-bold">
-                    <li><a href="#" id="navHome" class="hover:text-powerpuff-pink">Home</a></li>
-                    <li><a href="#" id="navFriends" class="hover:text-powerpuff-blue">Friends</a></li>
-                    <li><a href="#" id="navProfile" class="hover:text-powerpuff-green">Profile</a></li>
-                    <li><a href="#" id="navLogout" class="hover:text-powerpuff-red">Logout</a></li>
-                </ul>
             </nav>
 
             <!-- Home Section -->
@@ -294,20 +409,113 @@
                         <p class="text-xl text-white opacity-90 mb-8">Ready to play the ultimate Pong experience?</p>
                         
                         <!-- Game Statistics -->
-                        <div class="bg-gray-700/60 rounded-2xl p-12 border border-white/20 shadow-xl max-w-4xl mx-auto mb-8">
-                            <h3 class="text-3xl font-bold text-white mb-6 text-center">Your Stats</h3>
-                            <div class="flex justify-center space-x-8">
+                        <div class="bg-gray-700/60 rounded-2xl p-12 border border-white/20 shadow-xl max-w-6xl mx-auto mb-8">
+                            <h3 class="text-3xl font-bold text-white mb-6 text-center">Your Gaming Stats</h3>
+                            
+                            <!-- Overall Stats -->
+                            <div class="flex justify-center space-x-8 mb-8">
                                 <div class="text-center">
-                                    <div class="text-4xl font-bold text-powerpuff-pink" id="homeGamesPlayed">0</div>
-                                    <div class="text-white text-lg">Games</div>
+                                    <div class="text-4xl font-bold text-powerpuff-pink" id="homeTotalGames">0</div>
+                                    <div class="text-white text-lg">Total Games</div>
                                 </div>
-                                                                    <div class="text-center">
-                                        <div class="text-4xl font-bold text-powerpuff-green" id="homeWins">0</div>
-                                        <div class="text-white text-lg">Wins</div>
-                                    </div>
+                                <div class="text-center">
+                                    <div class="text-4xl font-bold text-powerpuff-green" id="homeTotalWins">0</div>
+                                    <div class="text-white text-lg">Total Wins</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-4xl font-bold text-powerpuff-blue" id="homeWinRate">0%</div>
+                                    <div class="text-white text-lg">Win Rate</div>
+                                </div>
+                            </div>
+
+                            <!-- Game Type Breakdown -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <!-- AI Games -->
+                                <div class="bg-gray-600/50 rounded-xl p-6 border border-white/20">
                                     <div class="text-center">
-                                        <div class="text-4xl font-bold text-powerpuff-blue" id="homeLosses">0</div>
-                                        <div class="text-white text-lg">Losses</div>
+                                        <div class="text-3xl mb-2">🤖</div>
+                                        <h4 class="text-xl font-bold text-powerpuff-blue mb-3">AI Games</h4>
+                                        <div class="space-y-2">
+                                            <div class="flex justify-between">
+                                                <span class="text-white">Games:</span>
+                                                <span class="text-powerpuff-pink font-bold" id="homeAIGames">0</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-white">Wins:</span>
+                                                <span class="text-powerpuff-green font-bold" id="homeAIWins">0</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-white">Win Rate:</span>
+                                                <span class="text-powerpuff-blue font-bold" id="homeAIWinRate">0%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Local Games -->
+                                <div class="bg-gray-600/50 rounded-xl p-6 border border-white/20">
+                                    <div class="text-center">
+                                        <div class="text-3xl mb-2">🎮</div>
+                                        <h4 class="text-xl font-bold text-powerpuff-yellow mb-3">Local Games</h4>
+                                        <div class="space-y-2">
+                                            <div class="flex justify-between">
+                                                <span class="text-white">Games:</span>
+                                                <span class="text-powerpuff-pink font-bold" id="homeLocalGames">0</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-white">Wins:</span>
+                                                <span class="text-powerpuff-green font-bold" id="homeLocalWins">0</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-white">Win Rate:</span>
+                                                <span class="text-powerpuff-blue font-bold" id="homeLocalWinRate">0%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Multiplayer Games -->
+                                <div class="bg-gray-600/50 rounded-xl p-6 border border-white/20">
+                                    <div class="text-center">
+                                        <div class="text-3xl mb-2">🔗</div>
+                                        <h4 class="text-xl font-bold text-powerpuff-green mb-3">Multiplayer</h4>
+                                        <div class="space-y-2">
+                                            <div class="flex justify-between">
+                                                <span class="text-white">Games:</span>
+                                                <span class="text-powerpuff-pink font-bold" id="homeMPGames">0</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-white">Wins:</span>
+                                                <span class="text-powerpuff-green font-bold" id="homeMPWins">0</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-white">Win Rate:</span>
+                                                <span class="text-powerpuff-blue font-bold" id="homeMPWinRate">0%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Tournament Games -->
+                                <div class="bg-gray-600/50 rounded-xl p-6 border border-white/20">
+                                    <div class="text-center">
+                                        <div class="text-3xl mb-2">🏆</div>
+                                        <h4 class="text-xl font-bold text-powerpuff-purple mb-3">Tournaments</h4>
+                                        <div class="space-y-2">
+                                            <div class="flex justify-between">
+                                                <span class="text-white">Games:</span>
+                                                <span class="text-powerpuff-pink font-bold" id="homeTournamentGames">0</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-white">Wins:</span>
+                                                <span class="text-powerpuff-green font-bold" id="homeTournamentWins">0</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-white">Win Rate:</span>
+                                                <span class="text-powerpuff-blue font-bold" id="homeTournamentWinRate">0%</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -398,10 +606,6 @@
                                 <div class="flex justify-center space-x-4">
                                     <button type="button" id="tournament4Players" class="bg-powerpuff-pink hover:bg-powerpuff-purple text-white font-bold py-3 px-6 rounded-lg transition-colors border-2 border-white/30">
                                         4 Players
-                                    </button>
-                                    <button type="button" id="tournament8Players" class="bg-powerpuff-blue hover:bg-powerpuff-purple text-white font-bold py-3 px-6 rounded-lg transition-colors border-2 border-white/30">
-                                        8 Players
-                                    </button>
                                 </div>
                             </div>
 
@@ -664,6 +868,288 @@
                 </div>
             </div>
 
+            <!-- Dashboard Section -->
+            <div id="dashboardSection" class="section">
+                <div class="container mx-auto px-4 py-8">
+                    <div class="max-w-6xl mx-auto">
+                        <!-- Dashboard Header -->
+                        <div class="text-center mb-8">
+                            <h1 class="text-6xl font-logo text-white mb-4">
+                                🎮 Gaming <span class="text-powerpuff-pink">Dashboard</span>
+                            </h1>
+                            <p class="text-xl text-white opacity-90 mb-8">Track your performance across all games and climb the leaderboards</p>
+                        </div>
+
+                        <!-- Dashboard Navigation -->
+                        <div class="flex justify-center gap-4 mb-8">
+                            <button class="dashboard-nav-btn active" data-section="overview">Overview</button>
+                            <button class="dashboard-nav-btn" data-section="ai-games">AI Games</button>
+                            <button class="dashboard-nav-btn" data-section="local-games">Local Games</button>
+                            <button class="dashboard-nav-btn" data-section="multiplayer">Multiplayer</button>
+                            <button class="dashboard-nav-btn" data-section="tournaments">Tournaments</button>
+                            <button id="refreshDashboardBtn" class="bg-powerpuff-green hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                                🔄 Refresh Stats
+                            </button>
+                        </div>
+
+                        <!-- Overview Section -->
+                        <div id="dashboard-overview" class="dashboard-subsection">
+                            <!-- Summary Stats -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                                <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl text-center">
+                                    <div class="text-4xl mb-2">🎯</div>
+                                    <div class="text-3xl font-bold text-powerpuff-pink mb-2" id="overall-win-rate">--</div>
+                                    <div class="text-white text-sm">Overall Win Rate</div>
+                                </div>
+                                <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl text-center">
+                                    <div class="text-4xl mb-2">🏆</div>
+                                    <div class="text-3xl font-bold text-powerpuff-blue mb-2" id="total-games">--</div>
+                                    <div class="text-white text-sm">Total Games</div>
+                                </div>
+                                <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl text-center">
+                                    <div class="text-4xl mb-2">⭐</div>
+                                    <div class="text-3xl font-bold text-powerpuff-green mb-2" id="skill-level">--</div>
+                                    <div class="text-white text-sm">Skill Level</div>
+                                </div>
+                                <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl text-center">
+                                    <div class="text-4xl mb-2">🔥</div>
+                                    <div class="text-3xl font-bold text-powerpuff-purple mb-2" id="current-streak">--</div>
+                                    <div class="text-white text-sm">Current Streak</div>
+                                </div>
+                            </div>
+
+                            <!-- Recent Games -->
+                            <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl mb-8">
+                                <h3 class="text-2xl font-bold text-white mb-4">Recent Games</h3>
+                                <div id="recent-games-list" class="space-y-3">
+                                    <div class="text-center text-white">Loading recent games...</div>
+                                </div>
+                            </div>
+
+                            <!-- Achievements -->
+                            <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl">
+                                <h3 class="text-2xl font-bold text-white mb-4">Achievements</h3>
+                                <div id="achievements-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <div class="text-center text-white">Loading achievements...</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AI Games Section -->
+                        <div id="dashboard-ai-games" class="dashboard-subsection hidden">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl text-center">
+                                    <div class="text-4xl mb-2">🤖</div>
+                                    <div class="text-3xl font-bold text-powerpuff-pink mb-2" id="ai-games-won">--</div>
+                                    <div class="text-white text-sm">AI Games Won</div>
+                                </div>
+                                <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl text-center">
+                                    <div class="text-4xl mb-2">📊</div>
+                                    <div class="text-3xl font-bold text-powerpuff-blue mb-2" id="ai-win-rate">--</div>
+                                    <div class="text-white text-sm">AI Win Rate</div>
+                                </div>
+                                <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl text-center">
+                                    <div class="text-4xl mb-2">🎯</div>
+                                    <div class="text-3xl font-bold text-powerpuff-green mb-2" id="ai-best-score">--</div>
+                                    <div class="text-white text-sm">Best Score</div>
+                                </div>
+                                <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl text-center">
+                                    <div class="text-4xl mb-2">⚡</div>
+                                    <div class="text-3xl font-bold text-powerpuff-purple mb-2" id="ai-avg-score">--</div>
+                                    <div class="text-white text-sm">Average Score</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Local Games Section -->
+                        <div id="dashboard-local-games" class="dashboard-subsection hidden">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl text-center">
+                                    <div class="text-4xl mb-2">🎮</div>
+                                    <div class="text-3xl font-bold text-powerpuff-pink mb-2" id="local-games-won">--</div>
+                                    <div class="text-white text-sm">Local Games Won</div>
+                                </div>
+                                <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl text-center">
+                                    <div class="text-4xl mb-2">📊</div>
+                                    <div class="text-3xl font-bold text-powerpuff-blue mb-2" id="local-win-rate">--</div>
+                                    <div class="text-white text-sm">Local Win Rate</div>
+                                </div>
+                                <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl text-center">
+                                    <div class="text-4xl mb-2">🎯</div>
+                                    <div class="text-3xl font-bold text-powerpuff-green mb-2" id="local-best-score">--</div>
+                                    <div class="text-white text-sm">Best Score</div>
+                                </div>
+                                <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl text-center">
+                                    <div class="text-4xl mb-2">⚡</div>
+                                    <div class="text-3xl font-bold text-powerpuff-purple mb-2" id="local-avg-score">--</div>
+                                    <div class="text-white text-sm">Average Score</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Multiplayer Section -->
+                        <div id="dashboard-multiplayer" class="dashboard-subsection hidden">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl text-center">
+                                    <div class="text-4xl mb-2">👥</div>
+                                    <div class="text-3xl font-bold text-powerpuff-pink mb-2" id="mp-wins">--</div>
+                                    <div class="text-white text-sm">Multiplayer Wins</div>
+                                </div>
+                                <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl text-center">
+                                    <div class="text-4xl mb-2">📈</div>
+                                    <div class="text-3xl font-bold text-powerpuff-blue mb-2" id="mp-win-rate">--</div>
+                                    <div class="text-white text-sm">MP Win Rate</div>
+                                </div>
+                                <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl text-center">
+                                    <div class="text-4xl mb-2">🏅</div>
+                                    <div class="text-3xl font-bold text-powerpuff-green mb-2" id="best-opponent">--</div>
+                                    <div class="text-white text-sm">Best Opponent</div>
+                                </div>
+                                <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl text-center">
+                                    <div class="text-4xl mb-2">🔄</div>
+                                    <div class="text-3xl font-bold text-powerpuff-purple mb-2" id="mp-total">--</div>
+                                    <div class="text-white text-sm">Total Matches</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tournaments Section -->
+                        <div id="dashboard-tournaments" class="dashboard-subsection hidden">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl text-center">
+                                    <div class="text-4xl mb-2">🏆</div>
+                                    <div class="text-3xl font-bold text-powerpuff-pink mb-2" id="tournaments-won">--</div>
+                                    <div class="text-white text-sm">Tournaments Won</div>
+                                </div>
+                                <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl text-center">
+                                    <div class="text-4xl mb-2">📊</div>
+                                    <div class="text-3xl font-bold text-powerpuff-blue mb-2" id="tournament-win-rate">--</div>
+                                    <div class="text-white text-sm">Tournament Win Rate</div>
+                                </div>
+                                <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl text-center">
+                                    <div class="text-4xl mb-2">🥇</div>
+                                    <div class="text-3xl font-bold text-powerpuff-green mb-2" id="best-finish">--</div>
+                                    <div class="text-white text-sm">Best Finish</div>
+                                </div>
+                                <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl text-center">
+                                    <div class="text-4xl mb-2">🎯</div>
+                                    <div class="text-3xl font-bold text-powerpuff-purple mb-2" id="tournament-matches">--</div>
+                                    <div class="text-white text-sm">Total Matches</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Pong Section -->
+            <div id="aiPongSection" class="section">
+                <div class="container mx-auto px-4 py-8">
+                    <div class="max-w-4xl mx-auto">
+                        <!-- AI Pong Header -->
+                        <div class="text-center mb-8">
+                            <h1 class="text-6xl font-logo text-white mb-4">
+                                🤖 AI <span class="text-powerpuff-pink">Pong</span> <span class="text-powerpuff-blue">Game</span>
+                            </h1>
+                            <p class="text-xl text-white opacity-90 mb-8">Challenge the AI in different difficulty levels!</p>
+                        </div>
+
+                        <!-- Instructions -->
+                        <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl mb-8">
+                            <h3 class="text-2xl font-bold text-white mb-4">How to Play:</h3>
+                            <ul class="text-white space-y-2">
+                                <li><strong>Controls:</strong> Use <strong>W</strong> (up) and <strong>S</strong> (down) keys to move your paddle</li>
+                                <li><strong>Objective:</strong> Beat the AI! First to 5 points wins</li>
+                                <li><strong>AI Difficulty:</strong> Choose your challenge level below</li>
+                                <li><strong>Scoring:</strong> Score when the AI misses the ball, lose when you miss</li>
+                            </ul>
+                        </div>
+
+                        <!-- Game Container -->
+                        <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl mb-8">
+                            <div class="text-center mb-4">
+                                <div class="text-3xl font-bold text-powerpuff-pink" id="aiScoreDisplay">Player: 0 - AI: 0</div>
+                            </div>
+                            <div class="flex justify-center mb-6">
+                                <div class="relative bg-black rounded-lg shadow-2xl border-4 border-powerpuff-purple">
+                                    <canvas id="aiGameCanvas" width="800" height="600" class="rounded-lg"></canvas>
+                                    
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Controls -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <!-- Connection Controls -->
+                            <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl">
+                                <h3 class="text-xl font-bold text-white mb-4">Connection</h3>
+                                <div class="space-y-3">
+                                    <button id="aiConnectBtn" class="w-full bg-powerpuff-green hover:bg-powerpuff-purple text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                                        🔌 Connect
+                                    </button>
+                                    <button id="aiDisconnectBtn" class="w-full bg-powerpuff-red hover:bg-powerpuff-purple text-white font-bold py-2 px-4 rounded-lg transition-colors" disabled>
+                                        ❌ Disconnect
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Difficulty Selection -->
+                            <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl">
+                                <h3 class="text-xl font-bold text-white mb-4">AI Difficulty</h3>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button id="aiEasyBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded-lg transition-colors text-sm">
+                                        🟢 Easy
+                                    </button>
+                                    <button id="aiMediumBtn" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-3 rounded-lg transition-colors text-sm ring-4 ring-white ring-opacity-50 border-4 border-white scale-110">
+                                        🟠 Medium
+                                    </button>
+                                    <button id="aiHardBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-lg transition-colors text-sm">
+                                        🔴 Hard
+                                    </button>
+                                    <button id="aiExpertBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-3 rounded-lg transition-colors text-sm">
+                                        🟣 Expert
+                                    </button>
+                                </div>
+                                <div class="text-center mt-3">
+                                    <p class="text-white font-semibold">Current: <span id="currentDifficultyText">Medium</span></p>
+                                </div>
+                            </div>
+
+                            <!-- Game Controls -->
+                            <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl">
+                                <h3 class="text-xl font-bold text-white mb-4">Game Controls</h3>
+                                <div class="space-y-3">
+                                    <button id="aiStartBtn" class="w-full bg-powerpuff-blue hover:bg-powerpuff-purple text-white font-bold py-2 px-4 rounded-lg transition-colors" disabled>
+                                        ▶️ Start Game
+                                    </button>
+                                    <button id="aiPauseBtn" class="w-full bg-powerpuff-yellow hover:bg-powerpuff-purple text-white font-bold py-2 px-4 rounded-lg transition-colors" disabled>
+                                        ⏸️ Pause
+                                    </button>
+                                    <button id="aiRestartBtn" class="w-full bg-powerpuff-green hover:bg-powerpuff-purple text-white font-bold py-2 px-4 rounded-lg transition-colors" disabled>
+                                        🔄 Restart
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl">
+                            <h3 class="text-xl font-bold text-white mb-4">Game Status</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <div class="text-white text-sm mb-1">Connection Status:</div>
+                                    <div id="aiConnectionStatus" class="text-powerpuff-red font-bold">Disconnected</div>
+                                </div>
+                                <div>
+                                    <div class="text-white text-sm mb-1">Game Status:</div>
+                                    <div id="aiGameStatus" class="text-powerpuff-blue font-bold">Ready to play</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Game Section -->
             <div id="gameSection" class="section">
                 <div class="container mx-auto px-4 py-8">
@@ -831,9 +1317,614 @@
                     </div>
                 </div>
             </div>
+
+            <!-- AI Game Over Modal -->
+            <div id="aiGameOverModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+                <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+                    <div class="text-center mb-6">
+                        <div id="aiGameOverIcon" class="text-6xl mb-4">🏆</div>
+                        <h3 id="aiGameOverTitle" class="text-2xl font-bold text-gray-800 mb-2">Game Over!</h3>
+                        <p id="aiGameOverMessage" class="text-gray-600 mb-4">The AI game has ended</p>
+                        
+                        <!-- AI Game Score Display -->
+                        <div class="bg-gray-100 rounded-lg p-4 mb-6">
+                            <div class="flex justify-center space-x-8">
+                                <div class="text-center">
+                                    <p class="text-sm text-gray-600">You</p>
+                                    <p id="aiGameOverPlayerScore" class="text-2xl font-bold text-gray-800">0</p>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-sm text-gray-600">AI</p>
+                                    <p id="aiGameOverAIScore" class="text-2xl font-bold text-gray-800">0</p>
+                                </div>
+                            </div>
+                            <div class="text-center mt-2">
+                                <p class="text-sm text-gray-500" id="aiGameOverDifficulty">Difficulty: Medium</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex space-x-4">
+                        <button id="aiPlayAgainBtn" class="flex-1 bg-powerpuff-green hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">
+                            🎮 Play Again
+                        </button>
+                        <button id="aiGoHomeBtn" class="flex-1 bg-powerpuff-blue hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">
+                            🏠 Go Home
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <script src="./dist/main.js?v=1756785023"></script>
+    <script>
+        // AI Pong Game Script - Working version from original ai-pong.html
+        let aiGameInitialized = false;
+        
+        function initializeAIGame() {
+            if (aiGameInitialized) return;
+            aiGameInitialized = true;
+            
+            // Game configuration constants - matches backend configuration
+            const GAME_CONFIG = {
+                CANVAS: {
+                    WIDTH: 800,
+                    HEIGHT: 600
+                },
+                PADDLE: {
+                    WIDTH: 15,
+                    HEIGHT: 100,
+                    SPEED: 4
+                },
+                BALL: {
+                    RADIUS: 10,
+                    SPEED_X: 5,
+                    SPEED_Y: 3
+                },
+                GAME: {
+                    WINNING_SCORE: 5
+                }
+            };
+
+            // Game variables
+            let ws = null;
+            let gameState = {
+                ballX: GAME_CONFIG.CANVAS.WIDTH / 2,
+                ballY: GAME_CONFIG.CANVAS.HEIGHT / 2,
+                ballSpeedX: GAME_CONFIG.BALL.SPEED_X,
+                ballSpeedY: GAME_CONFIG.BALL.SPEED_Y,
+                ballRadius: GAME_CONFIG.BALL.RADIUS,
+                playerPaddleY: (GAME_CONFIG.CANVAS.HEIGHT - GAME_CONFIG.PADDLE.HEIGHT) / 2,
+                aiPaddleY: (GAME_CONFIG.CANVAS.HEIGHT - GAME_CONFIG.PADDLE.HEIGHT) / 2,
+                playerScore: 0,
+                aiScore: 0,
+                gameStarted: false,
+                gameOver: false,
+                winningScore: GAME_CONFIG.GAME.WINNING_SCORE,
+                currentDifficulty: 'MEDIUM'
+            };
+
+            let keys = { w: false, s: false };
+            let animationId = null;
+            let availableDifficulties = {};
+
+            // DOM elements
+            const canvas = document.getElementById('aiGameCanvas');
+            const ctx = canvas.getContext('2d');
+            const startBtn = document.getElementById('aiStartBtn');
+            const pauseBtn = document.getElementById('aiPauseBtn');
+            const restartBtn = document.getElementById('aiRestartBtn');
+            const connectBtn = document.getElementById('aiConnectBtn');
+            const disconnectBtn = document.getElementById('aiDisconnectBtn');
+            const scoreDisplay = document.getElementById('aiScoreDisplay');
+            const connectionStatus = document.getElementById('aiConnectionStatus');
+            const gameStatus = document.getElementById('aiGameStatus');
+            const gameOverlay = document.getElementById('gameOverlay');
+            const gameOverMessage = document.getElementById('gameOverMessage');
+
+            // Difficulty buttons
+            const easyBtn = document.getElementById('aiEasyBtn');
+            const mediumBtn = document.getElementById('aiMediumBtn');
+            const hardBtn = document.getElementById('aiHardBtn');
+            const expertBtn = document.getElementById('aiExpertBtn');
+
+            // Logging function
+            function log(message) {
+                const timestamp = new Date().toLocaleTimeString();
+                console.log(`[${timestamp}] ${message}`);
+            }
+
+            // Update score display
+            function updateScore() {
+                scoreDisplay.textContent = `Player: ${gameState.playerScore} - AI: ${gameState.aiScore}`;
+            }
+
+            // Update difficulty display
+            function updateDifficultyDisplay(difficulty, aiConfig) {
+                // Update active button visual state
+                document.querySelectorAll('#aiEasyBtn, #aiMediumBtn, #aiHardBtn, #aiExpertBtn').forEach(btn => {
+                    btn.classList.remove('ring-4', 'ring-white', 'ring-opacity-50', 'border-4', 'border-white', 'scale-110');
+                });
+                
+                const activeBtn = document.getElementById(`ai${difficulty.charAt(0).toUpperCase() + difficulty.slice(1).toLowerCase()}Btn`);
+                if (activeBtn) {
+                    activeBtn.classList.add('ring-4', 'ring-white', 'ring-opacity-50', 'border-4', 'border-white', 'scale-110');
+                }
+                
+                // Update text indicator
+                const difficultyText = document.getElementById('currentDifficultyText');
+                if (difficultyText) {
+                    difficultyText.textContent = difficulty;
+                }
+            }
+
+            // Change difficulty
+            function changeDifficulty(difficulty) {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'change-difficulty', difficulty: difficulty }));
+                    log(`Changing difficulty to ${difficulty}...`);
+                }
+            }
+
+            // Draw game elements
+            function drawGame() {
+                // Clear canvas
+                ctx.fillStyle = '#0f0f23';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Draw center line
+                ctx.strokeStyle = '#533483';
+                ctx.setLineDash([5, 15]);
+                ctx.beginPath();
+                ctx.moveTo(canvas.width / 2, 0);
+                ctx.lineTo(canvas.width / 2, canvas.height);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Draw player paddle (left)
+                ctx.fillStyle = '#60a5fa';
+                ctx.fillRect(GAME_CONFIG.PADDLE.WIDTH, gameState.playerPaddleY, GAME_CONFIG.PADDLE.WIDTH, GAME_CONFIG.PADDLE.HEIGHT);
+
+                // Draw AI paddle (right) with difficulty-based color
+                const aiColor = availableDifficulties[gameState.currentDifficulty]?.color || '#f87171';
+                ctx.fillStyle = aiColor;
+                ctx.fillRect(GAME_CONFIG.CANVAS.WIDTH - GAME_CONFIG.PADDLE.WIDTH * 2, gameState.aiPaddleY, GAME_CONFIG.PADDLE.WIDTH, GAME_CONFIG.PADDLE.HEIGHT);
+
+                // Draw ball
+                ctx.fillStyle = '#facc15';
+                ctx.beginPath();
+                ctx.arc(gameState.ballX, gameState.ballY, gameState.ballRadius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Game loop
+            function gameLoop() {
+                drawGame();
+                animationId = requestAnimationFrame(gameLoop);
+            }
+
+            // Start game loop
+            function startGameLoop() {
+                if (!animationId) {
+                    gameLoop();
+                }
+            }
+
+            // Stop game loop
+            function stopGameLoop() {
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                }
+            }
+
+            // Connect to AI game WebSocket
+            function connect() {
+                try {
+                    console.log('🔌 Attempting to connect to WebSocket...');
+                    ws = new WebSocket('wss://localhost/ai-game');
+                    
+                    ws.onopen = () => {
+                        log('Connected to AI Pong Game!');
+                        connectionStatus.textContent = 'Connected';
+                        connectBtn.disabled = true;
+                        disconnectBtn.disabled = false;
+                        startBtn.disabled = false;
+                    };
+
+                    ws.onmessage = (event) => {
+                        try {
+                            const data = JSON.parse(event.data);
+                            
+                            switch (data.type) {
+                                case 'connected':
+                                    log(data.message);
+                                    break;
+                                    
+                                case 'game-state':
+                                    gameState = { ...gameState, ...data.gameState };
+                                    if (data.availableDifficulties) {
+                                        availableDifficulties = data.availableDifficulties.reduce((acc, diff) => {
+                                            acc[diff.key] = diff;
+                                            return acc;
+                                        }, {});
+                                    }
+                                    updateScore();
+                                    if (gameState.currentDifficulty && availableDifficulties[gameState.currentDifficulty]) {
+                                        updateDifficultyDisplay(gameState.currentDifficulty, availableDifficulties[gameState.currentDifficulty]);
+                                    }
+                                    break;
+                                    
+                                case 'difficulty-changed':
+                                    gameState.currentDifficulty = data.difficulty;
+                                    updateDifficultyDisplay(data.difficulty, data.aiConfig);
+                                    log(data.message);
+                                    break;
+                                    
+                                case 'game-started':
+                                    log(data.message);
+                                    gameStatus.textContent = 'Game Running';
+                                    startBtn.disabled = true;
+                                    pauseBtn.disabled = false;
+                                    pauseBtn.textContent = '⏸️ Pause';
+                                    restartBtn.disabled = false;
+                                    startGameLoop();
+                                    
+                                    break;
+                                    
+                                case 'game-update':
+                                    console.log('🎮 Received game update:', data.gameState);
+                                    console.log('🎮 Current scores before update:', {
+                                        player: gameState.playerScore,
+                                        ai: gameState.aiScore
+                                    });
+                                    
+                                    gameState = { ...gameState, ...data.gameState };
+                                    
+                                    console.log('🎮 Scores after update:', {
+                                        player: gameState.playerScore,
+                                        ai: gameState.aiScore
+                                    });
+                                    
+                                    updateScore();
+                                    drawGame(); // Redraw with new game state
+                                    
+                                    // Check if this is the final score update before game over
+                                    if (gameState.playerScore >= gameState.winningScore || gameState.aiScore >= gameState.winningScore) {
+                                        console.log('🎮 Final score reached! Player:', gameState.playerScore, 'AI:', gameState.aiScore);
+                                        // Force a final score display update
+                                        setTimeout(() => {
+                                            updateScore();
+                                            drawGame();
+                                        }, 100);
+                                    }
+                                    break;
+                                    
+                                case 'game-paused':
+                                    log(data.message);
+                                    gameStatus.textContent = 'Game Paused';
+                                    pauseBtn.textContent = '▶️ Resume';
+                                    stopGameLoop();
+                                    break;
+                                    
+                                case 'game-resumed':
+                                    log(data.message);
+                                    gameStatus.textContent = 'Game Running';
+                                    pauseBtn.textContent = '⏸️ Pause';
+                                    startGameLoop();
+                                    break;
+                                    
+                                case 'game-over':
+                                    console.log('🎮 GAME OVER MESSAGE RECEIVED:', data);
+                                    log(`Game Over! ${data.winner === 'player' ? 'You win!' : 'AI wins!'} (Difficulty: ${data.difficulty})`);
+                                    
+                                    // Stop the game loop immediately to prevent further updates
+                                    stopGameLoop();
+                                    
+                                    
+                                    // Log current game state before updating
+                                    console.log('🎮 Current game state before update:', {
+                                        playerScore: gameState.playerScore,
+                                        aiScore: gameState.aiScore
+                                    });
+                                    
+                                    // Update the game state with final scores from the game-over message
+                                    if (data.playerScore !== undefined && data.aiScore !== undefined) {
+                                        gameState.playerScore = data.playerScore;
+                                        gameState.aiScore = data.aiScore;
+                                        console.log('🎮 Final score set from game-over message:', data.playerScore, '-', data.aiScore);
+                                    } else {
+                                        console.log('🎮 No final scores in game-over message, using current state');
+                                    }
+                                    
+                                    // Log final game state
+                                    console.log('🎮 Final game state:', {
+                                        playerScore: gameState.playerScore,
+                                        aiScore: gameState.aiScore
+                                    });
+                                    
+                                    // Ensure final score is displayed
+                                    updateScore();
+                                    drawGame();
+                                    
+                                    // Update game status
+                                    gameStatus.textContent = 'Game Over';
+                                    startBtn.disabled = false;
+                                    pauseBtn.disabled = true;
+                                    pauseBtn.textContent = '⏸️ Pause';
+                                    restartBtn.disabled = false;
+                                    
+                                    // Show game over modal after a brief delay to ensure score is visible
+                                    setTimeout(() => {
+                                        showAIGameOverModal(data.winner, data.difficulty);
+                                        log('Game result will be saved automatically');
+                                    }, 500);
+                                    break;
+                                    
+                                case 'error':
+                                    log(`Error: ${data.message}`);
+                                    break;
+                                    
+                                default:
+                                    log(`Received: ${data.type}`);
+                            }
+                        } catch (e) {
+                            log(`Error parsing message: ${e.message}`);
+                        }
+                    };
+
+                    ws.onclose = (event) => {
+                        console.log('🔌 WebSocket closed:', event.code, event.reason);
+                        log(`Connection closed: ${event.reason || 'No reason provided'} (Code: ${event.code})`);
+                        connectionStatus.textContent = 'Disconnected';
+                        gameStatus.textContent = 'Connection lost';
+                        connectBtn.disabled = false;
+                        disconnectBtn.disabled = true;
+                        startBtn.disabled = true;
+                        pauseBtn.disabled = true;
+                        pauseBtn.textContent = '⏸️ Pause';
+                        restartBtn.disabled = true;
+                        ws = null;
+                    };
+
+                    ws.onerror = (error) => {
+                        log('WebSocket error occurred');
+                        connectionStatus.textContent = 'Error';
+                        console.error('WebSocket error:', error);
+                    };
+
+                } catch (error) {
+                    log(`Failed to create WebSocket: ${error.message}`);
+                    connectionStatus.textContent = 'Error';
+                }
+            }
+
+            // Disconnect from WebSocket
+            function disconnect() {
+                if (ws) {
+                    ws.close(1000, 'Manual disconnect');
+                    log('Disconnecting...');
+                }
+            }
+
+            // Send start game command
+            function startGame() {
+                console.log('🎮 Start game button clicked!');
+                console.log('🎮 WebSocket state:', ws ? ws.readyState : 'null');
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    console.log('🎮 Sending start-game command...');
+                    ws.send(JSON.stringify({ type: 'start-game' }));
+                    log('Starting game...');
+                } else {
+                    console.error('❌ Cannot start game - WebSocket not connected');
+                    log('Cannot start game - not connected to server');
+                }
+            }
+
+            // Send pause game command
+            function pauseGame() {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'pause-game' }));
+                }
+            }
+
+            // Send restart game command
+            function restartGame() {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'restart-game' }));
+                    log('Restarting game...');
+                    
+                }
+            }
+
+            // Event listeners
+            console.log('🎮 Setting up event listeners...');
+            console.log('🎮 Connect button:', connectBtn);
+            console.log('🎮 Start button:', startBtn);
+            
+            if (connectBtn) {
+                connectBtn.addEventListener('click', connect);
+                console.log('🎮 Connect button listener added');
+            } else {
+                console.error('❌ Connect button not found!');
+            }
+            
+            if (disconnectBtn) {
+                disconnectBtn.addEventListener('click', disconnect);
+                console.log('🎮 Disconnect button listener added');
+            }
+            
+            if (startBtn) {
+                startBtn.addEventListener('click', startGame);
+                console.log('🎮 Start button listener added');
+            } else {
+                console.error('❌ Start button not found!');
+            }
+            
+            if (pauseBtn) {
+                pauseBtn.addEventListener('click', pauseGame);
+                console.log('🎮 Pause button listener added');
+            }
+            
+            if (restartBtn) {
+                restartBtn.addEventListener('click', restartGame);
+                console.log('🎮 Restart button listener added');
+            }
+
+            // Difficulty button event listeners
+            easyBtn.addEventListener('click', () => changeDifficulty('EASY'));
+            mediumBtn.addEventListener('click', () => changeDifficulty('MEDIUM'));
+            hardBtn.addEventListener('click', () => changeDifficulty('HARD'));
+            expertBtn.addEventListener('click', () => changeDifficulty('EXPERT'));
+
+            // Game overlay buttons
+            const replayBtn = document.getElementById('replayBtn');
+            if (replayBtn) {
+                replayBtn.addEventListener('click', () => {
+                    gameOverlay.classList.add('hidden');
+                    restartGame();
+                });
+            }
+
+            const backBtn = document.getElementById('backBtn');
+            if (backBtn) {
+                backBtn.addEventListener('click', () => {
+                    // Navigate back to home using the SPA navigation
+                    if (window.simpleAuth && window.simpleAuth.navigateToSection) {
+                        window.simpleAuth.navigateToSection('home');
+                    }
+                });
+            }
+
+            // AI Game Over Modal buttons
+            const aiPlayAgainBtn = document.getElementById('aiPlayAgainBtn');
+            const aiGoHomeBtn = document.getElementById('aiGoHomeBtn');
+
+            if (aiPlayAgainBtn) {
+                aiPlayAgainBtn.addEventListener('click', () => {
+                    hideAIGameOverModal();
+                    restartGame();
+                });
+            }
+
+            if (aiGoHomeBtn) {
+                aiGoHomeBtn.addEventListener('click', () => {
+                    hideAIGameOverModal();
+                    // Navigate back to home using the SPA navigation
+                    if (window.simpleAuth && window.simpleAuth.navigateToSection) {
+                        window.simpleAuth.navigateToSection('home');
+                    }
+                });
+            }
+
+            // Keyboard controls
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'w') keys.w = true;
+                if (e.key === 's') keys.s = true;
+            });
+
+            document.addEventListener('keyup', (e) => {
+                if (e.key === 'w') keys.w = false;
+                if (e.key === 's') keys.s = false;
+            });
+
+            // Player paddle movement
+            function updatePlayerPaddle() {
+                if (keys.w && gameState.playerPaddleY > 0) {
+
+                    gameState.playerPaddleY -= GAME_CONFIG.PADDLE.SPEED;
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'player-input', action: 'up' }));
+                    }
+                }
+                if (keys.s && gameState.playerPaddleY < GAME_CONFIG.CANVAS.HEIGHT - GAME_CONFIG.PADDLE.HEIGHT) {
+                    gameState.playerPaddleY += GAME_CONFIG.PADDLE.SPEED;
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'player-input', action: 'down' }));
+                    }
+                }
+            }
+
+            // Player control loop
+            function playerControlLoop() {
+                updatePlayerPaddle();
+                requestAnimationFrame(playerControlLoop);
+            }
+
+            // Show AI Game Over Modal
+            function showAIGameOverModal(winner, difficulty) {
+                const modal = document.getElementById('aiGameOverModal');
+                const icon = document.getElementById('aiGameOverIcon');
+                const title = document.getElementById('aiGameOverTitle');
+                const message = document.getElementById('aiGameOverMessage');
+                const playerScore = document.getElementById('aiGameOverPlayerScore');
+                const aiScore = document.getElementById('aiGameOverAIScore');
+                const difficultyText = document.getElementById('aiGameOverDifficulty');
+
+                // Set the content based on winner
+                if (winner === 'player') {
+                    icon.textContent = '🏆';
+                    title.textContent = 'Victory!';
+                    message.textContent = 'Congratulations! You beat the AI!';
+                } else {
+                    icon.textContent = '🤖';
+                    title.textContent = 'Game Over!';
+                    message.textContent = 'The AI won this time. Try again!';
+                }
+
+                // Set the scores
+                playerScore.textContent = gameState.playerScore;
+                aiScore.textContent = gameState.aiScore;
+                difficultyText.textContent = `Difficulty: ${difficulty}`;
+
+                // Show the modal
+                modal.classList.remove('hidden');
+
+                // Refresh stats after game completion
+                console.log('🎮 Game completed, refreshing stats...');
+                if (window.simpleAuth && window.simpleAuth.updateHomeDashboard) {
+                    window.simpleAuth.updateHomeDashboard().catch(error => {
+                        console.error('Error refreshing home dashboard after AI game:', error);
+                    });
+                }
+                if (window.simpleAuth && window.simpleAuth.loadDashboardData) {
+                    window.simpleAuth.loadDashboardData().catch(error => {
+                        console.error('Error refreshing dashboard after AI game:', error);
+                    });
+                }
+            }
+
+            // Hide AI Game Over Modal
+            function hideAIGameOverModal() {
+                const modal = document.getElementById('aiGameOverModal');
+                modal.classList.add('hidden');
+            }
+
+            // Initialize
+            updateScore();
+            drawGame();
+            playerControlLoop(); // Start player control loop
+
+            log('AI Pong Game loaded with enhanced professional standards!');
+            log('Click Connect to start playing against the AI!');
+            log('Use W and S keys to control your paddle.');
+            log('Select your preferred AI difficulty level!');
+            console.log('🎮 AI Pong Game loaded successfully!');
+            console.log('🎮 Keyboard event listeners should be active now!');
+        }
+
+        // Make initializeAIGame available globally
+        window.initializeAIGame = initializeAIGame;
+        
+        // Debug: Log that the script has loaded
+        console.log('🎮 AI Game script loaded and ready!');
+        console.log('🎮 initializeAIGame function available:', typeof window.initializeAIGame);
+        
+        // Also make it available on the global scope for easier access
+        window.simpleAuth = window.simpleAuth || {};
+        window.simpleAuth.initializeAIGame = initializeAIGame;
+    </script>
+    <script src="./dist/main.js?v=1756785022"></script>
 </body>
 </html> 
