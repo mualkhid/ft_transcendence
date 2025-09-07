@@ -1273,13 +1273,28 @@ class SimpleAuth {
             console.error('Logout error:', error);
         }
 
+        // Clear authentication data
         this.currentUser = null;
+        this.authToken = null;
+        
+        // Clear cookies
+        document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        
+        // Clear localStorage (comprehensive cleanup)
         localStorage.removeItem('user');
+        localStorage.removeItem('userData');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('lastActiveSection');
         
         this.showStatus('Logged out successfully', 'success');
         setTimeout(() => {
             this.showPage('registrationPage');
         }, 1000);
+        
+        // Reset URL to home
+        window.history.pushState({}, '', '/');
+        
+        console.log('User logged out successfully');
     }
 
     private showStatus(message: string, type: 'success' | 'error' | 'info' = 'info'): void {
@@ -1573,29 +1588,6 @@ class SimpleAuth {
         }
     }
 
-    private handleLogout(): void {
-        console.log('Logging out user...');
-        
-        // Clear authentication data
-        this.currentUser = null;
-        this.authToken = null;
-        
-        // Clear cookies
-        document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        
-        // Clear localStorage
-        localStorage.removeItem('userData');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('lastActiveSection');
-        
-        // Show login page
-        this.showPage('loginPage');
-        
-        // Reset URL to home
-        window.history.pushState({}, '', '/');
-        
-        console.log('User logged out successfully');
-    }
 
     private setupFriendsRefresh(): void {
         // Refresh friends list every 30 seconds to update online status

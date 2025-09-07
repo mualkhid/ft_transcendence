@@ -239,7 +239,7 @@ class SimpleAuth {
     async testAuthentication() {
         try {
             console.log('Testing authentication...');
-            const response = await fetch('https://localhost/api/profile/test-auth', {
+            const response = await fetch('https://10.11.1.5/api/profile/test-auth', {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -279,7 +279,7 @@ class SimpleAuth {
         // Check if backend is running first
         try {
             console.log('Testing backend connection...');
-            const healthCheck = await fetch('https://localhost/api/profile/me', {
+            const healthCheck = await fetch('https://10.11.1.5/api/profile/me', {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -304,14 +304,14 @@ class SimpleAuth {
         }
         try {
             console.log('Sending username update request:', { newUsername });
-            console.log('Request URL:', 'https://localhost/api/profile/username');
+            console.log('Request URL:', 'https://10.11.1.5/api/profile/username');
             console.log('Request method:', 'PATCH');
             console.log('Request headers:', {
                 'Content-Type': 'application/json',
             });
             console.log('Request body:', JSON.stringify({ newUsername }));
             console.log('Credentials:', 'include');
-            const response = await fetch('https://localhost/api/profile/username', {
+            const response = await fetch('https://10.11.1.5/api/profile/username', {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -386,14 +386,14 @@ class SimpleAuth {
         }
         try {
             console.log('Sending password update request');
-            console.log('Request URL:', 'https://localhost/api/profile/password');
+            console.log('Request URL:', 'https://10.11.1.5/api/profile/password');
             console.log('Request method:', 'PATCH');
             console.log('Request headers:', {
                 'Content-Type': 'application/json',
             });
             console.log('Request body:', JSON.stringify({ currentPassword, newPassword: '***' }));
             console.log('Credentials:', 'include');
-            const response = await fetch('https://localhost/api/profile/password', {
+            const response = await fetch('https://10.11.1.5/api/profile/password', {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -474,7 +474,7 @@ class SimpleAuth {
             console.log('Uploading avatar file:', file.name, 'Size:', file.size, 'Type:', file.type);
             const formData = new FormData();
             formData.append('avatar', file);
-            const response = await fetch('https://localhost/api/profile/avatar', {
+            const response = await fetch('https://10.11.1.5/api/profile/avatar', {
                 method: 'PATCH',
                 body: formData,
                 credentials: 'include'
@@ -487,7 +487,7 @@ class SimpleAuth {
                 const profileAvatar = document.getElementById('profileAvatar');
                 if (profileAvatar) {
                     // Add timestamp to prevent caching
-                    profileAvatar.src = `https://localhost${data.avatarUrl}?t=${Date.now()}`;
+                    profileAvatar.src = `https://10.11.1.5${data.avatarUrl}?t=${Date.now()}`;
                 }
                 // Update current user data
                 if (this.currentUser) {
@@ -537,7 +537,7 @@ class SimpleAuth {
         }
         try {
             console.log('Searching users with term:', searchTerm);
-            const response = await fetch(`https://localhost/api/friends/searchUser?q=${encodeURIComponent(searchTerm)}`, {
+            const response = await fetch(`https://10.11.1.5/api/friends/searchUser?q=${encodeURIComponent(searchTerm)}`, {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -573,7 +573,7 @@ class SimpleAuth {
         }
         try {
             console.log('Loading friends data...');
-            const response = await fetch('https://localhost/api/friends', {
+            const response = await fetch('https://10.11.1.5/api/friends', {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -622,7 +622,7 @@ class SimpleAuth {
                 <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
                     <div class="flex items-center space-x-3">
                         <div class="relative">
-                            <img src="${user.avatarUrl ? `https://localhost${user.avatarUrl}?t=${Date.now()}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}`}" 
+                            <img src="${user.avatarUrl ? `https://10.11.1.5${user.avatarUrl}?t=${Date.now()}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}`}" 
                                  alt="${user.username}" 
                                  class="w-12 h-12 rounded-full object-cover border-2 border-white border-opacity-30">
                         </div>
@@ -656,7 +656,7 @@ class SimpleAuth {
                 <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
                     <div class="flex items-center space-x-3">
                         <div class="relative">
-                            <img src="${friend.avatarUrl ? `https://localhost${friend.avatarUrl}?t=${Date.now()}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(friend.username)}`}" 
+                            <img src="${friend.avatarUrl ? `https://10.11.1.5${friend.avatarUrl}?t=${Date.now()}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(friend.username)}`}" 
                                  alt="${friend.username}" 
                                  class="w-12 h-12 rounded-full object-cover border-2 border-white border-opacity-30">
                             <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${isOnline ? 'bg-green-400' : 'bg-gray-400'}"></div>
@@ -697,7 +697,7 @@ class SimpleAuth {
             <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
                 <div class="flex items-center space-x-3">
                     <div class="relative">
-                        <img src="${request.avatarUrl ? `https://localhost${request.avatarUrl}?t=${Date.now()}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(request.username)}`}" 
+                        <img src="${request.avatarUrl ? `https://10.11.1.5${request.avatarUrl}?t=${Date.now()}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(request.username)}`}" 
                              alt="${request.username}" 
                              class="w-12 h-12 rounded-full object-cover border-2 border-white border-opacity-30">
                     </div>
@@ -741,7 +741,7 @@ class SimpleAuth {
         }
         try {
             console.log('Sending friend request to user:', userId);
-            const response = await fetch('https://localhost/api/friends/sendRequest', {
+            const response = await fetch('https://10.11.1.5/api/friends/sendRequest', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -788,7 +788,7 @@ class SimpleAuth {
         }
         try {
             console.log('Accepting friend request from user:', userId);
-            const response = await fetch('https://localhost/api/friends/acceptRequest', {
+            const response = await fetch('https://10.11.1.5/api/friends/acceptRequest', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -829,7 +829,7 @@ class SimpleAuth {
         }
         try {
             console.log('Declining friend request from user:', userId);
-            const response = await fetch('https://localhost/api/friends/declineRequest', {
+            const response = await fetch('https://10.11.1.5/api/friends/declineRequest', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -869,7 +869,7 @@ class SimpleAuth {
         }
         try {
             console.log('Removing friend:', userId);
-            const response = await fetch('https://localhost/api/friends/removeFriend', {
+            const response = await fetch('https://10.11.1.5/api/friends/removeFriend', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -910,7 +910,7 @@ class SimpleAuth {
         }
         try {
             console.log('Blocking friend:', userId);
-            const response = await fetch('https://localhost/api/friends/blockFriend', {
+            const response = await fetch('https://10.11.1.5/api/friends/blockFriend', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -956,8 +956,8 @@ class SimpleAuth {
             return;
         }
         try {
-            console.log('Sending registration request to:', 'https://localhost/api/auth/registerUser');
-            const response = await fetch('https://localhost/api/auth/registerUser', {
+            console.log('Sending registration request to:', 'https://10.11.1.5/api/auth/registerUser');
+            const response = await fetch('https://10.11.1.5/api/auth/registerUser', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -996,8 +996,8 @@ class SimpleAuth {
             return;
         }
         try {
-            console.log('Sending login request to:', 'https://localhost/api/auth/login');
-            const response = await fetch('https://localhost/api/auth/login', {
+            console.log('Sending login request to:', 'https://10.11.1.5/api/auth/login');
+            const response = await fetch('https://10.11.1.5/api/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1140,7 +1140,7 @@ class SimpleAuth {
     async tryRefreshToken() {
         console.log('Attempting to refresh token...');
         try {
-            const response = await fetch('https://localhost/api/auth/refresh', {
+            const response = await fetch('https://10.11.1.5/api/auth/refresh', {
                 method: 'POST',
                 credentials: 'include'
             });
@@ -1207,6 +1207,35 @@ class SimpleAuth {
                 console.log('✅ Keeping current active section');
             }
         }
+    }
+    async handleLogout() {
+        try {
+            // Call the logout endpoint to clear the server-side cookie
+            await fetch('https://10.11.1.5/api/auth/logout', {
+                method: 'POST',
+                credentials: 'include'
+            });
+        }
+        catch (error) {
+            console.error('Logout error:', error);
+        }
+        // Clear authentication data
+        this.currentUser = null;
+        this.authToken = null;
+        // Clear cookies
+        document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        // Clear localStorage (comprehensive cleanup)
+        localStorage.removeItem('user');
+        localStorage.removeItem('userData');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('lastActiveSection');
+        this.showStatus('Logged out successfully', 'success');
+        setTimeout(() => {
+            this.showPage('registrationPage');
+        }, 1000);
+        // Reset URL to home
+        window.history.pushState({}, '', '/');
+        console.log('User logged out successfully');
     }
     showStatus(message, type = 'info') {
         const statusDiv = document.getElementById('status');
@@ -1466,23 +1495,6 @@ class SimpleAuth {
         if (activeBtn) {
             activeBtn.classList.add('active');
         }
-    }
-    handleLogout() {
-        console.log('Logging out user...');
-        // Clear authentication data
-        this.currentUser = null;
-        this.authToken = null;
-        // Clear cookies
-        document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        // Clear localStorage
-        localStorage.removeItem('userData');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('lastActiveSection');
-        // Show login page
-        this.showPage('loginPage');
-        // Reset URL to home
-        window.history.pushState({}, '', '/');
-        console.log('User logged out successfully');
     }
     setupFriendsRefresh() {
         // Refresh friends list every 30 seconds to update online status
@@ -1745,7 +1757,7 @@ class SimpleAuth {
         }
         // Check authentication before proceeding
         try {
-            const response = await fetch('https://localhost/api/profile/me', {
+            const response = await fetch('https://10.11.1.5/api/profile/me', {
                 credentials: 'include'
             });
             if (!response.ok) {
@@ -2360,7 +2372,7 @@ class SimpleAuth {
         console.log('Current cookies:', document.cookie);
         try {
             console.log('Loading user profile, current cookies:', document.cookie);
-            const response = await fetch('https://localhost/api/profile/me', {
+            const response = await fetch('https://10.11.1.5/api/profile/me', {
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
@@ -2424,7 +2436,7 @@ class SimpleAuth {
         if (profileAvatar) {
             if (this.currentUser.avatarUrl) {
                 // Use the user's custom avatar
-                profileAvatar.src = `https://localhost${this.currentUser.avatarUrl}?t=${Date.now()}`;
+                profileAvatar.src = `https://10.11.1.5${this.currentUser.avatarUrl}?t=${Date.now()}`;
                 console.log('Updated avatar with custom image:', this.currentUser.avatarUrl);
             }
             else {
@@ -2608,7 +2620,7 @@ class SimpleAuth {
     async refreshUserData() {
         try {
             console.log('🔄 Refreshing user data from server...');
-            const response = await fetch('https://localhost/api/auth/profile', {
+            const response = await fetch('https://10.11.1.5/api/auth/profile', {
                 method: 'GET',
                 credentials: 'include',
                 headers: {
@@ -2672,7 +2684,7 @@ class SimpleAuth {
     }
     async refreshToken() {
         try {
-            const response = await fetch('https://localhost/api/auth/refresh', {
+            const response = await fetch('https://10.11.1.5/api/auth/refresh', {
                 method: 'POST',
                 credentials: 'include'
             });
@@ -2724,7 +2736,7 @@ class SimpleAuth {
                 requestBody.player2Score = player2Score;
                 requestBody.opponentName = opponentName || 'Local Player';
             }
-            const response = await fetch('https://localhost/api/profile/update-stats', {
+            const response = await fetch('https://10.11.1.5/api/profile/update-stats', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2760,12 +2772,12 @@ class SimpleAuth {
         console.log('=== RECORDING TOURNAMENT RESULT ===');
         console.log('Winner:', winner, 'Loser:', loser);
         console.log('Tournament ID:', this.tournamentState.tournamentId);
-        if (!this.currentUser?.token) {
+        if (!this.currentUser) {
             console.log('No authentication token, skipping backend recording');
             return;
         }
         try {
-            const url = 'http://localhost:3000/api/tournament/local-result';
+            const url = 'https://10.11.1.5/api/tournament/local-result';
             const requestBody = {
                 winner,
                 loser,
@@ -2778,9 +2790,9 @@ class SimpleAuth {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.currentUser.token}`
                 },
-                body: JSON.stringify(requestBody)
+                body: JSON.stringify(requestBody),
+                credentials: 'include'
             });
             const result = await response.json();
             console.log('Record result response:', result);
@@ -2881,16 +2893,13 @@ class SimpleAuth {
         this.showNextMatch();
     }
     async createTournamentInDatabase(players) {
-        console.log('=== DEBUGGING TOURNAMENT CREATION ===');
-        console.log('Current user:', this.currentUser);
-        console.log('Token exists:', !!this.currentUser?.token);
-        if (!this.currentUser?.token) {
+        if (!this.currentUser) {
             console.log('No authentication token, skipping tournament creation in database');
             return;
         }
         try {
             // Use correct URL - adjust port/protocol as needed
-            const url = 'http://localhost:3000/api/tournament/create';
+            const url = 'https://10.11.1.5/api/tournament/create';
             console.log('Making request to:', url);
             const requestBody = {
                 name: `Local Tournament - ${new Date().toLocaleDateString()}`,
@@ -2902,9 +2911,9 @@ class SimpleAuth {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.currentUser.token}`
                 },
-                body: JSON.stringify(requestBody)
+                body: JSON.stringify(requestBody),
+                credentials: 'include'
             });
             console.log('Response status:', response.status);
             console.log('Response headers:', [...response.headers.entries()]);
@@ -2923,20 +2932,20 @@ class SimpleAuth {
         }
     }
     async completeTournamentInDatabase(winnerId) {
-        if (!this.currentUser?.token || !this.tournamentState.tournamentId) {
+        if (!this.currentUser || !this.tournamentState.tournamentId) {
             console.log('No authentication token or tournament ID, skipping tournament completion');
             return;
         }
         try {
-            const response = await fetch(`https://localhost/api/tournament/${this.tournamentState.tournamentId}/complete`, {
+            const response = await fetch(`https://10.11.1.5/api/tournament/${this.tournamentState.tournamentId}/complete`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.currentUser.token}`
                 },
                 body: JSON.stringify({
                     winnerId: winnerId || null
-                })
+                }),
+                credentials: 'include'
             });
             const result = await response.json();
             if (response.ok) {
@@ -3676,6 +3685,7 @@ class SimpleAuth {
                             // Fallback: Check for game over if server doesn't send game-over message
                             if (data.player1Score >= 5 || data.player2Score >= 5) {
                                 console.log('🎯 Fallback: Game over detected in game-state message');
+                                this.onlineGameState.gameFinished = true;
                                 const winner = data.player1Score >= 5 ? data.player1Username : data.player2Username;
                                 const winnerScore = data.player1Score >= 5 ? data.player1Score : data.player2Score;
                                 const loserScore = data.player1Score >= 5 ? data.player2Score : data.player1Score;
@@ -3710,6 +3720,22 @@ class SimpleAuth {
                             this.hideRemoteGameMessage();
                             this.hideScoreDisplay();
                             this.updateRemoteGameStatus('Restarting', 'Both players agreed to play again!');
+                            this.onlineGameState.gameFinished = false;
+                            this.onlineGameState.gameState = {
+                                ballX: 400,
+                                ballY: 300,
+                                leftPaddleY: 250,
+                                rightPaddleY: 250,
+                                player1Score: 0,
+                                player2Score: 0,
+                                speedX: 5,
+                                speedY: 3
+                            };
+                            // ✅ ADD: Hide game over modal
+                            const gameOverModal = document.getElementById('gameOverModal');
+                            if (gameOverModal) {
+                                gameOverModal.classList.add('hidden');
+                            }
                             break;
                         case 'play-again-waiting':
                             console.log('⏳ Play again waiting:', data);
@@ -3760,7 +3786,17 @@ class SimpleAuth {
                 console.log(`🔌 Remote game connection closed: ${event.code} ${event.reason}`);
                 this.onlineGameState.isConnected = false;
                 // Only show disconnect message if game wasn't finished
-                if (!this.onlineGameState.gameFinished) {
+                if (this.onlineGameState.gameFinished) {
+                    console.log('Game finished normally, not showing disconnect message');
+                    return;
+                }
+                // Check for normal closure codes
+                if (event.code === 1000 && (event.reason === 'Game completed normally' || event.reason === 'Match is full')) {
+                    console.log('WebSocket closed normally:', event.reason);
+                    return;
+                }
+                // Only show disconnect message for unexpected closures
+                if (event.code !== 1000) {
                     this.updateRemoteGameStatus('Disconnected', `Connection closed: ${event.reason || 'No reason provided'}`);
                     // Show a message that the game was abandoned
                     this.showRemoteGameMessage('Game abandoned - opponent disconnected');
@@ -4190,7 +4226,7 @@ class SimpleAuth {
         console.log('Starting matchmaking...');
         try {
             // Connect to matchmaking WebSocket
-            const matchmakingSocket = new WebSocket('ws://localhost/api/matchmaking');
+            const matchmakingSocket = new WebSocket('ws://10.11.1.5/api/matchmaking');
             matchmakingSocket.onopen = () => {
                 console.log('Connected to matchmaking server');
                 this.onlineGameState.matchmakingSocket = matchmakingSocket;
@@ -4289,7 +4325,7 @@ class SimpleAuth {
     connectToGame(matchId) {
         console.log('Connecting to game:', matchId);
         try {
-            const gameSocket = new WebSocket(`ws://localhost/api/remote-game/${matchId}`);
+            const gameSocket = new WebSocket(`ws://10.11.1.5/api/remote-game/${matchId}`);
             gameSocket.onopen = () => {
                 console.log('Connected to game server');
                 this.onlineGameState.gameSocket = gameSocket;
