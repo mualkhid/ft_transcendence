@@ -4,7 +4,7 @@
 
 /* Hearts GIF Background for login/registration only */
 #loginPage, #registrationPage {
-    background-image: url('../avatars/powerpuff_girls_wallpaper.png');
+    background-image: url('../imgs/powerpuff_girls_wallpaper.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -25,19 +25,19 @@
 
 /* Background image classes */
 .bg-home {
-    background-image: url('../avatars/powerpuff-bg.png') !important;
+    background-image: url('../imgs/powerpuff-bg.png') !important;
 }
 
 .bg-friends {
-    background-image: url('../avatars/untitled-design.png') !important;
+    background-image: url('../imgs/untitled-design.png') !important;
 }
 
 .bg-profile {
-    background-image: url('../avatars/20250905_111657_0000.png') !important;
+    background-image: url('../imgs/20250905_111657_0000.png') !important;
 }
 
 .bg-game-options {
-    background-image: url('../avatars/bg.md') !important;
+    background-image: url('../imgs/bg.md') !important;
 }
 
 

@@ -19,7 +19,7 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY index.html /usr/share/nginx/html/
 COPY ai-pong.html /usr/share/nginx/html/
 COPY dashboard.html /usr/share/nginx/html/
-COPY avatars/ /usr/share/nginx/html/avatars/
+COPY imgs/ /usr/share/nginx/html/imgs/
 
 EXPOSE 80
 
