@@ -228,7 +228,7 @@ class SimpleAuth {
     private async testAuthentication(): Promise<void> {
         try {
             console.log('Testing authentication...');
-            const response = await fetch('https://localhost/api/profile/test-auth', { 
+            const response = await fetch('https://localhost/api/profile/test-auth', {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -1262,40 +1262,6 @@ class SimpleAuth {
         }
     }
 
-    private async handleLogout(): Promise<void> {
-        try {
-            // Call the logout endpoint to clear the server-side cookie
-            await fetch('https://localhost/api/auth/logout', {
-                method: 'POST',
-                credentials: 'include'
-            });
-        } catch (error) {
-            console.error('Logout error:', error);
-        }
-
-        // Clear authentication data
-        this.currentUser = null;
-        this.authToken = null;
-        
-        // Clear cookies
-        document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        
-        // Clear localStorage (comprehensive cleanup)
-        localStorage.removeItem('user');
-        localStorage.removeItem('userData');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('lastActiveSection');
-        
-        this.showStatus('Logged out successfully', 'success');
-        setTimeout(() => {
-            this.showPage('registrationPage');
-        }, 1000);
-        
-        // Reset URL to home
-        window.history.pushState({}, '', '/');
-        
-        console.log('User logged out successfully');
-    }
 
     private showStatus(message: string, type: 'success' | 'error' | 'info' = 'info'): void {
         const statusDiv = document.getElementById('status');
@@ -1588,6 +1554,29 @@ class SimpleAuth {
         }
     }
 
+    private handleLogout(): void {
+        console.log('Logging out user...');
+        
+        // Clear authentication data
+        this.currentUser = null;
+        this.authToken = null;
+        
+        // Clear cookies
+        document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        
+        // Clear localStorage
+        localStorage.removeItem('userData');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('lastActiveSection');
+        
+        // Show login page
+        this.showPage('loginPage');
+        
+        // Reset URL to home
+        window.history.pushState({}, '', '/');
+        
+        console.log('User logged out successfully');
+    }
 
     private setupFriendsRefresh(): void {
         // Refresh friends list every 30 seconds to update online status
@@ -3103,13 +3092,13 @@ class SimpleAuth {
         console.log('Winner:', winner, 'Loser:', loser);
         console.log('Tournament ID:', this.tournamentState.tournamentId);
         
-        if (!this.currentUser) {
+        if (!this.currentUser?.token) {
             console.log('No authentication token, skipping backend recording');
             return;
         }
     
         try {
-            const url = 'https://localhost/api/tournament/local-result';
+            const url = 'http://localhost:3000/api/tournament/local-result';
             const requestBody = {
                 winner,
                 loser,
@@ -3124,9 +3113,9 @@ class SimpleAuth {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.currentUser.token}`
                 },
-                body: JSON.stringify(requestBody),
-                credentials: 'include'
+                body: JSON.stringify(requestBody)
             });
     
             const result = await response.json();
@@ -3244,17 +3233,19 @@ class SimpleAuth {
         this.showNextMatch();
     }
 
-    private async createTournamentInDatabase(players: string[]): Promise<void>
-    {
+    private async createTournamentInDatabase(players: string[]): Promise<void> {
+        console.log('=== DEBUGGING TOURNAMENT CREATION ===');
+        console.log('Current user:', this.currentUser);
+        console.log('Token exists:', !!this.currentUser?.token);
         
-        if (!this.currentUser) {
+        if (!this.currentUser?.token) {
             console.log('No authentication token, skipping tournament creation in database');
             return;
         }
     
         try {
             // Use correct URL - adjust port/protocol as needed
-            const url = 'https://localhost/api/tournament/create';
+            const url = 'http://localhost:3000/api/tournament/create';
             console.log('Making request to:', url);
             
             const requestBody = {
@@ -3268,9 +3259,9 @@ class SimpleAuth {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.currentUser.token}`
                 },
-                body: JSON.stringify(requestBody),
-                credentials: 'include'
+                body: JSON.stringify(requestBody)
             });
     
             console.log('Response status:', response.status);
@@ -3292,7 +3283,7 @@ class SimpleAuth {
 
     private async completeTournamentInDatabase(winnerId?: number): Promise<void>
     {
-        if (!this.currentUser|| !this.tournamentState.tournamentId) {
+        if (!this.currentUser?.token || !this.tournamentState.tournamentId) {
             console.log('No authentication token or tournament ID, skipping tournament completion');
             return;
         }
@@ -3302,11 +3293,11 @@ class SimpleAuth {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.currentUser.token}`
                 },
                 body: JSON.stringify({
                     winnerId: winnerId || null
-                }),
-                credentials: 'include'
+                })
             });
     
             const result = await response.json();
@@ -4170,7 +4161,6 @@ class SimpleAuth {
                             // Fallback: Check for game over if server doesn't send game-over message
                             if (data.player1Score >= 5 || data.player2Score >= 5) {
                                 console.log('🎯 Fallback: Game over detected in game-state message');
-                                this.onlineGameState.gameFinished = true;
                                 const winner = data.player1Score >= 5 ? data.player1Username : data.player2Username;
                                 const winnerScore = data.player1Score >= 5 ? data.player1Score : data.player2Score;
                                 const loserScore = data.player1Score >= 5 ? data.player2Score : data.player1Score;
@@ -4208,23 +4198,6 @@ class SimpleAuth {
                             this.hideRemoteGameMessage();
                             this.hideScoreDisplay();
                             this.updateRemoteGameStatus('Restarting', 'Both players agreed to play again!');
-                             this.onlineGameState.gameFinished = false;
-                            this.onlineGameState.gameState = {
-                                ballX: 400,
-                                ballY: 300,
-                                leftPaddleY: 250,
-                                rightPaddleY: 250,
-                                player1Score: 0,
-                                player2Score: 0,
-                                speedX: 5,
-                                speedY: 3
-                            };
-                            
-                            // ✅ ADD: Hide game over modal
-                            const gameOverModal = document.getElementById('gameOverModal');
-                            if (gameOverModal) {
-                                gameOverModal.classList.add('hidden');
-                            }
                             break;
                             
                         case 'play-again-waiting':
@@ -4280,19 +4253,7 @@ class SimpleAuth {
                 this.onlineGameState.isConnected = false;
                 
                 // Only show disconnect message if game wasn't finished
-                if (this.onlineGameState.gameFinished) {
-                    console.log('Game finished normally, not showing disconnect message');
-                    return;
-                }
-                
-                // Check for normal closure codes
-                if (event.code === 1000 && (event.reason === 'Game completed normally' || event.reason === 'Match is full')) {
-                    console.log('WebSocket closed normally:', event.reason);
-                    return;
-                }
-                
-                // Only show disconnect message for unexpected closures
-                if (event.code !== 1000) {
+                if (!this.onlineGameState.gameFinished) {
                     this.updateRemoteGameStatus('Disconnected', `Connection closed: ${event.reason || 'No reason provided'}`);
                     
                     // Show a message that the game was abandoned
