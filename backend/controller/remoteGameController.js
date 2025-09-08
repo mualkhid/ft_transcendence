@@ -59,35 +59,24 @@ export async function handleRemoteGame(socket, matchId, username = null)
             
         if (match.state.gameLoopInterval)
             clearInterval(match.state.gameLoopInterval);
-            
-        
         startGameCountdown(match, parseInt(matchId));
-            
-        }
-        else
-        {
-            const waitingMessage = JSON.stringify({
-                type: 'waiting',
-                message: `Waiting for opponent to join... (${match.state.connectedPlayers}/2 players)`,
-                connectedPlayers: match.state.connectedPlayers
-            });
-            socket.send(waitingMessage);
-        }
+    }
+    else
+    {
+        const waitingMessage = JSON.stringify({
+            type: 'waiting',
+            message: `Waiting for opponent to join... (${match.state.connectedPlayers}/2 players)`,
+            connectedPlayers: match.state.connectedPlayers
+        });
+        socket.send(waitingMessage);
+    }
 
         socket.on('message', (message) => {
-            try {
+            try
+            {
                 const data = JSON.parse(message);
-                
                 if (data.type === 'input')
                     handlePlayerInputMessage(socket, data, parseInt(matchId), playerNumber);
-                // Handle ping/pong for connection testing
-                else if (data.type === 'ping') {
-                    socket.send(JSON.stringify({
-                        type: 'pong',
-                        timestamp: data.timestamp,
-                        serverTime: Date.now()
-                    }));
-                }
             } catch (error) {
                 console.error('Error parsing message from client:', error);
                 socket.send(JSON.stringify({
@@ -101,25 +90,27 @@ export async function handleRemoteGame(socket, matchId, username = null)
         socket.on('close', async (code, reason) => {
         console.log(`Player ${playerNumber} disconnected from match ${matchId}`);
         const currentMatch = getMatch(parseInt(matchId));
-         if (currentMatch && currentMatch.state.gameFinished)
+        if (currentMatch && currentMatch.state.gameFinished)
         {
             console.log(`Game ${matchId} already finished, skipping disconnect message`);
-            await removePlayerFromMatch(parseInt(matchId), socket);
+            removePlayerFromMatch(parseInt(matchId), socket);
             return;
         }
-        if (currentMatch) {
+        if(currentMatch && !currentMatch.state.gameFinished) {
                 const disconnectMessage = JSON.stringify({
                     type: 'opponent-disconnected',
                     message: `Player ${playerNumber} has disconnected`,
                     disconnectedPlayer: playerNumber
                 });
                 
-                // Send to remaining connected players
                 if (currentMatch.player1 && currentMatch.player1.readyState === 1)
                     currentMatch.player1.send(disconnectMessage);
                 if (currentMatch.player2 && currentMatch.player2.readyState === 1)
                     currentMatch.player2.send(disconnectMessage);
             }
+            setTimeout(() => {
+                removePlayerFromMatch(parseInt(matchId), socket);
+            }, 1000);
         });
 }
 

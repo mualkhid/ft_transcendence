@@ -6,7 +6,7 @@ export function setupWebSocketServer() {
     const wss = new WebSocketServer({ port: 3001 });
         
     wss.on('connection', (ws, request) => {
-        const url = new URL(request.url, 'https://10.11.1.5:3001');
+        const url = new URL(request.url, 'https://localhost:3001');
         const path = url.pathname;
                 
         if (path === '/ai-game') {

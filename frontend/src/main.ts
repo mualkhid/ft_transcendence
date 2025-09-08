@@ -3519,6 +3519,11 @@ class SimpleAuth {
             ctx.strokeRect(733, this.onlineGameState.gameState.rightPaddleY - 2, 19, 104);
             ctx.shadowBlur = 0;
         }
+        const scoreDisplay = document.getElementById('onlineScoreDisplay');
+            if (scoreDisplay && scoreDisplay.style.display === 'none') {
+                console.warn('Score display was hidden during game, reshowing...');
+                this.showScoreDisplay();
+            }
     }
 
     private connectToRemoteGame(): void {
@@ -3550,7 +3555,6 @@ class SimpleAuth {
                 this.onlineGameState.isConnected = true;
                 this.updateRemoteGameStatus('Connected', 'WebSocket connection established');
             };
-
             this.onlineGameState.gameSocket.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
@@ -3606,6 +3610,8 @@ class SimpleAuth {
                             this.startRemoteGame();
                             // Make sure score display is visible and updated
                             this.showScoreDisplay();
+                            this.onlineGameState.gameState.player1Score = 0;
+                            this.onlineGameState.gameState.player2Score = 0;
                             this.updateRemoteScore();
                             break;
                             
@@ -3644,16 +3650,28 @@ class SimpleAuth {
                             break;
                             
                         case 'game-over':
-                            console.log(`🏆 Game Over! ${data.winner} wins!`);
-                            console.log('📊 Game over data:', data);
                             this.onlineGameState.gameFinished = true;
-                            this.showGameOverScreen({
-                                winner: data.winner,
-                                winnerScore: data.winnerScore,
-                                loserScore: data.loserScore,
+                            this.onlineGameState.gameState.player1Score = data.player1Score;
+                            this.onlineGameState.gameState.player2Score = data.player2Score;
+                            this.updateRemoteScore();
+                            
+                            // Prepare game over screen data
+                            const gameOverScreenData = {
+                                winner: data.winnerAlias || data.winner,
+                                winnerScore: Math.max(data.player1Score, data.player2Score),
+                                loserScore: Math.min(data.player1Score, data.player2Score),
                                 player1Username: data.player1Username,
-                                player2Username: data.player2Username
-                            });
+                                player2Username: data.player2Username,
+                                player1Score: data.player1Score,
+                                player2Score: data.player2Score
+                            };
+                            
+                            // Show game over screen
+                            this.showGameOverScreen(gameOverScreenData);
+                            
+                            // Update game status
+                            this.updateRemoteGameStatus('Game Over', `${data.winnerAlias} wins!`);
+                            
                             // Refresh user data to update dashboard
                             this.refreshUserData();
                             break;
@@ -3799,18 +3817,59 @@ class SimpleAuth {
     private updateRemoteScore(): void {
         const player1Score = document.getElementById('onlinePlayer1Score');
         const player2Score = document.getElementById('onlinePlayer2Score');
+        const scoreDisplay = document.getElementById('onlineScoreDisplay');
         
-        console.log(`🎮 Updating remote score - Player ${this.onlineGameState.playerNumber}:`);
-        console.log(`   Player1Score: ${this.onlineGameState.gameState.player1Score}, Player2Score: ${this.onlineGameState.gameState.player2Score}`);
-        console.log('Score elements found:', { player1Score: !!player1Score, player2Score: !!player2Score });
+        console.log('=== SCORE UPDATE DEBUG ===');
+        console.log('Score values:', {
+            player1Score: this.onlineGameState.gameState.player1Score,
+            player2Score: this.onlineGameState.gameState.player2Score
+        });
         
-        // Use the same simple approach as the working backend/public/index.html
+        console.log('DOM elements:', {
+            player1Element: !!player1Score,
+            player2Element: !!player2Score,
+            scoreDisplayElement: !!scoreDisplay
+        });
+        
+        if (scoreDisplay) {
+            console.log('Score display styles:', {
+                display: scoreDisplay.style.display,
+                visibility: scoreDisplay.style.visibility,
+                opacity: scoreDisplay.style.opacity,
+                computedDisplay: window.getComputedStyle(scoreDisplay).display,
+                computedVisibility: window.getComputedStyle(scoreDisplay).visibility,
+                offsetHeight: scoreDisplay.offsetHeight,
+                offsetWidth: scoreDisplay.offsetWidth
+            });
+        }
+        
         if (player1Score && player2Score) {
+            // Force the score display to be visible
+            if (scoreDisplay) {
+                scoreDisplay.style.display = 'block';
+                scoreDisplay.style.visibility = 'visible';
+                scoreDisplay.style.opacity = '1';
+            }
+            
+            // Update the scores
             player1Score.textContent = this.onlineGameState.gameState.player1Score.toString();
             player2Score.textContent = this.onlineGameState.gameState.player2Score.toString();
-            console.log(`   Updated scores: ${this.onlineGameState.gameState.player1Score} - ${this.onlineGameState.gameState.player2Score}`);
+            
+            console.log('Updated scores to:', {
+                player1Text: player1Score.textContent,
+                player2Text: player2Score.textContent
+            });
+            
+            // Double-check visibility after update
+            if (scoreDisplay) {
+                console.log('After update - Score display styles:', {
+                    display: scoreDisplay.style.display,
+                    computedDisplay: window.getComputedStyle(scoreDisplay).display,
+                    offsetHeight: scoreDisplay.offsetHeight
+                });
+            }
         } else {
-            console.error('❌ Score elements not found!');
+            console.error('Score elements not found!');
         }
     }
 
@@ -4003,6 +4062,37 @@ class SimpleAuth {
         }
     }
 
+    private reconnectToRemoteGame(): void {
+        console.log('Reconnecting to remote game...');
+        
+        // Reset game state
+        this.onlineGameState.gameFinished = false;
+        this.onlineGameState.gameState = {
+            ballX: 400,
+            ballY: 300,
+            leftPaddleY: 250,
+            rightPaddleY: 250,
+            player1Score: 0,
+            player2Score: 0,
+            speedX: 5,
+            speedY: 3
+        };
+        
+        // Close existing connection
+        if (this.onlineGameState.gameSocket) {
+            this.onlineGameState.gameSocket.close();
+        }
+        
+        // Reset connection state
+        this.onlineGameState.isConnected = false;
+        this.onlineGameState.playerNumber = null;
+        
+        // Reconnect after a short delay
+        setTimeout(() => {
+            this.connectToRemoteGame();
+        }, 1000);
+    }
+
     private showGameOverScreen(data: any): void {
         // Show the game over modal
         const gameOverModal = document.getElementById('gameOverModal');
@@ -4015,17 +4105,23 @@ class SimpleAuth {
         const gameOverPlayer2Score = document.getElementById('gameOverPlayer2Score');
         
         if (gameOverModal && gameOverIcon && gameOverTitle && gameOverMessage) {
-            // Set winner icon and title
-            gameOverIcon.textContent = '🏆';
-            gameOverTitle.textContent = 'Game Over!';
-            gameOverMessage.textContent = `${data.winner} wins!`;
+            // Determine if current user won
+            const currentUsername = this.currentUser?.username;
+            const isWinner = (currentUsername === data.winner) ||
+                            (currentUsername === data.player1Username && data.player1Score > data.player2Score) ||
+                            (currentUsername === data.player2Username && data.player2Score > data.player1Score);
+            
+            // Set appropriate icon and message
+            gameOverIcon.textContent = isWinner ? '🏆' : '💔';
+            gameOverTitle.textContent = isWinner ? 'Victory!' : 'Defeat!';
+            gameOverMessage.textContent = isWinner ? 'Congratulations, you won!' : `${data.winner} wins!`;
             
             // Set player names and scores
             if (gameOverPlayer1Name && gameOverPlayer2Name && gameOverPlayer1Score && gameOverPlayer2Score) {
                 gameOverPlayer1Name.textContent = data.player1Username || 'Player 1';
                 gameOverPlayer2Name.textContent = data.player2Username || 'Player 2';
-                gameOverPlayer1Score.textContent = data.winnerScore.toString();
-                gameOverPlayer2Score.textContent = data.loserScore.toString();
+                gameOverPlayer1Score.textContent = data.player1Score?.toString() || '0';
+                gameOverPlayer2Score.textContent = data.player2Score?.toString() || '0';
             }
             
             // Show the modal
@@ -4034,38 +4130,30 @@ class SimpleAuth {
             // Set up button event listeners
             const playAgainBtn = document.getElementById('playAgainBtn');
             const goHomeBtn = document.getElementById('goHomeBtn');
-            
-            if (playAgainBtn) {
-                playAgainBtn.onclick = () => {
-                    // Send play again request to server
-                    if (this.onlineGameState.gameSocket && this.onlineGameState.gameSocket.readyState === 1) {
-                        const playAgainMessage = JSON.stringify({
-                            type: 'play-again'
-                        });
-                        this.onlineGameState.gameSocket.send(playAgainMessage);
-                        console.log('Sent play again request to server');
-                    }
-                    
-                    // Hide the modal
-                    gameOverModal.classList.add('hidden');
-                };
-            }
-            
+            if (playAgainBtn)
+                playAgainBtn.style.display = 'none';
             if (goHomeBtn) {
-                // Remove existing listeners by cloning the button
+                // Remove existing listeners
                 const newGoHomeBtn = goHomeBtn.cloneNode(true) as HTMLButtonElement;
                 goHomeBtn.parentNode?.replaceChild(newGoHomeBtn, goHomeBtn);
                 
-                // Add unique identifier to prevent multiple handlers
-                newGoHomeBtn.setAttribute('data-handler-attached', 'true');
-                
+                newGoHomeBtn.classList.add('w-full');
+                newGoHomeBtn.textContent = '🏠 Return to Home';
                 newGoHomeBtn.onclick = () => {
-                    console.log('Remote game Go to Home clicked');
+                    console.log('Go Home clicked');
+                    
+                    // Close WebSocket if still open
+                    if (this.onlineGameState.gameSocket) {
+                        this.onlineGameState.gameSocket.close(1000, 'User chose to go home');
+                    }
+                    
+                    // Close modal and go home
+                    gameOverModal.classList.add('hidden');
                     this.goHome();
                 };
             }
         }
-    }
+}
 
     private restartRemoteGame(): void {
         console.log('Restarting remote game...');
@@ -4218,7 +4306,7 @@ class SimpleAuth {
         
         try {
             // Connect to matchmaking WebSocket
-            const matchmakingSocket = new WebSocket('ws://localhost/api/matchmaking');
+            const matchmakingSocket = new WebSocket('ws://10.11.1.6/api/matchmaking');
             
             matchmakingSocket.onopen = () => {
                 console.log('Connected to matchmaking server');
@@ -4328,7 +4416,7 @@ class SimpleAuth {
         console.log('Connecting to game:', matchId);
         
         try {
-            const gameSocket = new WebSocket(`ws://localhost/api/remote-game/${matchId}`);
+            const gameSocket = new WebSocket(`ws://10.11.1.6/api/remote-game/${matchId}`);
             
             gameSocket.onopen = () => {
                 console.log('Connected to game server');

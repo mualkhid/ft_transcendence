@@ -5,13 +5,11 @@ import { trackUserActivity } from '../services/lastSeenService.js';
 async function remoteGameRoutes(fastify, options) {
     fastify.get('/remote-game/:matchId', { websocket: true }, async (connection, request) => {
         
-        // Check if this is a WebSocket upgrade request
-        if (!connection.socket) {
-            console.error('❌ No WebSocket connection available');
+        if (!connection.socket)
+        {
+            console.error('No WebSocket connection available');
             return;
         }
-        
-        // Check if request params are available
         if (!request || !request.params || !request.params.matchId) {
             if (connection.socket.readyState === 1) {
                 connection.socket.send(JSON.stringify({
@@ -22,37 +20,22 @@ async function remoteGameRoutes(fastify, options) {
             }
             return;
         }
-        
-        try {
-            const matchId = request.params.matchId;
-            const username = request.query?.username || null;
-            
-            console.log(`Fastify route - matchId: "${matchId}", username: "${username}"`);
-            
-            // Validate matchId
-            if (!matchId || isNaN(parseInt(matchId))) {
-                console.error(`Invalid matchId in Fastify route: "${matchId}"`);
-                connection.socket.send(JSON.stringify({
-                    type: 'error',
-                    message: 'Invalid match ID format'
-                }));
-                connection.socket.close(1002, 'Invalid match ID');
-                return;
-            }
-            
-            // Pass the correct parameters: socket, matchId (as string), username
-            await handleRemoteGame(connection.socket, matchId, username);
-        } catch (error) {
-            console.error('Error in remoteGameRoutes:', error);
-            if (connection.socket && connection.socket.readyState === 1) {
-                connection.socket.send(JSON.stringify({
-                    type: 'error',
-                    message: 'Internal server error occurred'
-                }));
-                connection.socket.close(1011, 'Internal server error');
-            }
+    
+        const matchId = request.params.matchId;
+        const username = request.query?.username || null;
+
+        if (!matchId || matchId === 'remote-game' || isNaN(parseInt(matchId))) {
+            console.error(`Invalid matchId in remote game route: "${matchId}"`);
+            connection.socket.send(JSON.stringify({
+                type: 'error',
+                message: 'Invalid match ID format'
+            }));
+            connection.socket.close(1002, 'Invalid match ID');
+            return;
         }
-    });
+            
+        await handleRemoteGame(connection.socket, matchId, username);
+});
 }
 
 export default remoteGameRoutes;
