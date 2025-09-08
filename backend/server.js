@@ -22,7 +22,6 @@ import aiGameRoutes from './routes/aiGameRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 
 import { globalErrorHandler } from './utils/errorHandler.js';
-import { getSecrets } from './services/vaultService.js';
 import { setupWebSocketServer } from './services/webSocketService.js';
 import { prisma } from './prisma/prisma_lib.js';
 import { setupGracefulShutdown } from './utils/gracefulShutdown.js';
