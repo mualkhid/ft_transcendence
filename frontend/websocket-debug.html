@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .connected { background: #4CAF50; }
+        .disconnected { background: #f44336; }
+        .connecting { background: #ff9800; }
+        #log {
+            background: #333;
+            padding: 10px;
+            border-radius: 5px;
+            height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #2196F3;
+            color: white;
+        }
+        button:hover {
+            background: #1976D2;
+        }
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Connection Debug Test</h1>
+    
+    <div id="status" class="status disconnected">Disconnected</div>
+    
+    <button onclick="testMatchmaking()">Test Matchmaking</button>
+    <button onclick="testGameConnection()">Test Game Connection</button>
+    <button onclick="clearLog()">Clear Log</button>
+    
+    <h3>Connection Log:</h3>
+    <div id="log"></div>
+
+    <script>
+        let matchmakingSocket = null;
+        let gameSocket = null;
+        const log = document.getElementById('log');
+        const status = document.getElementById('status');
+
+        function logMessage(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            log.innerHTML += `[${timestamp}] ${message}\n`;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function updateStatus(text, className) {
+            status.textContent = text;
+            status.className = `status ${className}`;
+        }
+
+        function testMatchmaking() {
+            if (matchmakingSocket && matchmakingSocket.readyState === WebSocket.OPEN) {
+                logMessage('Already connected to matchmaking');
+                return;
+            }
+
+            logMessage('🔍 Testing matchmaking connection...');
+            updateStatus('Connecting to matchmaking...', 'connecting');
+
+            try {
+                matchmakingSocket = new WebSocket('ws://localhost:3000/api/matchmaking');
+
+                matchmakingSocket.onopen = function(event) {
+                    logMessage('✅ Matchmaking WebSocket connected successfully');
+                    updateStatus('Connected to matchmaking', 'connected');
+                    
+                    // Send a test message
+                    const testMessage = {
+                        type: 'join-queue',
+                        userId: 'test_user_' + Date.now(),
+                        username: 'TestUser'
+                    };
+                    matchmakingSocket.send(JSON.stringify(testMessage));
+                    logMessage('📤 Sent join-queue: ' + JSON.stringify(testMessage));
+                };
+
+                matchmakingSocket.onmessage = function(event) {
+                    logMessage('📥 Received: ' + event.data);
+                };
+
+                matchmakingSocket.onerror = function(error) {
+                    logMessage('❌ Matchmaking WebSocket error: ' + error);
+                    updateStatus('Error', 'disconnected');
+                };
+
+                matchmakingSocket.onclose = function(event) {
+                    logMessage(`🔌 Matchmaking WebSocket closed. Code: ${event.code}, Reason: ${event.reason}`);
+                    updateStatus('Disconnected', 'disconnected');
+                };
+
+            } catch (error) {
+                logMessage('❌ Failed to create matchmaking WebSocket: ' + error.message);
+                updateStatus('Failed to connect', 'disconnected');
+            }
+        }
+
+        function testGameConnection() {
+            if (gameSocket && gameSocket.readyState === WebSocket.OPEN) {
+                logMessage('Already connected to game');
+                return;
+            }
+
+            logMessage('🎮 Testing game connection...');
+            updateStatus('Connecting to game...', 'connecting');
+
+            try {
+                gameSocket = new WebSocket('ws://localhost:3000/api/remote-game/1');
+
+                gameSocket.onopen = function(event) {
+                    logMessage('✅ Game WebSocket connected successfully');
+                    updateStatus('Connected to game', 'connected');
+                };
+
+                gameSocket.onmessage = function(event) {
+                    logMessage('📥 Game message: ' + event.data);
+                };
+
+                gameSocket.onerror = function(error) {
+                    logMessage('❌ Game WebSocket error: ' + error);
+                    updateStatus('Error', 'disconnected');
+                };
+
+                gameSocket.onclose = function(event) {
+                    logMessage(`🔌 Game WebSocket closed. Code: ${event.code}, Reason: ${event.reason}`);
+                    updateStatus('Disconnected', 'disconnected');
+                };
+
+            } catch (error) {
+                logMessage('❌ Failed to create game WebSocket: ' + error.message);
+                updateStatus('Failed to connect', 'disconnected');
+            }
+        }
+
+        function clearLog() {
+            log.innerHTML = '';
+        }
+
+        // Auto-test on page load
+        window.onload = function() {
+            logMessage('Page loaded, starting tests...');
+            setTimeout(() => {
+                testMatchmaking();
+            }, 1000);
+        };
+    </script>
+</body>
+</html>

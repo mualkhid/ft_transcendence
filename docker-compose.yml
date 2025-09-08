@@ -1,0 +1,55 @@
+networks:
+  webapp: {}
+
+
+services:
+  # Nginx with SSL
+  nginx:
+    build: ./security
+    ports:
+      - "443:443"
+      - "80:80"
+    depends_on:
+      - backend
+      - frontend
+    networks: [webapp]
+    restart: unless-stopped
+
+
+  # Backend service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - HOST_IP=${HOST_IP}
+    expose:
+      - "8080"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+      - HOST_IP=${HOST_IP}
+    networks: [webapp]
+    restart: unless-stopped
+    
+  
+  # frontend service
+  backend:
+    build: ./backend
+    environment:
+      - NODE_ENV=${NODE_ENV}
+      - JWT_SECRET=${JWT_SECRET}
+      - DATABASE_URL=${DATABASE_URL}
+      - HOST_IP=${HOST_IP}
+    expose:
+      - "3000"
+    networks: [webapp]
+    volumes:
+      - ./persist/sqlite:/app/data
+      - ./persist/avatars:/app/public/avatars
+    restart: unless-stopped
+
+
+
+volumes:
+  database: {}

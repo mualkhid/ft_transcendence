@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+</head>
+<body>
+    <h1>WebSocket Test</h1>
+    <button onclick="testWS()">Test WebSocket</button>
+    <div id="output"></div>
+
+    <script>
+        function testWS() {
+            const output = document.getElementById('output');
+            output.innerHTML = 'Connecting...';
+            
+            try {
+                const ws = new WebSocket('ws://localhost:3000/ws-test');
+                
+                ws.onopen = function() {
+                    output.innerHTML += '<br>✅ Connected!';
+                };
+                
+                ws.onmessage = function(event) {
+                    const data = JSON.parse(event.data);
+                    output.innerHTML += '<br>📨 Received: ' + JSON.stringify(data);
+                };
+                
+                ws.onerror = function(error) {
+                    output.innerHTML += '<br>❌ Error: ' + error;
+                };
+                
+                ws.onclose = function(event) {
+                    output.innerHTML += '<br>🔌 Closed: ' + event.code + ' ' + event.reason;
+                };
+                
+            } catch (error) {
+                output.innerHTML += '<br>❌ Failed to create WebSocket: ' + error;
+            }
+        }
+    </script>
+</body>
+</html>

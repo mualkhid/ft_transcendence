@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .connected { background: #4CAF50; }
+        .disconnected { background: #f44336; }
+        .connecting { background: #ff9800; }
+        #log {
+            background: #333;
+            padding: 10px;
+            border-radius: 5px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #2196F3;
+            color: white;
+        }
+        button:hover {
+            background: #1976D2;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Connection Test</h1>
+    
+    <div id="status" class="status disconnected">Disconnected</div>
+    
+    <button onclick="connect()">Connect</button>
+    <button onclick="disconnect()">Disconnect</button>
+    <button onclick="sendMessage()">Send Test Message</button>
+    <button onclick="clearLog()">Clear Log</button>
+    
+    <h3>Connection Log:</h3>
+    <div id="log"></div>
+
+    <script>
+        let ws = null;
+        const log = document.getElementById('log');
+        const status = document.getElementById('status');
+
+        function logMessage(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            log.innerHTML += `[${timestamp}] ${message}\n`;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function updateStatus(text, className) {
+            status.textContent = text;
+            status.className = `status ${className}`;
+        }
+
+        function connect() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                logMessage('Already connected');
+                return;
+            }
+
+            logMessage('Attempting to connect to ws://localhost:3000/api/matchmaking');
+            updateStatus('Connecting...', 'connecting');
+
+            try {
+                ws = new WebSocket('ws://localhost:3000/api/matchmaking');
+
+                ws.onopen = function(event) {
+                    logMessage('✅ WebSocket connected successfully');
+                    updateStatus('Connected', 'connected');
+                    
+                    // Send a test message
+                    const testMessage = {
+                        type: 'join-queue',
+                        userId: 'test_user_' + Date.now(),
+                        username: 'TestUser'
+                    };
+                    ws.send(JSON.stringify(testMessage));
+                    logMessage('📤 Sent: ' + JSON.stringify(testMessage));
+                };
+
+                ws.onmessage = function(event) {
+                    logMessage('📥 Received: ' + event.data);
+                };
+
+                ws.onerror = function(error) {
+                    logMessage('❌ WebSocket error: ' + error);
+                    updateStatus('Error', 'disconnected');
+                };
+
+                ws.onclose = function(event) {
+                    logMessage(`🔌 WebSocket closed. Code: ${event.code}, Reason: ${event.reason}`);
+                    updateStatus('Disconnected', 'disconnected');
+                };
+
+            } catch (error) {
+                logMessage('❌ Failed to create WebSocket: ' + error.message);
+                updateStatus('Failed to connect', 'disconnected');
+            }
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                logMessage('🔌 Disconnect requested');
+            } else {
+                logMessage('Not connected');
+            }
+        }
+
+        function sendMessage() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const message = {
+                    type: 'ping',
+                    timestamp: Date.now()
+                };
+                ws.send(JSON.stringify(message));
+                logMessage('📤 Sent: ' + JSON.stringify(message));
+            } else {
+                logMessage('❌ Not connected');
+            }
+        }
+
+        function clearLog() {
+            log.innerHTML = '';
+        }
+
+        // Auto-connect on page load
+        window.onload = function() {
+            logMessage('Page loaded, auto-connecting...');
+            setTimeout(connect, 1000);
+        };
+    </script>
+</body>
+</html>

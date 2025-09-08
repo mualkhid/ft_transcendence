@@ -1,0 +1,129 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Hearts GIF Background for login/registration only */
+#loginPage, #registrationPage {
+    background-image: url('../powerpuff_girls_wallpaper.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    min-height: 100vh;
+}
+
+/* Powerpuff Girls Background for main app (after login) */
+#mainApp {
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    background-attachment: fixed !important;
+    min-height: 100vh !important;
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+/* Background image classes */
+.bg-home {
+    background-image: url('../powerpuff-bg.png') !important;
+}
+
+.bg-friends {
+    background-image: url('../untitled-design.png') !important;
+}
+
+.bg-profile {
+    background-image: url('../20250905_111657_0000.png') !important;
+}
+
+.bg-game-options {
+    background-image: url('../bg.md') !important;
+}
+
+
+/* Medium-dark backgrounds for all containers */
+.bg-gray-600\/50 {
+    background-color: rgba(0, 0, 0, 0.4) !important;
+}
+
+.bg-gray-700\/60 {
+    background-color: rgba(0, 0, 0, 0.45) !important;
+}
+
+.bg-white\/20 {
+    background-color: rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Custom CSS for page navigation */
+.page {
+    display: none;
+}
+
+.page.active {
+    display: block;
+}
+
+.section {
+    display: none;
+}
+
+.section.active {
+    display: block;
+}
+
+/* Status message styles */
+.status {
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    margin: 1rem 0;
+    font-weight: bold;
+    font-size: 1.1rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    border: 2px solid transparent;
+    min-width: 300px;
+    text-align: center;
+}
+
+.status.success {
+    background-color: #10b981;
+    color: white;
+}
+
+.status.error {
+    background-color: #ef4444;
+    color: white;
+}
+
+.status.info {
+    background-color: #3b82f6;
+    color: white;
+}
+
+/* Notification system styles */
+#notificationOverlay {
+    position: fixed !important;
+    z-index: 9999 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
+    transform: none !important;
+    isolation: isolate !important;
+}
+
+#notificationCard {
+    position: relative !important;
+    z-index: 10000 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
+    transform: none !important;
+    isolation: isolate !important;
+    background: white !important;
+    color: black !important;
+}
+
+#notificationCard * {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
+} 

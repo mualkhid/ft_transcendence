@@ -1,0 +1,15 @@
+services:
+  powerpuff-pong:
+    build: .
+    ports:
+      - "8080:80"
+    volumes:
+      - ./dist:/usr/share/nginx/html/dist
+      - ./index.html:/usr/share/nginx/html/index.html
+      - ./logo.png:/usr/share/nginx/html/logo.png
+      - ./powerpuff_girls_wallpaper.png:/usr/share/nginx/html/powerpuff_girls_wallpaper.png
+      - ./powerpuff-bg.png:/usr/share/nginx/html/powerpuff-bg.png
+      - ./20250905_111657_0000.png:/usr/share/nginx/html/20250905_111657_0000.png
+      - ./Untitled design.png:/usr/share/nginx/html/Untitled design.png
+      - ./avatars:/usr/share/nginx/html/avatars
+    restart: unless-stopped
