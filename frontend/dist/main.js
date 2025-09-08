@@ -1,7 +1,7 @@
 "use strict";
 // Declare process for TypeScript without installing @types/node
 const config = {
-    hostIp: '10.42.249.15'
+    hostIp: '__HOST_IP__'
 };
 if (config.hostIp === '__HOST_IP' + '__') {
     config.hostIp = 'localhost';
@@ -311,6 +311,11 @@ class SimpleAuth {
             return;
         }
         try {
+            const currentUsername = this.currentUser?.username;
+            if (newUsername.trim() === currentUsername) {
+                this.showStatus("New username cannot be the same as the current one", "error");
+                return; // stop here, don’t send the request
+            }
             console.log('Sending username update request:', { newUsername });
             console.log('Request URL:', `https://${HOST_IP}/api/profile/username`);
             console.log('Request method:', 'PATCH');
@@ -342,7 +347,6 @@ class SimpleAuth {
                 this.showStatus('Username updated successfully!', 'success');
             }
             else if (response.status === 401) {
-                // Unauthorized - user needs to login again
                 const errorData = await response.json();
                 console.error('Username update 401 error:', errorData);
                 this.showStatus('Session expired. Please login again.', 'error');
@@ -495,7 +499,7 @@ class SimpleAuth {
                 const profileAvatar = document.getElementById('profileAvatar');
                 if (profileAvatar) {
                     // Add timestamp to prevent caching
-                    profileAvatar.src = `https://${HOST_IP}/${data.avatarUrl}?t=${Date.now()}`;
+                    profileAvatar.src = `https://${HOST_IP}${data.avatarUrl}?t=${Date.now()}`;
                 }
                 // Update current user data
                 if (this.currentUser) {

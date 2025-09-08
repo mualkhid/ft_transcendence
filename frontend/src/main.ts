@@ -308,6 +308,11 @@ class SimpleAuth {
         }
 
         try {
+            const currentUsername = this.currentUser?.username;
+            if (newUsername.trim() === currentUsername) {
+                this.showStatus("New username cannot be the same as the current one", "error");
+                return; // stop here, don’t send the request
+            }
             console.log('Sending username update request:', { newUsername });
             console.log('Request URL:', `https://${HOST_IP}/api/profile/username`);
             console.log('Request method:', 'PATCH');
@@ -316,7 +321,7 @@ class SimpleAuth {
             });
             console.log('Request body:', JSON.stringify({ newUsername }));
             console.log('Credentials:', 'include');
-            
+        
             const response = await fetch(`https://${HOST_IP}/api/profile/username`, {
                 method: 'PATCH',
                 headers: {
@@ -325,27 +330,23 @@ class SimpleAuth {
                 body: JSON.stringify({ newUsername }),
                 credentials: 'include'
             });
-
+        
             console.log('Username update response status:', response.status);
             console.log('Username update response headers:', response.headers);
-
+        
             if (response.ok) {
                 const data = await response.json();
                 console.log('Username update response:', data);
-                
                 // Update local user data
                 this.currentUser.username = newUsername;
                 localStorage.setItem('user', JSON.stringify(this.currentUser));
-                
                 // Update display
                 this.updateProfileDisplay();
-                
                 // Clear input
                 newUsernameInput.value = '';
-                
                 this.showStatus('Username updated successfully!', 'success');
-            } else if (response.status === 401) {
-                // Unauthorized - user needs to login again
+            }
+            else if (response.status === 401) {
                 const errorData = await response.json();
                 console.error('Username update 401 error:', errorData);
                 this.showStatus('Session expired. Please login again.', 'error');
@@ -354,15 +355,17 @@ class SimpleAuth {
                 setTimeout(() => {
                     this.showPage('loginPage');
                 }, 2000);
-            } else {
+            }
+            else {
                 const errorData = await response.json();
                 console.error('Username update error:', errorData);
                 this.showStatus(errorData.error || 'Failed to update username', 'error');
             }
-        } catch (error) {
+        }
+        catch (error) {
             console.error('Error updating username:', error);
             this.showStatus('Network error updating username. Please check if the backend server is running.', 'error');
-        }
+        } 
     }
 
     private async handlePasswordChange(): Promise<void> {
