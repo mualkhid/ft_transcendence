@@ -1,11 +1,8 @@
 import {prisma} from '../prisma/prisma_lib.js'
 
-import path from 'path'
-import {pipeline} from 'stream'
-import { promisify } from 'util'
 import validator from 'validator'
 
-const pump = promisify(pipeline)
+import * as img from '../services/imageService.js';
 
 
 import {ValidationError, AuthenticationError, notFoundError } from '../utils/errors.js'
@@ -42,6 +39,8 @@ export async function updateUsername (req, reply)
 {
 	const id = req.user.id; // Get user ID from JWT token
 	const {newUsername} = req.body
+	if (newUsername === req.user.username)
+		throw new ValidationError("Username is the same as the old one")
 
     if (!validator.isAlphanumeric(newUsername))
         throw new ValidationError("username should consist of letters and digits")
@@ -97,44 +96,37 @@ export async function updatePassword (req, reply)
 
 export async function updateAvatar(req, reply)
 {
-	const id = req.user.id // Get user ID from JWT token
-	const file = await req.file()
-	if (!file)
-		throw new notFoundError('No file uploaded')
+	const id = req.user.id;
 
-	const allowed = new Set(['image/jpeg', 'image/png', 'image/webp'])
-	if (!allowed.has(file.mimetype))
-		return reply.status(415).send({error: 'Unsupported file type'})
-	
-	// Check file size before processing (max 5MB)
-	const maxSize = 5 * 1024 * 1024; // 5MB in bytes
-	if (file.file.bytesRead > maxSize) {
-		return reply.status(413).send({error: 'File too large. Maximum size is 5MB'})
-	}
-	
-	const ext = file.mimetype === 'image/jpeg' ? 'jpg'
-	: file.mimetype === 'image/png'  ? 'png'
-	: 'webp';
-	
-	const filename = `${id}.${ext}`
-	const destPath = path.join (process.cwd(), 'public', 'avatars', filename)
-	const writeStream = (await import('fs')).createWriteStream(destPath)
-	await pump(file.file, writeStream)
-	
-	// Double-check if file was truncated during upload
-	if (file.file.truncated)
-		return reply.status(413).send({error: 'File too large'})
-	const publicUrl = `/avatars/${filename}`
+	const file = await req.file();
 
-	await prisma.user.update ({
-		where : {id: id},
-		data: {avatarUrl: publicUrl},
-	})
+	// 1) Basic guards
+	img.assertFilePresent(file);
+	img.assertAllowedMime(file.mimetype);
+	img.assertMaxSizeNotExceeded(file.file?.bytesRead ?? 0);
+	
+	// 2) Prepare paths
+	await img.ensureAvatarDir();
+	const ext = img.deduceExtensionFromMime(file.mimetype);
+	const filename = img.buildAvatarFilename(id, ext);
+	const destPath = img.buildAvatarPath(filename);
+	
+	// 3) Stream upload to final destination
+	await img.writeStreamToFile(file.file, destPath);
+	await img.assertMagicMimeAllowed(destPath);
 
-	return reply.status(200).send({avatarUrl: publicUrl});
+	// 4) Post conditions
+	img.assertNotTruncated(file);
 
+	// 5) Persist URL
+	const publicUrl = img.buildPublicUrl(filename);
+	await prisma.user.update({
+	where: { id },
+	data: { avatarUrl: publicUrl },
+	});
+
+	return reply.status(200).send({ avatarUrl: publicUrl });
 }
-
 
 export async function updateStats(req, reply) {
     const userId = req.user.id; // Get user ID from JWT token
@@ -186,7 +178,7 @@ export async function updateStats(req, reply) {
             }
         });
         
-        return reply.status(200).send({ 
+        return reply.status(200).send({
             message: 'Game completed successfully',
             user: updatedUser,
             gameResult: won ? 'won' : 'lost'
