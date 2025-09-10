@@ -6,7 +6,7 @@ export async function updateLastSeenIfNeeded(id) {
     const now = Date.now();
     const lastUpdate = lastSeenCache.get(id) || 0;
 
-    if (now - lastUpdate > 5 * 60 * 1000) {
+    if (now - lastUpdate > 1 * 60 * 1000) {
         lastSeenCache.set(id, now);
         
         await prisma.user.update({

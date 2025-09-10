@@ -118,15 +118,17 @@ export async function login(req, reply) {
     }
 
     const token = generateToken(user);
+    const isLocalhost = req.headers.host === 'localhost' || req.headers.host === '127.0.0.1';
+
     reply.setCookie('token', token, {
         httpOnly: true,
-        secure: false, // Set to false for development (localhost)
-        sameSite: 'lax', // Allow cross-origin requests
+        secure: true,
+        sameSite: 'lax',
         path: '/',
         maxAge: 3600,
-        // domain: 'localhost' // Explicitly set domain for cross-origin
+        ...(isLocalhost ?  { domain: 'localhost' }: {})
     });
-    
+        
     await prisma.user.update({where: { id: user.id }, data: { lastSeen: new Date() } });
 
     return reply.status(200).send({ 
@@ -167,9 +169,9 @@ export async function getCurrentUser(req, reply) {
 export function logout(req, reply) {
     reply.clearCookie('token', { 
         path: '/',
-        secure: false,
+        secure: true,
         sameSite: 'lax',
-        domain: 'localhost'
+        // domain: 'localhost'
     });
     return reply.status(200).send({ message: "logged-out" });
 }
@@ -197,16 +199,15 @@ export async function refreshToken(req, reply) {
         throw new notFoundError("User not found")
     
     // Generate new token
-    const token = generateToken(user);
-    
-    // Set new cookie
+    const isLocalhost = req.hostname === 'localhost' || req.hostname === '127.0.0.1';
+
     reply.setCookie('token', token, {
         httpOnly: true,
-        secure: false, // Set to false for development (localhost)
-        sameSite: 'lax', // Allow cross-origin requests
+        secure: false,
+        sameSite: 'lax',
         path: '/',
         maxAge: 3600,
-        domain: 'localhost' // Explicitly set domain for cross-origin
+        ...(isLocalhost ?  { domain: 'localhost' }: {})
     });
     
     // Update last seen

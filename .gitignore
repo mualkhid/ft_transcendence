@@ -2,4 +2,4 @@
 *.env
 *.db
 *.DS_Store
-persist
+persist/*

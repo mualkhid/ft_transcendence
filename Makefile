@@ -2,33 +2,32 @@
 
 # Directories to persist data
 PERSIST_DIRS = persist/sqlite persist/avatars
+GET_IP := $(shell node get_ip.js 2>/dev/null || echo 'localhost')
 
-
-COMPOSE = docker compose
 
 all: up
 
-# Create directories if they don't exist
 init-dirs:
 	@mkdir -p $(PERSIST_DIRS)
 	
 build: init-dirs
-	$(COMPOSE) build
+	@echo  "Starting with IP: $(GET_IP)"
+	HOST_IP=$(GET_IP) docker-compose build 
 
 up: init-dirs
-	$(COMPOSE) up --build -d
+	HOST_IP=$(GET_IP) docker-compose up --build -d
 
 clean:
-	$(COMPOSE) down -v --remove-orphans
+	docker-compose down -v --remove-orphans
 	docker system prune -af --volumes
 
 down:
-	$(COMPOSE) down
+	docker-compose down
 
 restart: down up
 
 logs:
-	$(COMPOSE) logs -f
+	docker-compose logs -f
 
 .PHONY: re
 re: clean all

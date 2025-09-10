@@ -15,8 +15,9 @@
     "first-time": "npm install && npm run build && npm run docker:compose && echo '🎮 Game is ready! Open http://localhost:8080'"
   },
   "devDependencies": {
-    "tailwindcss": "^3.4.17",
-    "typescript": "^5.0.0"
+    "tailwindcss": "^3.3.0",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.5"
   },
   "keywords": [
     "pong",

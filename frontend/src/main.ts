@@ -1,8 +1,46 @@
+// Declare process for TypeScript without installing @types/node
+const config = {
+    hostIp: '__HOST_IP__'
+  };
+  if (config.hostIp === '__HOST_IP' + '__') {
+    config.hostIp = 'localhost';
+  }
+
+const HOST_IP=config.hostIp
+
 // Simple Authentication System
 class SimpleAuth {
     private currentUser: any = null;
     private authToken: string | null = null;
-
+    private gameState: any = null;
+    private gameLoopInterval: any = null;
+    private isGoingHome = false;
+    
+    // AI Game state and configuration
+    private aiGameState = {
+        ballX: 400,
+        ballY: 300,
+        ballSpeedX: 5,
+        ballSpeedY: 3,
+        ballRadius: 8,
+        playerPaddleY: 250,
+        aiPaddleY: 250,
+        playerScore: 0,
+        aiScore: 0,
+        currentDifficulty: 'easy'
+    };
+    
+    private aiGameConfig = {
+        CANVAS: { WIDTH: 800, HEIGHT: 600 },
+        PADDLE: { WIDTH: 15, HEIGHT: 100, SPEED: 5 },
+        BALL: { RADIUS: 8, SPEED: 5 },
+        WINNING_SCORE: 5
+    };
+    
+    private aiGameWs: WebSocket | null = null;
+    private aiGameAnimationId: number | null = null;
+    private aiGameKeys = { w: false, s: false };
+    private aiGameAvailableDifficulties: any = {};
 
     constructor() {
         console.log('SimpleAuth constructor called');
@@ -30,6 +68,10 @@ class SimpleAuth {
         console.log('About to call setupGameOptions...');
         this.setupGameOptions();
         console.log('setupGameOptions completed');
+        
+        console.log('About to call setupDashboardNavigation...');
+        this.setupDashboardNavigation();
+        console.log('setupDashboardNavigation completed');
         
         console.log('=== SimpleAuth initialization complete ===');
     }
@@ -228,7 +270,7 @@ class SimpleAuth {
     private async testAuthentication(): Promise<void> {
         try {
             console.log('Testing authentication...');
-            const response = await fetch('https://localhost/api/profile/test-auth', {
+            const response = await fetch(`https://${HOST_IP}/api/profile/test-auth`, {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -273,7 +315,7 @@ class SimpleAuth {
         // Check if backend is running first
         try {
             console.log('Testing backend connection...');
-            const healthCheck = await fetch('https://localhost/api/profile/me', {
+            const healthCheck = await fetch(`https://${HOST_IP}/api/profile/me`, {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -299,16 +341,21 @@ class SimpleAuth {
         }
 
         try {
+            const currentUsername = this.currentUser?.username;
+            if (newUsername.trim() === currentUsername) {
+                this.showStatus("New username cannot be the same as the current one", "error");
+                return; // stop here, don’t send the request
+            }
             console.log('Sending username update request:', { newUsername });
-            console.log('Request URL:', 'https://localhost/api/profile/username');
+            console.log('Request URL:', `https://${HOST_IP}/api/profile/username`);
             console.log('Request method:', 'PATCH');
             console.log('Request headers:', {
                 'Content-Type': 'application/json',
             });
             console.log('Request body:', JSON.stringify({ newUsername }));
             console.log('Credentials:', 'include');
-            
-            const response = await fetch('https://localhost/api/profile/username', {
+        
+            const response = await fetch(`https://${HOST_IP}/api/profile/username`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -316,27 +363,23 @@ class SimpleAuth {
                 body: JSON.stringify({ newUsername }),
                 credentials: 'include'
             });
-
+        
             console.log('Username update response status:', response.status);
             console.log('Username update response headers:', response.headers);
-
+        
             if (response.ok) {
                 const data = await response.json();
                 console.log('Username update response:', data);
-                
                 // Update local user data
                 this.currentUser.username = newUsername;
                 localStorage.setItem('user', JSON.stringify(this.currentUser));
-                
                 // Update display
                 this.updateProfileDisplay();
-                
                 // Clear input
                 newUsernameInput.value = '';
-                
                 this.showStatus('Username updated successfully!', 'success');
-            } else if (response.status === 401) {
-                // Unauthorized - user needs to login again
+            }
+            else if (response.status === 401) {
                 const errorData = await response.json();
                 console.error('Username update 401 error:', errorData);
                 this.showStatus('Session expired. Please login again.', 'error');
@@ -345,15 +388,17 @@ class SimpleAuth {
                 setTimeout(() => {
                     this.showPage('loginPage');
                 }, 2000);
-            } else {
+            }
+            else {
                 const errorData = await response.json();
                 console.error('Username update error:', errorData);
                 this.showStatus(errorData.error || 'Failed to update username', 'error');
             }
-        } catch (error) {
+        }
+        catch (error) {
             console.error('Error updating username:', error);
             this.showStatus('Network error updating username. Please check if the backend server is running.', 'error');
-        }
+        } 
     }
 
     private async handlePasswordChange(): Promise<void> {
@@ -394,7 +439,7 @@ class SimpleAuth {
 
         try {
             console.log('Sending password update request');
-            console.log('Request URL:', 'https://localhost/api/profile/password');
+            console.log('Request URL:', `https://${HOST_IP}/api/profile/password`);
             console.log('Request method:', 'PATCH');
             console.log('Request headers:', {
                 'Content-Type': 'application/json',
@@ -402,7 +447,7 @@ class SimpleAuth {
             console.log('Request body:', JSON.stringify({ currentPassword, newPassword: '***' }));
             console.log('Credentials:', 'include');
             
-            const response = await fetch('https://localhost/api/profile/password', {
+            const response = await fetch(`https://${HOST_IP}/api/profile/password`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -492,7 +537,7 @@ class SimpleAuth {
             const formData = new FormData();
             formData.append('avatar', file);
 
-            const response = await fetch('https://localhost/api/profile/avatar', {
+            const response = await fetch(`https://${HOST_IP}/api/profile/avatar`, {
                 method: 'PATCH',
                 body: formData,
                 credentials: 'include'
@@ -508,7 +553,7 @@ class SimpleAuth {
                 const profileAvatar = document.getElementById('profileAvatar') as HTMLImageElement;
                 if (profileAvatar) {
                     // Add timestamp to prevent caching
-                    profileAvatar.src = `https://localhost${data.avatarUrl}?t=${Date.now()}`;
+                    profileAvatar.src = `https://${HOST_IP}${data.avatarUrl}?t=${Date.now()}`;
                 }
                 
                 // Update current user data
@@ -558,7 +603,7 @@ class SimpleAuth {
 
         try {
             console.log('Searching users with term:', searchTerm);
-            const response = await fetch(`https://localhost/api/friends/searchUser?q=${encodeURIComponent(searchTerm)}`, {
+            const response = await fetch(`https://${HOST_IP}/api/friends/searchUser?q=${encodeURIComponent(searchTerm)}`, {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -595,7 +640,7 @@ class SimpleAuth {
 
         try {
             console.log('Loading friends data...');
-            const response = await fetch('https://localhost/api/friends', {
+            const response = await fetch(`https://${HOST_IP}/api/friends`, {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -645,7 +690,7 @@ class SimpleAuth {
                 <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
                     <div class="flex items-center space-x-3">
                         <div class="relative">
-                            <img src="${user.avatarUrl ? `https://localhost${user.avatarUrl}?t=${Date.now()}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}`}" 
+                            <img src="${user.avatarUrl ? `https://${HOST_IP}${user.avatarUrl}?t=${Date.now()}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}`}" 
                                  alt="${user.username}" 
                                  class="w-12 h-12 rounded-full object-cover border-2 border-white border-opacity-30">
                         </div>
@@ -681,7 +726,7 @@ class SimpleAuth {
                 <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
                     <div class="flex items-center space-x-3">
                         <div class="relative">
-                            <img src="${friend.avatarUrl ? `https://localhost${friend.avatarUrl}?t=${Date.now()}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(friend.username)}`}" 
+                            <img src="${friend.avatarUrl ? `https://${HOST_IP}${friend.avatarUrl}?t=${Date.now()}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(friend.username)}`}" 
                                  alt="${friend.username}" 
                                  class="w-12 h-12 rounded-full object-cover border-2 border-white border-opacity-30">
                             <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${isOnline ? 'bg-green-400' : 'bg-gray-400'}"></div>
@@ -724,7 +769,7 @@ class SimpleAuth {
             <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
                 <div class="flex items-center space-x-3">
                     <div class="relative">
-                        <img src="${request.avatarUrl ? `https://localhost${request.avatarUrl}?t=${Date.now()}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(request.username)}`}" 
+                        <img src="${request.avatarUrl ? `https://${HOST_IP}${request.avatarUrl}?t=${Date.now()}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(request.username)}`}" 
                              alt="${request.username}" 
                              class="w-12 h-12 rounded-full object-cover border-2 border-white border-opacity-30">
                     </div>
@@ -771,7 +816,7 @@ class SimpleAuth {
 
         try {
             console.log('Sending friend request to user:', userId);
-            const response = await fetch('https://localhost/api/friends/sendRequest', {
+            const response = await fetch(`https://${HOST_IP}/api/friends/sendRequest`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -820,7 +865,7 @@ class SimpleAuth {
 
         try {
             console.log('Accepting friend request from user:', userId);
-            const response = await fetch('https://localhost/api/friends/acceptRequest', {
+            const response = await fetch(`https://${HOST_IP}/api/friends/acceptRequest`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -862,7 +907,7 @@ class SimpleAuth {
 
         try {
             console.log('Declining friend request from user:', userId);
-            const response = await fetch('https://localhost/api/friends/declineRequest', {
+            const response = await fetch(`https://${HOST_IP}/api/friends/declineRequest`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -903,7 +948,7 @@ class SimpleAuth {
 
         try {
             console.log('Removing friend:', userId);
-            const response = await fetch('https://localhost/api/friends/removeFriend', {
+            const response = await fetch(`https://${HOST_IP}/api/friends/removeFriend`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -945,7 +990,7 @@ class SimpleAuth {
 
         try {
             console.log('Blocking friend:', userId);
-            const response = await fetch('https://localhost/api/friends/blockFriend', {
+            const response = await fetch(`https://${HOST_IP}/api/friends/blockFriend`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -994,8 +1039,8 @@ class SimpleAuth {
         }
 
         try {
-            console.log('Sending registration request to:', 'https://localhost/api/auth/registerUser');
-            const response = await fetch('https://localhost/api/auth/registerUser', {
+            console.log('Sending registration request to:', `https://${HOST_IP}/api/auth/registerUser`);
+            const response = await fetch(`https://${HOST_IP}/api/auth/registerUser`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1039,8 +1084,8 @@ class SimpleAuth {
         }
 
         try {
-            console.log('Sending login request to:', 'https://localhost/api/auth/login');
-            const response = await fetch('https://localhost/api/auth/login', {
+            console.log('Sending login request to:', `https://${HOST_IP}/api/auth/login`);
+            const response = await fetch(`https://${HOST_IP}/api/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1114,9 +1159,7 @@ class SimpleAuth {
                     
                     // Show the main app with cached data even without cookie
                     this.showPage('mainApp');
-                    this.updateHomeDashboard().catch(error => {
-                        console.error('Error updating home dashboard:', error);
-                    });
+                    this.updateHomeDashboard();
                     this.updateProfileDisplay();
                     
                     // Clear search input when restoring from localStorage
@@ -1196,7 +1239,7 @@ class SimpleAuth {
     private async tryRefreshToken(): Promise<void> {
         console.log('Attempting to refresh token...');
         try {
-            const response = await fetch('https://localhost/api/auth/refresh', {
+            const response = await fetch(`https://${HOST_IP}/api/auth/refresh`, {
                 method: 'POST',
                 credentials: 'include'
             });
@@ -1262,6 +1305,25 @@ class SimpleAuth {
         }
     }
 
+    private async handleLogout(): Promise<void> {
+        try {
+            // Call the logout endpoint to clear the server-side cookie
+            await fetch(`https://${HOST_IP}/api/auth/logout`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+
+        this.currentUser = null;
+        localStorage.removeItem('user');
+        
+        this.showStatus('Logged out successfully', 'success');
+        setTimeout(() => {
+            this.showPage('registrationPage');
+        }, 1000);
+    }
 
     private showStatus(message: string, type: 'success' | 'error' | 'info' = 'info'): void {
         const statusDiv = document.getElementById('status');
@@ -1318,44 +1380,61 @@ class SimpleAuth {
     }
 
     private showSection(sectionId: string): void {
-        console.log(`showSection called with: ${sectionId}`);
         const sections = document.querySelectorAll('.section');
-        console.log(`Found ${sections.length} sections:`, Array.from(sections).map(s => s.id));
-        
         sections.forEach(section => {
             section.classList.remove('active');
-            console.log(`Removed active class from section: ${section.id}`);
         });
 
         const targetSection = document.getElementById(sectionId);
         if (targetSection) {
             targetSection.classList.add('active');
-            console.log(`Added active class to section: ${sectionId}`);
+            console.log(`Showing section: ${sectionId}`);
+            
+            // Update main app background based on active section
+            const mainApp = document.getElementById('mainApp');
+            if (mainApp) {
+                // Remove all background classes
+                mainApp.classList.remove('bg-home', 'bg-friends', 'bg-profile', 'bg-dashboard', 'bg-game-options');
+                
+                // Add appropriate background class based on section
+                switch(sectionId) {
+                    case 'homeSection':
+                        mainApp.classList.add('bg-home');
+                        break;
+                    case 'friendsSection':
+                        mainApp.classList.add('bg-friends');
+                        break;
+                    case 'profileSection':
+                        mainApp.classList.add('bg-profile');
+                        break;
+                    case 'dashboardSection':
+                        mainApp.classList.add('bg-dashboard');
+                        break;
+                    case 'gameSection':
+                    case 'onlineGameSection':
+                    case 'aiPongSection':
+                        mainApp.classList.add('bg-game-options');
+                        break;
+                    default:
+                        mainApp.classList.add('bg-home'); // Default to home background
+                }
+            }
             
             // Save the current section to localStorage for persistence
             localStorage.setItem('lastActiveSection', sectionId);
             console.log(`Saved section to localStorage: ${sectionId}`);
             
-            // Load section-specific data
+            // If showing profile section, load fresh data
             if (sectionId === 'profileSection' && this.currentUser) {
                 console.log('Profile section shown, loading fresh data...');
                 setTimeout(() => {
                     this.loadUserProfile();
                 }, 100);
-            } else if (sectionId === 'friendsSection' && this.currentUser) {
-                console.log('Friends section shown, loading friends data...');
-                setTimeout(() => {
-                    this.loadFriendsData();
-                }, 100);
             } else if (sectionId === 'dashboardSection') {
-                console.log('Dashboard section shown, loading comprehensive dashboard data...');
-                // Load comprehensive dashboard data and synchronize with home stats
+                console.log('Dashboard section shown, loading dashboard data...');
+                // Load dashboard data even if user is not logged in (for demo purposes)
                 setTimeout(() => {
                     this.loadDashboardData();
-                    // Also refresh home stats to ensure they're in sync
-                    this.updateHomeDashboard().catch(error => {
-                        console.error('Error synchronizing home stats with dashboard:', error);
-                    });
                 }, 100);
             } else if (sectionId === 'aiPongSection') {
                 console.log('AI Pong section shown, initializing AI game...');
@@ -1388,15 +1467,42 @@ class SimpleAuth {
     }
 
     private setupMainAppNavigation(): void {
-        // Setup client-side routing with browser history support
-        this.setupClientSideRouting();
-        
-        // Setup popstate event listener for browser back/forward buttons
-        this.setupBrowserHistorySupport();
-        
-        // Setup dashboard navigation
-        this.setupDashboardNavigation();
-        
+        const navHome = document.getElementById('navHome');
+        const navTournament = document.getElementById('navTournament');
+        const navFriends = document.getElementById('navFriends');
+        const navAnalytics = document.getElementById('navAnalytics');
+        const navProfile = document.getElementById('navProfile');
+        const navLogout = document.getElementById('navLogout');
+
+        if (navHome) {
+            navHome.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.showSection('homeSection');
+            });
+        }
+
+        if (navFriends) {
+            navFriends.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.showSection('friendsSection');
+            });
+        }
+
+        if (navAnalytics) {
+            navAnalytics.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.showSection('dashboardSection');
+            });
+        }
+
+        if (navProfile) {
+            navProfile.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.showSection('profileSection');
+                this.loadUserProfile(); // Load user profile data
+            });
+        }
+
         // Add refresh stats button listener
         const refreshStatsBtn = document.getElementById('refreshStatsBtn');
         if (refreshStatsBtn) {
@@ -1407,49 +1513,29 @@ class SimpleAuth {
             });
         }
 
-        // Add refresh dashboard button listener
-        const refreshDashboardBtn = document.getElementById('refreshDashboardBtn');
-        if (refreshDashboardBtn) {
-            refreshDashboardBtn.addEventListener('click', (e) => {
+        // Add clear cache button listener - removed
+
+        // Add test auth button listener - removed
+        // Add test game stats button listener - removed
+
+        if (navLogout) {
+            navLogout.addEventListener('click', (e) => {
                 e.preventDefault();
-                console.log('Refresh dashboard button clicked');
-                this.loadDashboardData();
-                this.updateHomeDashboard().catch(error => {
-                    console.error('Error refreshing home dashboard:', error);
-                });
+                this.handleLogout();
             });
         }
+
+        // Set up periodic refresh of friends list for real-time online status
+        this.setupFriendsRefresh();
     }
 
-    private setupClientSideRouting(): void {
-        // Handle navigation links with data-section attributes
-        const navLinks = document.querySelectorAll('.nav-link[data-section]');
-        navLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const section = (link as HTMLElement).dataset.section;
-                if (section) {
-                    this.navigateToSection(section);
-                }
-            });
-        });
-    }
-
-    private setupBrowserHistorySupport(): void {
-        // Listen for browser back/forward button clicks
-        window.addEventListener('popstate', (event) => {
-            console.log('Browser navigation detected:', event.state);
-            const section = event.state?.section || this.getCurrentSectionFromUrl();
-            if (section) {
-                this.showSection(section);
+    private setupFriendsRefresh(): void {
+        // Refresh friends list every 30 seconds to update online status
+        setInterval(() => {
+            if (this.currentUser && document.getElementById('friendsSection')?.classList.contains('hidden') === false) {
+                this.loadFriendsData();
             }
-        });
-
-        // Handle initial page load
-        const initialSection = this.getCurrentSectionFromUrl();
-        if (initialSection) {
-            this.showSection(initialSection);
-        }
+        }, 30000); // 30 seconds
     }
 
     private setupDashboardNavigation(): void {
@@ -1464,69 +1550,6 @@ class SimpleAuth {
                 }
             });
         });
-    }
-
-    private navigateToSection(section: string): void {
-        console.log(`Navigating to section: ${section}`);
-        
-        // Handle special cases
-        if (section === 'logout') {
-                this.handleLogout();
-            return;
-        }
-
-        // Map section names to section IDs
-        let sectionId = section;
-        switch (section) {
-            case 'home':
-                sectionId = 'homeSection';
-                break;
-            case 'friends':
-                sectionId = 'friendsSection';
-                break;
-            case 'profile':
-                sectionId = 'profileSection';
-                break;
-            case 'dashboard':
-                sectionId = 'dashboardSection';
-                break;
-            case 'ai-pong':
-                sectionId = 'aiPongSection';
-                break;
-        }
-
-        console.log(`Mapped section '${section}' to sectionId '${sectionId}'`);
-
-        // Update browser history without page reload
-        const url = section === 'home' ? '/' : `/?section=${section}`;
-        window.history.pushState({ section }, '', url);
-        
-        // Show the section
-        this.showSection(sectionId);
-    }
-
-    private getCurrentSectionFromUrl(): string | null {
-        const urlParams = new URLSearchParams(window.location.search);
-        const section = urlParams.get('section');
-        
-        if (section) {
-            // Map URL parameter to section ID
-            switch (section) {
-                case 'friends':
-                    return 'friendsSection';
-                case 'profile':
-                    return 'profileSection';
-                case 'dashboard':
-                    return 'dashboardSection';
-                case 'ai-pong':
-                    return 'aiPongSection';
-                case 'home':
-                default:
-                    return 'homeSection';
-            }
-        }
-        
-        return 'homeSection'; // Default to home
     }
 
     private showDashboardSection(section: string): void {
@@ -1554,209 +1577,82 @@ class SimpleAuth {
         }
     }
 
-    private handleLogout(): void {
-        console.log('Logging out user...');
-        
-        // Clear authentication data
-        this.currentUser = null;
-        this.authToken = null;
-        
-        // Clear cookies
-        document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        
-        // Clear localStorage
-        localStorage.removeItem('userData');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('lastActiveSection');
-        
-        // Show login page
-        this.showPage('loginPage');
-        
-        // Reset URL to home
-        window.history.pushState({}, '', '/');
-        
-        console.log('User logged out successfully');
-    }
-
-    private setupFriendsRefresh(): void {
-        // Refresh friends list every 30 seconds to update online status
-        setInterval(() => {
-            if (this.currentUser && document.getElementById('friendsSection')?.classList.contains('hidden') === false) {
-                this.loadFriendsData();
-            }
-        }, 30000); // 30 seconds
-    }
-
     private async loadDashboardData(): Promise<void> {
         try {
-            console.log('Loading comprehensive dashboard data...');
-            const response = await fetch('/api/dashboard', {
+            console.log('Loading dashboard data...');
+            const response = await fetch(`https://${HOST_IP}/api/dashboard`, {
                 method: 'GET',
                 credentials: 'include',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 }
             });
 
             if (response.ok) {
                 const data = await response.json();
-                this.renderComprehensiveDashboardData(data.data);
+                this.renderDashboardData(data);
             } else {
                 console.error('Failed to load dashboard data');
-                this.renderBasicDashboardStats();
             }
         } catch (error) {
             console.error('Error loading dashboard data:', error);
-            this.renderBasicDashboardStats();
         }
     }
 
-    private renderComprehensiveDashboardData(dashboardData: any): void {
-        if (!dashboardData) return;
+    private renderDashboardData(data: any): void {
+        if (!data || !data.data) return;
+
+        const dashboardData = data.data;
         
-        console.log('Rendering comprehensive dashboard data:', dashboardData);
-        
-        // Update overview stats (same as home page)
+        // Update overview stats
         const overallWinRate = document.getElementById('overall-win-rate');
         const totalGames = document.getElementById('total-games');
         const skillLevel = document.getElementById('skill-level');
         const currentStreak = document.getElementById('current-streak');
+        
+        if (overallWinRate) overallWinRate.textContent = `${dashboardData.summary.overallWinRate}%`;
+        if (totalGames) totalGames.textContent = dashboardData.summary.totalGames;
+        if (skillLevel) skillLevel.textContent = dashboardData.summary.skillLevel.level;
+        if (currentStreak) currentStreak.textContent = '3'; // Would come from actual data
 
-        if (overallWinRate) {
-            overallWinRate.textContent = `${dashboardData.summary.overallWinRate}%`;
-        }
-        if (totalGames) {
-            totalGames.textContent = dashboardData.summary.totalGames.toString();
-        }
-        if (skillLevel) {
-            skillLevel.textContent = dashboardData.summary.skillLevel?.level || 'Beginner';
-        }
-        if (currentStreak) {
-            currentStreak.textContent = dashboardData.summary.currentStreak?.toString() || '0';
-        }
-
-        // Update AI games stats (comprehensive)
+        // Update AI games stats
         const aiGamesWon = document.getElementById('ai-games-won');
         const aiWinRate = document.getElementById('ai-win-rate');
         const aiBestScore = document.getElementById('ai-best-score');
         const aiAvgScore = document.getElementById('ai-avg-score');
+        
+        if (aiGamesWon) aiGamesWon.textContent = dashboardData.aiGameStats.wins;
+        if (aiWinRate) aiWinRate.textContent = `${dashboardData.aiGameStats.winRate}%`;
+        if (aiBestScore) aiBestScore.textContent = dashboardData.aiGameStats.bestScore;
+        if (aiAvgScore) aiAvgScore.textContent = dashboardData.aiGameStats.averageScore;
 
-        if (aiGamesWon) {
-            aiGamesWon.textContent = dashboardData.aiGameStats.wins.toString();
-        }
-        if (aiWinRate) {
-            aiWinRate.textContent = `${dashboardData.aiGameStats.winRate}%`;
-        }
-        if (aiBestScore) {
-            aiBestScore.textContent = dashboardData.aiGameStats.bestScore?.toString() || '0';
-        }
-        if (aiAvgScore) {
-            aiAvgScore.textContent = dashboardData.aiGameStats.averageScore?.toString() || '0';
-        }
-
-        // Update local games stats (comprehensive)
-        const localGamesWon = document.getElementById('local-games-won');
-        const localWinRate = document.getElementById('local-win-rate');
-        const localBestScore = document.getElementById('local-best-score');
-        const localAvgScore = document.getElementById('local-avg-score');
-
-        if (localGamesWon) {
-            localGamesWon.textContent = dashboardData.localGameStats.wins.toString();
-        }
-        if (localWinRate) {
-            localWinRate.textContent = `${dashboardData.localGameStats.winRate}%`;
-        }
-        if (localBestScore) {
-            localBestScore.textContent = dashboardData.localGameStats.bestScore?.toString() || '0';
-        }
-        if (localAvgScore) {
-            localAvgScore.textContent = dashboardData.localGameStats.averageScore?.toString() || '0';
-        }
-
-        // Update multiplayer stats (comprehensive)
+        // Update multiplayer stats
         const mpWins = document.getElementById('mp-wins');
         const mpWinRate = document.getElementById('mp-win-rate');
         const bestOpponent = document.getElementById('best-opponent');
         const mpTotal = document.getElementById('mp-total');
+        
+        if (mpWins) mpWins.textContent = dashboardData.multiplayerStats.wins;
+        if (mpWinRate) mpWinRate.textContent = `${dashboardData.multiplayerStats.winRate}%`;
+        if (bestOpponent) bestOpponent.textContent = 'Player123';
+        if (mpTotal) mpTotal.textContent = dashboardData.multiplayerStats.totalGames;
 
-        if (mpWins) {
-            mpWins.textContent = dashboardData.multiplayerStats.wins.toString();
-        }
-        if (mpWinRate) {
-            mpWinRate.textContent = `${dashboardData.multiplayerStats.winRate}%`;
-        }
-        if (bestOpponent) {
-            bestOpponent.textContent = dashboardData.multiplayerStats.bestOpponent || 'N/A';
-        }
-        if (mpTotal) {
-            mpTotal.textContent = dashboardData.multiplayerStats.totalGames.toString();
-        }
-
-        // Update tournament stats (comprehensive)
+        // Update tournament stats
         const tournamentsWon = document.getElementById('tournaments-won');
         const tournamentWinRate = document.getElementById('tournament-win-rate');
         const bestFinish = document.getElementById('best-finish');
         const tournamentMatches = document.getElementById('tournament-matches');
-
-        if (tournamentsWon) {
-            tournamentsWon.textContent = dashboardData.tournamentStats.tournamentsWon?.toString() || '0';
-        }
-        if (tournamentWinRate) {
-            tournamentWinRate.textContent = `${dashboardData.tournamentStats.winRate}%`;
-        }
-        if (bestFinish) {
-            bestFinish.textContent = dashboardData.tournamentStats.bestFinish || 'N/A';
-        }
-        if (tournamentMatches) {
-            tournamentMatches.textContent = dashboardData.tournamentStats.totalMatches?.toString() || '0';
-        }
+        
+        if (tournamentsWon) tournamentsWon.textContent = dashboardData.tournamentStats.tournamentsWon;
+        if (tournamentWinRate) tournamentWinRate.textContent = `${dashboardData.tournamentStats.winRate}%`;
+        if (bestFinish) bestFinish.textContent = '1st Place';
+        if (tournamentMatches) tournamentMatches.textContent = dashboardData.tournamentStats.totalMatches;
 
         // Render recent games
-        this.renderRecentGames(dashboardData.recentGames || []);
+        this.renderRecentGames(dashboardData.recentGames);
         
         // Render achievements
-        this.renderAchievements(dashboardData.achievements || []);
-    }
-
-    private renderBasicDashboardStats(): void {
-        // Fallback to basic stats if comprehensive data is not available
-        console.log('Rendering basic dashboard stats as fallback');
-        
-        const overallWinRate = document.getElementById('overall-win-rate');
-        const totalGames = document.getElementById('total-games');
-        const skillLevel = document.getElementById('skill-level');
-        const currentStreak = document.getElementById('current-streak');
-
-        if (overallWinRate) {
-            overallWinRate.textContent = '--';
-        }
-        if (totalGames) {
-            totalGames.textContent = (this.currentUser?.gamesPlayed || 0).toString();
-        }
-        if (skillLevel) {
-            skillLevel.textContent = 'Beginner';
-        }
-        if (currentStreak) {
-            currentStreak.textContent = '0';
-        }
-
-        // Set all other stats to default values
-        const defaultStats = [
-            'ai-games-won', 'ai-win-rate', 'ai-best-score', 'ai-avg-score',
-            'mp-wins', 'mp-win-rate', 'best-opponent', 'mp-total',
-            'tournaments-won', 'tournament-win-rate', 'best-finish', 'tournament-matches'
-        ];
-
-        defaultStats.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.textContent = '--';
-            }
-        });
-
-        // Show empty states for recent games and achievements
-        this.renderRecentGames([]);
-        this.renderAchievements([]);
+        this.renderAchievements(dashboardData.achievements);
     }
 
     private renderRecentGames(games: any[]): void {
@@ -1772,74 +1668,45 @@ class SimpleAuth {
             <div class="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg">
                 <div class="flex items-center space-x-4">
                     <div class="w-10 h-10 rounded-full flex items-center justify-center ${game.result === 'WIN' ? 'bg-green-500' : 'bg-red-500'}">
-                        ${game.result === 'WIN' ? 'W' : 'L'}
+                        <span class="text-white font-bold">${game.result === 'WIN' ? 'W' : 'L'}</span>
                     </div>
                     <div>
-                        <div class="text-white font-semibold">${game.type}</div>
-                        <div class="text-gray-300 text-sm">vs ${game.opponent}</div>
+                        <div class="text-white font-semibold">${game.opponent || 'AI'}</div>
+                        <div class="text-gray-400 text-sm">${new Date(game.date).toLocaleDateString()}</div>
                     </div>
                 </div>
-                <div class="text-white font-bold">${game.score}</div>
+                <div class="text-right">
+                    <div class="text-white font-bold">${game.score}</div>
+                    <div class="text-gray-400 text-sm">${game.duration}</div>
+                </div>
             </div>
         `).join('');
     }
 
     private renderAchievements(achievements: any[]): void {
-        const container = document.getElementById('achievements-grid');
+        const container = document.getElementById('achievements-list');
         if (!container) return;
 
         if (!achievements || achievements.length === 0) {
-            container.innerHTML = '<div class="text-center text-white">No achievements unlocked yet</div>';
+            container.innerHTML = '<div class="text-center text-white">No achievements yet</div>';
             return;
         }
 
         container.innerHTML = achievements.map(achievement => `
-            <div class="bg-gray-700/50 rounded-lg p-4 text-center">
-                <div class="text-4xl mb-2">${achievement.icon}</div>
-                <div class="text-white font-semibold mb-1">${achievement.name}</div>
-                <div class="text-gray-300 text-sm">${achievement.description}</div>
+            <div class="flex items-center space-x-4 p-4 bg-gray-700/50 rounded-lg">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center ${achievement.unlocked ? 'bg-yellow-500' : 'bg-gray-600'}">
+                    <span class="text-white text-xl">${achievement.icon}</span>
+                </div>
+                <div class="flex-1">
+                    <div class="text-white font-semibold">${achievement.name}</div>
+                    <div class="text-gray-400 text-sm">${achievement.description}</div>
+                </div>
+                <div class="text-gray-400 text-sm">
+                    ${achievement.unlocked ? 'Unlocked' : 'Locked'}
+                </div>
             </div>
         `).join('');
     }
-
-    private initializeAIGame(): void {
-        console.log('🎮 Initializing AI Pong game...');
-        console.log('🎮 Window object available:', typeof window !== 'undefined');
-        
-        // Try multiple ways to access the function
-        let aiGameFunction = null;
-        
-        if (typeof window !== 'undefined') {
-            // Try direct access
-            aiGameFunction = (window as any).initializeAIGame;
-            console.log('🎮 Direct function available:', typeof aiGameFunction);
-            
-            // Try through simpleAuth object
-            if (!aiGameFunction && (window as any).simpleAuth) {
-                aiGameFunction = (window as any).simpleAuth.initializeAIGame;
-                console.log('🎮 SimpleAuth function available:', typeof aiGameFunction);
-            }
-        }
-        
-        // Call the global AI game initialization function
-        if (aiGameFunction && typeof aiGameFunction === 'function') {
-            console.log('🎮 Calling AI game initialization function...');
-            try {
-                aiGameFunction();
-                console.log('🎮 AI game initialization function called successfully!');
-            } catch (error) {
-                console.error('❌ Error calling AI game function:', error);
-            }
-        } else {
-            console.error('❌ AI game initialization function not found');
-            console.error('❌ Available window properties:', Object.keys(window).filter(k => k.includes('AI') || k.includes('Game') || k.includes('simpleAuth')));
-        }
-        
-        console.log('🎮 AI Pong game initialization completed!');
-    }
-
-
-
 
     private setupGameOptions(): void {
         // Add click handlers for game options
@@ -1859,15 +1726,6 @@ class SimpleAuth {
 
     private async handleGameSelection(gameType: string): Promise<void> {
         console.log('🎮 handleGameSelection called with gameType:', gameType);
-        
-        // AI games don't require authentication
-        if (gameType === '1vAI') {
-            console.log('AI game selected, navigating to AI pong section...');
-            this.navigateToSection('ai-pong');
-            return;
-        }
-        
-        // Other games require authentication
         if (!this.currentUser) {
             this.showStatus('Please log in to play games', 'error');
             return;
@@ -1875,7 +1733,7 @@ class SimpleAuth {
 
         // Check authentication before proceeding
         try {
-            const response = await fetch('https://localhost/api/profile/me', {
+            const response = await fetch(`https://${HOST_IP}/api/profile/me`, {
                 credentials: 'include'
             });
             
@@ -1900,6 +1758,11 @@ class SimpleAuth {
             setTimeout(() => {
                 this.initializeGame();
             }, 100); // Small delay to ensure DOM is ready
+        } else if (gameType === '1vAI') {
+            // AI games don't require authentication
+            console.log('AI game selected, navigating to AI pong section...');
+            this.showSection('aiPongSection');
+            return;
         } else if (gameType === 'tournament') {
             // Redirect to tournament section
             this.showSection('localTournamentSection');
@@ -2117,10 +1980,6 @@ class SimpleAuth {
                 break;
         }
     }
-
-    private gameState: any = null;
-    private gameLoopInterval: number | null = null;
-    private isGoingHome: boolean = false;
 
     // Online game state
     private onlineGameState: {
@@ -2523,15 +2382,6 @@ class SimpleAuth {
             // Show the modal
             gameOverModal.classList.remove('hidden');
             
-            // Refresh stats after local game completion
-            console.log('🎮 Local game completed, refreshing stats...');
-            this.updateHomeDashboard().catch(error => {
-                console.error('Error refreshing home dashboard after local game:', error);
-            });
-            this.loadDashboardData().catch(error => {
-                console.error('Error refreshing dashboard after local game:', error);
-            });
-            
             // Set up button event listeners
             const playAgainBtn = document.getElementById('playAgainBtn');
             const goHomeBtn = document.getElementById('goHomeBtn');
@@ -2546,9 +2396,7 @@ class SimpleAuth {
                 
                 newPlayAgainBtn.onclick = async () => {
                     console.log('Play Again clicked, updating stats...');
-                    const player1Score = this.gameState?.scorePlayer1 || 0;
-                    const player2Score = this.gameState?.scorePlayer2 || 0;
-                    await this.updateUserStats(winner === 1, 'LOCAL', player1Score, player2Score, 'Local Player');
+                    await this.updateUserStats(winner === 1);
                     gameOverModal.classList.add('hidden');
                     this.startNewGame();
                 };
@@ -2564,9 +2412,7 @@ class SimpleAuth {
                 
                 newGoHomeBtn.onclick = async () => {
                     console.log('Go to Home clicked, updating stats...');
-                    const player1Score = this.gameState?.scorePlayer1 || 0;
-                    const player2Score = this.gameState?.scorePlayer2 || 0;
-                    await this.updateUserStats(winner === 1, 'LOCAL', player1Score, player2Score, 'Local Player');
+                    await this.updateUserStats(winner === 1);
                     gameOverModal.classList.add('hidden');
                     this.goHome();
                 };
@@ -2634,7 +2480,7 @@ class SimpleAuth {
         
         try {
             console.log('Loading user profile, current cookies:', document.cookie);
-            const response = await fetch('https://localhost/api/profile/me', {
+            const response = await fetch(`https://${HOST_IP}/api/profile/me`, {
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
@@ -2671,6 +2517,60 @@ class SimpleAuth {
         }
     }
 
+    private updateHomeDashboard(): void {
+        if (!this.currentUser) return;
+
+        const homeGamesPlayed = document.getElementById('homeGamesPlayed');
+        const homeWins = document.getElementById('homeWins');
+        const homeLosses = document.getElementById('homeLosses');
+
+        if (homeGamesPlayed) homeGamesPlayed.textContent = this.currentUser.gamesPlayed || '0';
+        if (homeWins) homeWins.textContent = this.currentUser.wins || '0';
+        if (homeLosses) homeLosses.textContent = this.currentUser.losses || '0';
+    }
+
+    private async updateUserStats(userWon: boolean): Promise<void> {
+        // Update stats for all games including tournament games
+        if (!this.currentUser) {
+            console.log('No current user found, cannot update stats');
+            return;
+        }
+
+        console.log('Updating user stats, user won:', userWon);
+        
+        try {
+            const response = await fetch(`https://${HOST_IP}/api/profile/update-stats`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    won: userWon
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Stats updated successfully:', data);
+                this.currentUser = data.user;
+                localStorage.setItem('user', JSON.stringify(data.user));
+                this.updateProfileDisplay();
+                this.updateHomeDashboard();
+            } else {
+                console.error('Failed to update stats:', response.status, response.statusText);
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
+                console.error('Response headers:', response.headers);
+                console.error('Request URL:', response.url);
+                this.showStatus(`Failed to update game stats: ${response.status} ${response.statusText}`, 'error');
+            }
+        } catch (error) {
+            console.error('Error updating user stats:', error);
+            this.showStatus('Network error updating stats', 'error');
+        }
+    }
+
     private updateDebugInfo(): void {
         // Removed - no longer needed
     }
@@ -2704,7 +2604,7 @@ class SimpleAuth {
         if (profileAvatar) {
             if (this.currentUser.avatarUrl) {
                 // Use the user's custom avatar
-                profileAvatar.src = `https://localhost${this.currentUser.avatarUrl}?t=${Date.now()}`;
+                profileAvatar.src = `https://${HOST_IP}${this.currentUser.avatarUrl}?t=${Date.now()}`;
                 console.log('Updated avatar with custom image:', this.currentUser.avatarUrl);
             } else {
                 // Use default avatar with username
@@ -2745,166 +2645,14 @@ class SimpleAuth {
             if (profileLosses) console.log('Losses displayed:', profileLosses.textContent);
         }, 100);
 
-        // Also update home dashboard and synchronize dashboard stats
-        this.updateHomeDashboard().catch(error => {
-            console.error('Error updating home dashboard:', error);
-        });
-        
-        // Synchronize dashboard stats if dashboard section is currently visible
-        const dashboardSection = document.getElementById('dashboardSection');
-        if (dashboardSection && dashboardSection.classList.contains('active')) {
-            this.loadDashboardData().catch(error => {
-                console.error('Error synchronizing dashboard stats:', error);
-            });
-        }
-    }
-
-    private async updateHomeDashboard(): Promise<void> {
-        if (!this.currentUser) return;
-
-        try {
-            // Load comprehensive dashboard data
-            const response = await fetch('/api/dashboard', {
-                method: 'GET',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                this.renderHomeDashboardData(data.data);
-            } else {
-                // Fallback to basic user stats if dashboard fails
-                this.renderBasicHomeStats();
-            }
-        } catch (error) {
-            console.error('Error loading home dashboard data:', error);
-            // Fallback to basic user stats
-            this.renderBasicHomeStats();
-        }
-    }
-
-    private renderHomeDashboardData(dashboardData: any): void {
-        console.log('🏠 Rendering home dashboard data:', dashboardData);
-        
-        // Update overall stats
-        const homeTotalGames = document.getElementById('homeTotalGames');
-        const homeTotalWins = document.getElementById('homeTotalWins');
-        const homeWinRate = document.getElementById('homeWinRate');
-
-        if (homeTotalGames) {
-            homeTotalGames.textContent = dashboardData.summary.totalGames.toString();
-        }
-        if (homeTotalWins) {
-            homeTotalWins.textContent = dashboardData.summary.totalWins.toString();
-        }
-        if (homeWinRate) {
-            homeWinRate.textContent = `${dashboardData.summary.overallWinRate}%`;
-        }
-
-        // Update AI Games stats
-        console.log('🤖 AI Game Stats:', dashboardData.aiGameStats);
-        const homeAIGames = document.getElementById('homeAIGames');
-        const homeAIWins = document.getElementById('homeAIWins');
-        const homeAIWinRate = document.getElementById('homeAIWinRate');
-
-        if (homeAIGames) {
-            homeAIGames.textContent = dashboardData.aiGameStats.totalGames.toString();
-        }
-        if (homeAIWins) {
-            homeAIWins.textContent = dashboardData.aiGameStats.wins.toString();
-        }
-        if (homeAIWinRate) {
-            homeAIWinRate.textContent = `${dashboardData.aiGameStats.winRate}%`;
-        }
-
-        // Update Local Games stats
-        console.log('🎮 Local Game Stats:', dashboardData.localGameStats);
-        const homeLocalGames = document.getElementById('homeLocalGames');
-        const homeLocalWins = document.getElementById('homeLocalWins');
-        const homeLocalWinRate = document.getElementById('homeLocalWinRate');
-
-        if (homeLocalGames) {
-            homeLocalGames.textContent = dashboardData.localGameStats.totalGames.toString();
-        }
-        if (homeLocalWins) {
-            homeLocalWins.textContent = dashboardData.localGameStats.wins.toString();
-        }
-        if (homeLocalWinRate) {
-            homeLocalWinRate.textContent = `${dashboardData.localGameStats.winRate}%`;
-        }
-
-        // Update Multiplayer stats
-        const homeMPGames = document.getElementById('homeMPGames');
-        const homeMPWins = document.getElementById('homeMPWins');
-        const homeMPWinRate = document.getElementById('homeMPWinRate');
-
-        if (homeMPGames) {
-            homeMPGames.textContent = dashboardData.multiplayerStats.totalGames.toString();
-        }
-        if (homeMPWins) {
-            homeMPWins.textContent = dashboardData.multiplayerStats.wins.toString();
-        }
-        if (homeMPWinRate) {
-            homeMPWinRate.textContent = `${dashboardData.multiplayerStats.winRate}%`;
-        }
-
-        // Update Tournament stats
-        const homeTournamentGames = document.getElementById('homeTournamentGames');
-        const homeTournamentWins = document.getElementById('homeTournamentWins');
-        const homeTournamentWinRate = document.getElementById('homeTournamentWinRate');
-
-        if (homeTournamentGames) {
-            homeTournamentGames.textContent = dashboardData.tournamentStats.totalGames.toString();
-        }
-        if (homeTournamentWins) {
-            homeTournamentWins.textContent = dashboardData.tournamentStats.wins.toString();
-        }
-        if (homeTournamentWinRate) {
-            homeTournamentWinRate.textContent = `${dashboardData.tournamentStats.winRate}%`;
-        }
-    }
-
-    private renderBasicHomeStats(): void {
-        // Fallback to basic user stats if dashboard data is not available
-        const homeTotalGames = document.getElementById('homeTotalGames');
-        const homeTotalWins = document.getElementById('homeTotalWins');
-        const homeWinRate = document.getElementById('homeWinRate');
-
-        if (homeTotalGames) {
-            homeTotalGames.textContent = (this.currentUser?.gamesPlayed || 0).toString();
-        }
-        if (homeTotalWins) {
-            homeTotalWins.textContent = (this.currentUser?.wins || 0).toString();
-        }
-        if (homeWinRate) {
-            const totalGames = this.currentUser?.gamesPlayed || 0;
-            const wins = this.currentUser?.wins || 0;
-            const winRate = totalGames > 0 ? (wins / totalGames * 100).toFixed(1) : 0;
-            homeWinRate.textContent = `${winRate}%`;
-        }
-
-        // Set all game type stats to 0 as fallback
-        const gameTypeStats = [
-            'homeAIGames', 'homeAIWins', 'homeAIWinRate',
-            'homeMPGames', 'homeMPWins', 'homeMPWinRate',
-            'homeTournamentGames', 'homeTournamentWins', 'homeTournamentWinRate'
-        ];
-
-        gameTypeStats.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.textContent = id.includes('WinRate') ? '0%' : '0';
-            }
-        });
+        // Also update home dashboard
+        this.updateHomeDashboard();
     }
 
     private async refreshUserData(): Promise<void> {
         try {
             console.log('🔄 Refreshing user data from server...');
-            const response = await fetch('https://localhost/api/auth/profile', {
+            const response = await fetch(`https://${HOST_IP}/api/auth/profile`, {
                 method: 'GET',
                 credentials: 'include',
                 headers: {
@@ -2978,7 +2726,7 @@ class SimpleAuth {
 
     private async refreshToken(): Promise<void> {
         try {
-            const response = await fetch('https://localhost/api/auth/refresh', {
+            const response = await fetch(`https://${HOST_IP}/api/auth/refresh`, {
                 method: 'POST',
                 credentials: 'include'
             });
@@ -3002,70 +2750,6 @@ class SimpleAuth {
 
     private clearCacheAndReload(): void {
         // Removed - no longer needed
-    }
-
-        private async updateUserStats(userWon: boolean, gameType: string = 'LOCAL', player1Score?: number, player2Score?: number, opponentName?: string): Promise<void> {
-        // Update stats for all games including tournament games
-        if (!this.currentUser) {
-            console.log('No current user found, cannot update stats');
-            return;
-        }
-
-        console.log('=== UPDATING USER STATS ===');
-        console.log('User won:', userWon);
-        console.log('Game type:', gameType);
-        console.log('Player 1 score:', player1Score);
-        console.log('Player 2 score:', player2Score);
-        console.log('Opponent name:', opponentName);
-        console.log('Current user ID:', this.currentUser.id);
-        console.log('Current cookies:', document.cookie);
-        console.log('Tournament game:', !!this.currentTournamentMatch);
-
-        try {
-            const requestBody: any = {
-                userId: this.currentUser.id,
-                won: userWon,
-                gameType: gameType
-            };
-
-            // Add game details for local games
-            if (gameType === 'LOCAL' && player1Score !== undefined && player2Score !== undefined) {
-                requestBody.player1Score = player1Score;
-                requestBody.player2Score = player2Score;
-                requestBody.opponentName = opponentName || 'Local Player';
-            }
-
-            const response = await fetch('https://localhost/api/profile/update-stats', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(requestBody),
-                credentials: 'include'
-            });
-
-            console.log('Update stats response status:', response.status);
-            console.log('Update stats response headers:', response.headers);
-
-            if (response.ok) {
-                const updatedUser = await response.json();
-                console.log('Stats update response:', updatedUser);
-                this.currentUser = updatedUser.user;
-                localStorage.setItem('user', JSON.stringify(updatedUser.user));
-                this.updateProfileDisplay(); // Update the display with new stats
-                console.log('User stats updated successfully');
-            } else {
-                console.error('Failed to update user stats:', response.status, response.statusText);
-                const errorText = await response.text();
-                console.error('Error response:', errorText);
-                console.error('Response headers:', response.headers);
-                console.error('Request URL:', response.url);
-                this.showStatus(`Failed to update game stats: ${response.status} ${response.statusText}`, 'error');
-            }
-        } catch (error) {
-            console.error('Error updating user stats:', error);
-            this.showStatus('Network error updating stats', 'error');
-        }
     }
 
     // Tournament functionality
@@ -3092,13 +2776,13 @@ class SimpleAuth {
         console.log('Winner:', winner, 'Loser:', loser);
         console.log('Tournament ID:', this.tournamentState.tournamentId);
         
-        if (!this.currentUser?.token) {
+        if (!this.currentUser) {
             console.log('No authentication token, skipping backend recording');
             return;
         }
     
         try {
-            const url = 'http://localhost:3000/api/tournament/local-result';
+            const url = `https://${HOST_IP}/api/tournament/local-result`;
             const requestBody = {
                 winner,
                 loser,
@@ -3113,9 +2797,9 @@ class SimpleAuth {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.currentUser.token}`
                 },
-                body: JSON.stringify(requestBody)
+                body: JSON.stringify(requestBody),
+                credentials: 'include'
             });
     
             const result = await response.json();
@@ -3233,19 +2917,17 @@ class SimpleAuth {
         this.showNextMatch();
     }
 
-    private async createTournamentInDatabase(players: string[]): Promise<void> {
-        console.log('=== DEBUGGING TOURNAMENT CREATION ===');
-        console.log('Current user:', this.currentUser);
-        console.log('Token exists:', !!this.currentUser?.token);
+    private async createTournamentInDatabase(players: string[]): Promise<void>
+    {
         
-        if (!this.currentUser?.token) {
+        if (!this.currentUser) {
             console.log('No authentication token, skipping tournament creation in database');
             return;
         }
     
         try {
             // Use correct URL - adjust port/protocol as needed
-            const url = 'http://localhost:3000/api/tournament/create';
+            const url = `https://${HOST_IP}/api/tournament/create`;
             console.log('Making request to:', url);
             
             const requestBody = {
@@ -3259,9 +2941,9 @@ class SimpleAuth {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.currentUser.token}`
                 },
-                body: JSON.stringify(requestBody)
+                body: JSON.stringify(requestBody),
+                credentials: 'include'
             });
     
             console.log('Response status:', response.status);
@@ -3283,21 +2965,21 @@ class SimpleAuth {
 
     private async completeTournamentInDatabase(winnerId?: number): Promise<void>
     {
-        if (!this.currentUser?.token || !this.tournamentState.tournamentId) {
+        if (!this.currentUser|| !this.tournamentState.tournamentId) {
             console.log('No authentication token or tournament ID, skipping tournament completion');
             return;
         }
     
         try {
-            const response = await fetch(`https://localhost/api/tournament/${this.tournamentState.tournamentId}/complete`, {
+            const response = await fetch(`https://${HOST_IP}/api/tournament/${this.tournamentState.tournamentId}/complete`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.currentUser.token}`
                 },
                 body: JSON.stringify({
                     winnerId: winnerId || null
-                })
+                }),
+                credentials: 'include'
             });
     
             const result = await response.json();
@@ -3570,23 +3252,6 @@ class SimpleAuth {
         if (this.currentUser && (currentMatch.player1 === this.currentUser.username || currentMatch.player2 === this.currentUser.username)) {
             const userWon = winnerName === this.currentUser.username;
             console.log('Updating tournament stats for user:', this.currentUser.username, 'Won:', userWon);
-            
-            // Update user stats for tournament game
-            const userScore = userWon ? 5 : 0; // Tournament games are first to 5
-            const opponentScore = userWon ? 0 : 5;
-            const opponentName = userWon ? loserName : winnerName;
-            
-            this.updateUserStats(userWon, 'TOURNAMENT', userScore, opponentScore, opponentName).catch(error => {
-                console.error('Error updating user stats after tournament game:', error);
-            });
-            
-            // Refresh dashboards
-            this.updateHomeDashboard().catch(error => {
-                console.error('Error refreshing home dashboard after tournament game:', error);
-            });
-            this.loadDashboardData().catch(error => {
-                console.error('Error refreshing dashboard after tournament game:', error);
-            });
         } else {
             console.log('Current user not participating in this tournament match, skipping stats update');
         }
@@ -4055,6 +3720,11 @@ class SimpleAuth {
             ctx.strokeRect(733, this.onlineGameState.gameState.rightPaddleY - 2, 19, 104);
             ctx.shadowBlur = 0;
         }
+        const scoreDisplay = document.getElementById('onlineScoreDisplay');
+            if (scoreDisplay && scoreDisplay.style.display === 'none') {
+                console.warn('Score display was hidden during game, reshowing...');
+                this.showScoreDisplay();
+            }
     }
 
     private connectToRemoteGame(): void {
@@ -4086,7 +3756,6 @@ class SimpleAuth {
                 this.onlineGameState.isConnected = true;
                 this.updateRemoteGameStatus('Connected', 'WebSocket connection established');
             };
-
             this.onlineGameState.gameSocket.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
@@ -4142,6 +3811,8 @@ class SimpleAuth {
                             this.startRemoteGame();
                             // Make sure score display is visible and updated
                             this.showScoreDisplay();
+                            this.onlineGameState.gameState.player1Score = 0;
+                            this.onlineGameState.gameState.player2Score = 0;
                             this.updateRemoteScore();
                             break;
                             
@@ -4161,6 +3832,7 @@ class SimpleAuth {
                             // Fallback: Check for game over if server doesn't send game-over message
                             if (data.player1Score >= 5 || data.player2Score >= 5) {
                                 console.log('🎯 Fallback: Game over detected in game-state message');
+                                this.onlineGameState.gameFinished = true;
                                 const winner = data.player1Score >= 5 ? data.player1Username : data.player2Username;
                                 const winnerScore = data.player1Score >= 5 ? data.player1Score : data.player2Score;
                                 const loserScore = data.player1Score >= 5 ? data.player2Score : data.player1Score;
@@ -4179,16 +3851,28 @@ class SimpleAuth {
                             break;
                             
                         case 'game-over':
-                            console.log(`🏆 Game Over! ${data.winner} wins!`);
-                            console.log('📊 Game over data:', data);
                             this.onlineGameState.gameFinished = true;
-                            this.showGameOverScreen({
-                                winner: data.winner,
-                                winnerScore: data.winnerScore,
-                                loserScore: data.loserScore,
+                            this.onlineGameState.gameState.player1Score = data.player1Score;
+                            this.onlineGameState.gameState.player2Score = data.player2Score;
+                            this.updateRemoteScore();
+                            
+                            // Prepare game over screen data
+                            const gameOverScreenData = {
+                                winner: data.winnerAlias || data.winner,
+                                winnerScore: Math.max(data.player1Score, data.player2Score),
+                                loserScore: Math.min(data.player1Score, data.player2Score),
                                 player1Username: data.player1Username,
-                                player2Username: data.player2Username
-                            });
+                                player2Username: data.player2Username,
+                                player1Score: data.player1Score,
+                                player2Score: data.player2Score
+                            };
+                            
+                            // Show game over screen
+                            this.showGameOverScreen(gameOverScreenData);
+                            
+                            // Update game status
+                            this.updateRemoteGameStatus('Game Over', `${data.winnerAlias} wins!`);
+                            
                             // Refresh user data to update dashboard
                             this.refreshUserData();
                             break;
@@ -4198,6 +3882,23 @@ class SimpleAuth {
                             this.hideRemoteGameMessage();
                             this.hideScoreDisplay();
                             this.updateRemoteGameStatus('Restarting', 'Both players agreed to play again!');
+                             this.onlineGameState.gameFinished = false;
+                            this.onlineGameState.gameState = {
+                                ballX: 400,
+                                ballY: 300,
+                                leftPaddleY: 250,
+                                rightPaddleY: 250,
+                                player1Score: 0,
+                                player2Score: 0,
+                                speedX: 5,
+                                speedY: 3
+                            };
+                            
+                            // ✅ ADD: Hide game over modal
+                            const gameOverModal = document.getElementById('gameOverModal');
+                            if (gameOverModal) {
+                                gameOverModal.classList.add('hidden');
+                            }
                             break;
                             
                         case 'play-again-waiting':
@@ -4253,7 +3954,19 @@ class SimpleAuth {
                 this.onlineGameState.isConnected = false;
                 
                 // Only show disconnect message if game wasn't finished
-                if (!this.onlineGameState.gameFinished) {
+                if (this.onlineGameState.gameFinished) {
+                    console.log('Game finished normally, not showing disconnect message');
+                    return;
+                }
+                
+                // Check for normal closure codes
+                if (event.code === 1000 && (event.reason === 'Game completed normally' || event.reason === 'Match is full')) {
+                    console.log('WebSocket closed normally:', event.reason);
+                    return;
+                }
+                
+                // Only show disconnect message for unexpected closures
+                if (event.code !== 1000) {
                     this.updateRemoteGameStatus('Disconnected', `Connection closed: ${event.reason || 'No reason provided'}`);
                     
                     // Show a message that the game was abandoned
@@ -4305,18 +4018,59 @@ class SimpleAuth {
     private updateRemoteScore(): void {
         const player1Score = document.getElementById('onlinePlayer1Score');
         const player2Score = document.getElementById('onlinePlayer2Score');
+        const scoreDisplay = document.getElementById('onlineScoreDisplay');
         
-        console.log(`🎮 Updating remote score - Player ${this.onlineGameState.playerNumber}:`);
-        console.log(`   Player1Score: ${this.onlineGameState.gameState.player1Score}, Player2Score: ${this.onlineGameState.gameState.player2Score}`);
-        console.log('Score elements found:', { player1Score: !!player1Score, player2Score: !!player2Score });
+        console.log('=== SCORE UPDATE DEBUG ===');
+        console.log('Score values:', {
+            player1Score: this.onlineGameState.gameState.player1Score,
+            player2Score: this.onlineGameState.gameState.player2Score
+        });
         
-        // Use the same simple approach as the working backend/public/index.html
+        console.log('DOM elements:', {
+            player1Element: !!player1Score,
+            player2Element: !!player2Score,
+            scoreDisplayElement: !!scoreDisplay
+        });
+        
+        if (scoreDisplay) {
+            console.log('Score display styles:', {
+                display: scoreDisplay.style.display,
+                visibility: scoreDisplay.style.visibility,
+                opacity: scoreDisplay.style.opacity,
+                computedDisplay: window.getComputedStyle(scoreDisplay).display,
+                computedVisibility: window.getComputedStyle(scoreDisplay).visibility,
+                offsetHeight: scoreDisplay.offsetHeight,
+                offsetWidth: scoreDisplay.offsetWidth
+            });
+        }
+        
         if (player1Score && player2Score) {
+            // Force the score display to be visible
+            if (scoreDisplay) {
+                scoreDisplay.style.display = 'block';
+                scoreDisplay.style.visibility = 'visible';
+                scoreDisplay.style.opacity = '1';
+            }
+            
+            // Update the scores
             player1Score.textContent = this.onlineGameState.gameState.player1Score.toString();
             player2Score.textContent = this.onlineGameState.gameState.player2Score.toString();
-            console.log(`   Updated scores: ${this.onlineGameState.gameState.player1Score} - ${this.onlineGameState.gameState.player2Score}`);
+            
+            console.log('Updated scores to:', {
+                player1Text: player1Score.textContent,
+                player2Text: player2Score.textContent
+            });
+            
+            // Double-check visibility after update
+            if (scoreDisplay) {
+                console.log('After update - Score display styles:', {
+                    display: scoreDisplay.style.display,
+                    computedDisplay: window.getComputedStyle(scoreDisplay).display,
+                    offsetHeight: scoreDisplay.offsetHeight
+                });
+            }
         } else {
-            console.error('❌ Score elements not found!');
+            console.error('Score elements not found!');
         }
     }
 
@@ -4509,6 +4263,37 @@ class SimpleAuth {
         }
     }
 
+    private reconnectToRemoteGame(): void {
+        console.log('Reconnecting to remote game...');
+        
+        // Reset game state
+        this.onlineGameState.gameFinished = false;
+        this.onlineGameState.gameState = {
+            ballX: 400,
+            ballY: 300,
+            leftPaddleY: 250,
+            rightPaddleY: 250,
+            player1Score: 0,
+            player2Score: 0,
+            speedX: 5,
+            speedY: 3
+        };
+        
+        // Close existing connection
+        if (this.onlineGameState.gameSocket) {
+            this.onlineGameState.gameSocket.close();
+        }
+        
+        // Reset connection state
+        this.onlineGameState.isConnected = false;
+        this.onlineGameState.playerNumber = null;
+        
+        // Reconnect after a short delay
+        setTimeout(() => {
+            this.connectToRemoteGame();
+        }, 1000);
+    }
+
     private showGameOverScreen(data: any): void {
         // Show the game over modal
         const gameOverModal = document.getElementById('gameOverModal');
@@ -4521,80 +4306,55 @@ class SimpleAuth {
         const gameOverPlayer2Score = document.getElementById('gameOverPlayer2Score');
         
         if (gameOverModal && gameOverIcon && gameOverTitle && gameOverMessage) {
-            // Set winner icon and title
-            gameOverIcon.textContent = '🏆';
-            gameOverTitle.textContent = 'Game Over!';
-            gameOverMessage.textContent = `${data.winner} wins!`;
+            // Determine if current user won
+            const currentUsername = this.currentUser?.username;
+            const isWinner = (currentUsername === data.winner) ||
+                            (currentUsername === data.player1Username && data.player1Score > data.player2Score) ||
+                            (currentUsername === data.player2Username && data.player2Score > data.player1Score);
+            
+            // Set appropriate icon and message
+            gameOverIcon.textContent = isWinner ? '🏆' : '💔';
+            gameOverTitle.textContent = isWinner ? 'Victory!' : 'Defeat!';
+            gameOverMessage.textContent = isWinner ? 'Congratulations, you won!' : `${data.winner} wins!`;
             
             // Set player names and scores
             if (gameOverPlayer1Name && gameOverPlayer2Name && gameOverPlayer1Score && gameOverPlayer2Score) {
                 gameOverPlayer1Name.textContent = data.player1Username || 'Player 1';
                 gameOverPlayer2Name.textContent = data.player2Username || 'Player 2';
-                gameOverPlayer1Score.textContent = data.winnerScore.toString();
-                gameOverPlayer2Score.textContent = data.loserScore.toString();
+                gameOverPlayer1Score.textContent = data.player1Score?.toString() || '0';
+                gameOverPlayer2Score.textContent = data.player2Score?.toString() || '0';
             }
             
             // Show the modal
             gameOverModal.classList.remove('hidden');
             
-            // Refresh stats after online game completion
-            console.log('🎮 Online game completed, refreshing stats...');
-            this.updateHomeDashboard().catch(error => {
-                console.error('Error refreshing home dashboard after online game:', error);
-            });
-            this.loadDashboardData().catch(error => {
-                console.error('Error refreshing dashboard after online game:', error);
-            });
-            
-            // Update user stats for remote multiplayer game
-            if (this.currentUser) {
-                const userWon = data.winner === this.currentUser.username;
-                const userScore = data.winner === this.currentUser.username ? data.winnerScore : data.loserScore;
-                const opponentScore = data.winner === this.currentUser.username ? data.loserScore : data.winnerScore;
-                const opponentName = data.winner === this.currentUser.username ? 
-                    (data.player1Username === this.currentUser.username ? data.player2Username : data.player1Username) :
-                    (data.player1Username === this.currentUser.username ? data.player2Username : data.player1Username);
-                
-                this.updateUserStats(userWon, 'MULTIPLAYER', userScore, opponentScore, opponentName).catch(error => {
-                    console.error('Error updating user stats after remote game:', error);
-                });
-            }
-            
             // Set up button event listeners
             const playAgainBtn = document.getElementById('playAgainBtn');
             const goHomeBtn = document.getElementById('goHomeBtn');
-            
-            if (playAgainBtn) {
-                playAgainBtn.onclick = () => {
-                    // Send play again request to server
-                    if (this.onlineGameState.gameSocket && this.onlineGameState.gameSocket.readyState === 1) {
-                        const playAgainMessage = JSON.stringify({
-                            type: 'play-again'
-                        });
-                        this.onlineGameState.gameSocket.send(playAgainMessage);
-                        console.log('Sent play again request to server');
-                    }
-                    
-                    // Hide the modal
-                    gameOverModal.classList.add('hidden');
-                };
-            }
-            
+            if (playAgainBtn)
+                playAgainBtn.style.display = 'none';
             if (goHomeBtn) {
-                // Remove existing listeners by cloning the button
+                // Remove existing listeners
                 const newGoHomeBtn = goHomeBtn.cloneNode(true) as HTMLButtonElement;
                 goHomeBtn.parentNode?.replaceChild(newGoHomeBtn, goHomeBtn);
                 
-                // Add unique identifier to prevent multiple handlers
-                newGoHomeBtn.setAttribute('data-handler-attached', 'true');
-                
+                newGoHomeBtn.classList.add('w-full');
+                newGoHomeBtn.textContent = '🏠 Return to Home';
                 newGoHomeBtn.onclick = () => {
-                    console.log('Remote game Go to Home clicked');
+                    console.log('Go Home clicked');
+                    
+                    // Close WebSocket if still open
+                    if (this.onlineGameState.gameSocket) {
+                        this.onlineGameState.gameSocket.close(1000, 'User chose to go home');
+                    }
+                    
+                    // Close modal and go home
+                    gameOverModal.classList.add('hidden');
                     this.goHome();
                 };
             }
         }
-    }
+}
 
     private restartRemoteGame(): void {
         console.log('Restarting remote game...');
@@ -4747,7 +4507,7 @@ class SimpleAuth {
         
         try {
             // Connect to matchmaking WebSocket
-            const matchmakingSocket = new WebSocket('ws://localhost/api/matchmaking');
+            const matchmakingSocket = new WebSocket('ws://10.11.1.6/api/matchmaking');
             
             matchmakingSocket.onopen = () => {
                 console.log('Connected to matchmaking server');
@@ -4857,7 +4617,7 @@ class SimpleAuth {
         console.log('Connecting to game:', matchId);
         
         try {
-            const gameSocket = new WebSocket(`ws://localhost/api/remote-game/${matchId}`);
+            const gameSocket = new WebSocket(`ws://10.11.1.6/api/remote-game/${matchId}`);
             
             gameSocket.onopen = () => {
                 console.log('Connected to game server');
@@ -5065,6 +4825,347 @@ class SimpleAuth {
 
             this.onlineGameState.gameSocket.send(JSON.stringify(inputMessage));
         });
+    }
+
+    // AI Pong Game Methods
+    private initializeAIGame(): void {
+        console.log('Initializing AI Pong game...');
+        
+        // Connect to AI game WebSocket
+        this.connectAIGame();
+        
+        // Setup AI game controls
+        this.setupAIGameControls();
+        
+        // Setup keyboard controls
+        this.setupAIKeyboardControls();
+    }
+
+    private setupAIGameControls(): void {
+        // Start button
+        const startBtn = document.getElementById('aiStartBtn');
+        if (startBtn) {
+            startBtn.addEventListener('click', () => this.startAIGame());
+        }
+
+        // Pause button
+        const pauseBtn = document.getElementById('aiPauseBtn');
+        if (pauseBtn) {
+            pauseBtn.addEventListener('click', () => this.pauseAIGame());
+        }
+
+        // Restart button
+        const restartBtn = document.getElementById('aiRestartBtn');
+        if (restartBtn) {
+            restartBtn.addEventListener('click', () => this.restartAIGame());
+        }
+
+        // Difficulty buttons
+        const difficultyBtns = document.querySelectorAll('.ai-difficulty-btn');
+        difficultyBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const difficulty = (e.target as HTMLElement).dataset.difficulty;
+                if (difficulty && this.aiGameWs && this.aiGameWs.readyState === WebSocket.OPEN) {
+                    this.aiGameWs.send(JSON.stringify({ type: 'change-difficulty', difficulty }));
+                }
+            });
+        });
+
+        // Game over modal buttons
+        const gameOverModal = document.getElementById('aiGameOverModal');
+        if (gameOverModal) {
+            const playAgainBtn = gameOverModal.querySelector('#aiPlayAgainBtn');
+            if (playAgainBtn) {
+                playAgainBtn.addEventListener('click', () => {
+                    if (gameOverModal) {
+                        gameOverModal.classList.add('hidden');
+                    }
+                    this.restartAIGame();
+                });
+            }
+        }
+    }
+
+    private setupAIKeyboardControls(): void {
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'w' || e.key === 'W') {
+                this.aiGameKeys.w = true;
+            }
+            if (e.key === 's' || e.key === 'S') {
+                this.aiGameKeys.s = true;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'w' || e.key === 'W') {
+                this.aiGameKeys.w = false;
+            }
+            if (e.key === 's' || e.key === 'S') {
+                this.aiGameKeys.s = false;
+            }
+        });
+    }
+
+    private connectAIGame(): void {
+        try {
+            this.aiGameWs = new WebSocket(`wss://${HOST_IP}/ai-game`);
+            
+            this.aiGameWs.onopen = () => {
+                this.logAIGame('Connected to AI Pong Game!');
+                this.updateAIGameStatus('Connected');
+                this.updateAIGameButtons(true, false, false, false);
+            };
+
+            this.aiGameWs.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    this.handleAIGameMessage(data);
+                } catch (error) {
+                    console.error('Error parsing AI game message:', error);
+                }
+            };
+
+            this.aiGameWs.onclose = () => {
+                this.logAIGame('Disconnected from AI Pong Game');
+                this.updateAIGameStatus('Disconnected');
+                this.updateAIGameButtons(false, false, false, false);
+            };
+
+            this.aiGameWs.onerror = (error) => {
+                console.error('AI Game WebSocket error:', error);
+                this.logAIGame('Connection error occurred');
+            };
+        } catch (error) {
+            console.error('Error connecting to AI game:', error);
+            this.logAIGame('Failed to connect to AI game');
+        }
+    }
+
+    private startAIGame(): void {
+        if (this.aiGameWs && this.aiGameWs.readyState === WebSocket.OPEN) {
+            this.aiGameWs.send(JSON.stringify({ type: 'start-game' }));
+            this.logAIGame('Starting game...');
+        }
+    }
+
+    private pauseAIGame(): void {
+        if (this.aiGameWs && this.aiGameWs.readyState === WebSocket.OPEN) {
+            this.aiGameWs.send(JSON.stringify({ type: 'pause-game' }));
+        }
+    }
+
+    private restartAIGame(): void {
+        if (this.aiGameWs && this.aiGameWs.readyState === WebSocket.OPEN) {
+            this.aiGameWs.send(JSON.stringify({ type: 'restart-game' }));
+            this.logAIGame('Restarting game...');
+        }
+    }
+
+    private handleAIGameMessage(data: any): void {
+        console.log('AI Game message received:', data);
+
+        switch (data.type) {
+            case 'connection-established':
+                this.logAIGame(data.message);
+                this.updateAIGameStatus('Ready');
+                this.updateAIGameButtons(true, false, false, false);
+                break;
+                
+            case 'game-state':
+                this.aiGameState = { ...this.aiGameState, ...data.gameState };
+                if (data.availableDifficulties) {
+                    this.aiGameAvailableDifficulties = data.availableDifficulties.reduce((acc: any, diff: any) => {
+                        acc[diff.key] = diff;
+                        return acc;
+                    }, {});
+                }
+                this.updateAIScore();
+                if (this.aiGameState.currentDifficulty && this.aiGameAvailableDifficulties[this.aiGameState.currentDifficulty]) {
+                    this.updateAIDifficultyDisplay(this.aiGameState.currentDifficulty, this.aiGameAvailableDifficulties[this.aiGameState.currentDifficulty]);
+                }
+                break;
+                
+            case 'difficulty-changed':
+                this.aiGameState.currentDifficulty = data.difficulty;
+                this.updateAIDifficultyDisplay(data.difficulty, data.aiConfig);
+                this.logAIGame(data.message);
+                break;
+                
+            case 'game-started':
+                this.logAIGame(data.message);
+                this.updateAIGameStatus('Game Running');
+                this.updateAIGameButtons(true, true, false, false);
+                this.startAIGameLoop();
+                break;
+                
+            case 'game-update':
+                this.aiGameState = { ...this.aiGameState, ...data.gameState };
+                this.updateAIScore();
+                break;
+                
+            case 'game-paused':
+                this.logAIGame(data.message);
+                this.updateAIGameStatus('Game Paused');
+                this.updateAIGameButtons(true, false, true, false);
+                this.stopAIGameLoop();
+                break;
+                
+            case 'game-resumed':
+                this.logAIGame(data.message);
+                this.updateAIGameStatus('Game Running');
+                this.updateAIGamePauseButton('⏸️ Pause');
+                this.startAIGameLoop();
+                break;
+                
+            case 'game-over':
+                this.logAIGame(data.message);
+                this.updateAIGameStatus('Game Over');
+                this.updateAIGameButtons(false, false, false, true);
+                this.stopAIGameLoop();
+                this.showAIGameOverModal(data.winner, data.finalScore);
+                break;
+                
+            case 'error':
+                this.logAIGame(`Error: ${data.message}`);
+                break;
+                
+            default:
+                console.log('Unknown AI game message type:', data.type);
+        }
+    }
+
+    private aiGameLoop(): void {
+        this.updatePlayerPaddle();
+        this.drawAIGame();
+        this.aiGameAnimationId = requestAnimationFrame(() => this.aiGameLoop());
+    }
+
+    private startAIGameLoop(): void {
+        if (!this.aiGameAnimationId) {
+            this.aiGameLoop();
+        }
+    }
+
+    private stopAIGameLoop(): void {
+        if (this.aiGameAnimationId) {
+            cancelAnimationFrame(this.aiGameAnimationId);
+            this.aiGameAnimationId = null;
+        }
+    }
+
+    private updatePlayerPaddle(): void {
+        if (this.aiGameKeys.w && this.aiGameState.playerPaddleY > 0) {
+            this.aiGameState.playerPaddleY -= this.aiGameConfig.PADDLE.SPEED;
+            if (this.aiGameWs && this.aiGameWs.readyState === WebSocket.OPEN) {
+                this.aiGameWs.send(JSON.stringify({ type: 'player-input', action: 'up' }));
+            }
+        }
+        if (this.aiGameKeys.s && this.aiGameState.playerPaddleY < this.aiGameConfig.CANVAS.HEIGHT - this.aiGameConfig.PADDLE.HEIGHT) {
+            this.aiGameState.playerPaddleY += this.aiGameConfig.PADDLE.SPEED;
+            if (this.aiGameWs && this.aiGameWs.readyState === WebSocket.OPEN) {
+                this.aiGameWs.send(JSON.stringify({ type: 'player-input', action: 'down' }));
+            }
+        }
+    }
+
+    private drawAIGame(): void {
+        const canvas = document.getElementById('aiGameCanvas') as HTMLCanvasElement;
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // Clear canvas
+        ctx.fillStyle = '#0f0f23';
+        ctx.fillRect(0, 0, this.aiGameConfig.CANVAS.WIDTH, this.aiGameConfig.CANVAS.HEIGHT);
+
+        // Draw center line
+        ctx.strokeStyle = '#ffffff';
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(this.aiGameConfig.CANVAS.WIDTH / 2, 0);
+        ctx.lineTo(this.aiGameConfig.CANVAS.WIDTH / 2, this.aiGameConfig.CANVAS.HEIGHT);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Draw player paddle (left)
+        ctx.fillStyle = '#60a5fa';
+        ctx.fillRect(this.aiGameConfig.PADDLE.WIDTH, this.aiGameState.playerPaddleY, this.aiGameConfig.PADDLE.WIDTH, this.aiGameConfig.PADDLE.HEIGHT);
+
+        // Draw AI paddle (right) with difficulty-based color
+        const aiColor = this.aiGameAvailableDifficulties[this.aiGameState.currentDifficulty]?.color || '#f87171';
+        ctx.fillStyle = aiColor;
+        ctx.fillRect(this.aiGameConfig.CANVAS.WIDTH - this.aiGameConfig.PADDLE.WIDTH * 2, this.aiGameState.aiPaddleY, this.aiGameConfig.PADDLE.WIDTH, this.aiGameConfig.PADDLE.HEIGHT);
+
+        // Draw ball
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.arc(this.aiGameState.ballX, this.aiGameState.ballY, this.aiGameState.ballRadius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    private updateAIScore(): void {
+        const scoreDisplay = document.getElementById('aiScoreDisplay');
+        if (scoreDisplay) {
+            scoreDisplay.textContent = `Player: ${this.aiGameState.playerScore} - AI: ${this.aiGameState.aiScore}`;
+        }
+    }
+
+    private updateAIGameStatus(status: string): void {
+        const statusElement = document.getElementById('aiGameStatus');
+        if (statusElement) {
+            statusElement.textContent = status;
+        }
+    }
+
+    private updateAIGameButtons(start: boolean, pause: boolean, resume: boolean, restart: boolean): void {
+        const startBtn = document.getElementById('aiStartBtn') as HTMLButtonElement;
+        const pauseBtn = document.getElementById('aiPauseBtn') as HTMLButtonElement;
+        const resumeBtn = document.getElementById('aiResumeBtn') as HTMLButtonElement;
+        const restartBtn = document.getElementById('aiRestartBtn') as HTMLButtonElement;
+
+        if (startBtn) startBtn.disabled = !start;
+        if (pauseBtn) pauseBtn.disabled = !pause;
+        if (resumeBtn) resumeBtn.disabled = !resume;
+        if (restartBtn) restartBtn.disabled = !restart;
+    }
+
+    private updateAIGamePauseButton(text: string): void {
+        const pauseBtn = document.getElementById('aiPauseBtn');
+        if (pauseBtn) {
+            pauseBtn.textContent = text;
+        }
+    }
+
+    private updateAIDifficultyDisplay(difficulty: string, config: any): void {
+        const difficultyDisplay = document.getElementById('aiDifficultyDisplay');
+        if (difficultyDisplay) {
+            difficultyDisplay.textContent = `Difficulty: ${config.name} (${config.speed}x)`;
+        }
+    }
+
+    private logAIGame(message: string): void {
+        const logElement = document.getElementById('aiGameLog');
+        if (logElement) {
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+    }
+
+    private showAIGameOverModal(winner: string, finalScore: string): void {
+        const modal = document.getElementById('aiGameOverModal');
+        if (modal) {
+            const title = document.getElementById('aiGameOverTitle');
+            const message = document.getElementById('aiGameOverMessage');
+            const score = document.getElementById('aiGameOverScore');
+
+            if (title) title.textContent = winner === 'player' ? 'You Won!' : 'AI Won!';
+            if (message) message.textContent = `Final Score: ${finalScore}`;
+            if (score) score.textContent = finalScore;
+
+            modal.classList.remove('hidden');
+        }
     }
 }
 

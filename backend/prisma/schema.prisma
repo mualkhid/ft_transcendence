@@ -48,7 +48,7 @@ model User {
   username     String   @unique
   email        String   @unique // store lowercase in app code
   passwordHash String
-  avatarUrl    String?
+  avatarUrl    String   @default("/avatars/default.jpg")
   lastSeen     DateTime @default(now())
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

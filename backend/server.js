@@ -22,7 +22,6 @@ import aiGameRoutes from './routes/aiGameRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 
 import { globalErrorHandler } from './utils/errorHandler.js';
-import { getSecrets } from './services/vaultService.js';
 import { setupWebSocketServer } from './services/webSocketService.js';
 import { prisma } from './prisma/prisma_lib.js';
 import { setupGracefulShutdown } from './utils/gracefulShutdown.js';
@@ -53,8 +52,6 @@ await fastify.register(cookie);
   
   // 2) CORS (allow 10.11.* + localhost; works with credentials)
   await fastify.register(cors, {
-    // origin: ['http://localhost:8080', 'http://127.0.0.1:8080', 'http://localhost:3000', 'http://127.0.0.1:3000', 'https://localhost', 'https://127.0.0.1', 'https://10.11.1.5', 'https://0.0.0.0', 'https://172.23.0.1', 'https://172.18.0.1', 'http://172.18.0.1', '*'],
-    // origin: ['https://localhost', 'https://172.23.0.1', 'https://127.0.0.1', 'https://10.11.1.5'],
     origin: '*',
     methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
     // credenials: true,
@@ -100,20 +97,20 @@ fastify.register(swaggerUI, {
   exposeRoute: true,
 });
 
-// await fastify.register(helmet, {
-//   contentSecurityPolicy: false,
-//   crossOriginEmbedderPolicy: false,
-//   crossOriginOpenerPolicy: false,
-//   crossOriginResourcePolicy: false
-// });
+await fastify.register(helmet, {
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+  crossOriginOpenerPolicy: false,
+  crossOriginResourcePolicy: false
+});
 
 // Security + Rate limiting
-// fastify.register(rateLimit, {
-//   max: 20,
-//   timeWindow: '1 minute',
-//   allowList: ['127.0.0.1', ''],
-//   skip: (request) => request.headers.upgrade && request.headers.upgrade.toLowerCase() === 'websocket'
-// });
+fastify.register(rateLimit, {
+  max: 20,
+  timeWindow: '1 minute',
+  allowList: ['127.0.0.1', ''],
+  skip: (request) => request.headers.upgrade && request.headers.upgrade.toLowerCase() === 'websocket'
+});
 
 // 🔹 Register routes
 fastify.register(tournamentRoutes, { prefix: '/api' });
@@ -128,34 +125,14 @@ fastify.register(dashboardRoutes, { prefix: '/api' });
 // Also register without prefix for testing
 fastify.register(remoteGameRoutes);
 
-console.log('🔌 API routes registered');
-
-// Register test HTTP route first
-fastify.get('/test-http', async (request, reply) => {
-    console.log('🧪 HTTP test route hit');
-    return { message: 'HTTP route working!' };
-});
-
-console.log('🔌 HTTP test route registered');
-
 // 🔹 Start server LAST
-try {
-    setupGracefulShutdown(fastify, prisma);
-    console.log('Attempting to start server...');
-    const address = await fastify.listen({ port: 3000, host: '0.0.0.0' });
-    console.log(`Server running at ${address}`);
-    
-    // Set up the separate WebSocket server
-    setupWebSocketServer();
-    
-    console.log('✅ Server started successfully');
-} catch (err) {
-    console.error("Server startup error:", err);
-    fastify.log.error("catched in server => ", err);
-    process.exit(1);
-}
+setupGracefulShutdown(fastify, prisma);
+console.log('Attempting to start server...');
+const address = await fastify.listen({ port: 3000, host: '0.0.0.0' });
+console.log(`Server running at ${address}`);
 
-// 🔹 After server boot, safe to use secrets or configs
-// const secrets = await getSecrets();
-// const jwtSecret = secrets.JWT_SECRET;
-// const dbPassword = secrets.DB_PASSWORD;
+// Set up the separate WebSocket server
+setupWebSocketServer();
+
+console.log('✅ Server started successfully');
+
