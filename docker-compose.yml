@@ -22,13 +22,13 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - HOST_IP=${HOST_IP}
+        - HOST_IP=${HOST_IP:-localhost}
     expose:
       - "8080"
     environment:
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
-      - HOST_IP=${HOST_IP}
+      - HOST_IP=${HOST_IP:-localhost}
     networks: [webapp]
     restart: unless-stopped
     
@@ -40,7 +40,7 @@ services:
       - NODE_ENV=${NODE_ENV}
       - JWT_SECRET=${JWT_SECRET}
       - DATABASE_URL=${DATABASE_URL}
-      - HOST_IP=${HOST_IP}
+      - HOST_IP=${HOST_IP:-localhost}
     expose:
       - "3000"
     networks: [webapp]
