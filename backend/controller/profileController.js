@@ -1,11 +1,11 @@
 import {prisma} from '../prisma/prisma_lib.js'
-
 import validator from 'validator'
-
 import * as img from '../services/imageService.js';
-
-
+import path from 'node:path';
 import {ValidationError, AuthenticationError, notFoundError } from '../utils/errors.js'
+
+const AVATARS_DIR = path.join(process.cwd(), 'public', 'avatars');
+const TMP_DIR      = path.join(AVATARS_DIR, '_tmp');
 
 const sanitizedUserSelect = { 
     id: true, 
@@ -33,7 +33,6 @@ export async function getCurrentUser(req, reply) {
 
 	return reply.status(200).send({ user: user });
 }
-
 
 export async function updateUsername (req, reply)
 {
@@ -83,7 +82,7 @@ export async function updatePassword (req, reply)
 	const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
 	if (!isCurrentPasswordValid)
 		throw new AuthenticationError('password Incorrect');
-		
+
 	// Hash the new password
 	const newPasswordHash = await bcrypt.hash(newPassword, 12);
 
@@ -100,30 +99,34 @@ export async function updateAvatar(req, reply)
 
 	const file = await req.file();
 
-	// 1) Basic guards
 	img.assertFilePresent(file);
 	img.assertAllowedMime(file.mimetype);
-	img.assertMaxSizeNotExceeded(file.file?.bytesRead ?? 0);
+
+	await img.ensureDir(TMP_DIR);
+	await img.ensureDir(AVATARS_DIR);
+
+	const tmpName = `${crypto.randomUUID()}.upload`;
+	const tmpPath = img.buildPath(TMP_DIR, tmpName);
+
+	await img.writeStreamToFile(file.file, tmpPath);
+
+	img.assertNotTruncated(file);           // from multipart limits
+	await img.assertMagicMimeAllowed(tmpPath);
 	
-	// 2) Prepare paths
-	await img.ensureAvatarDir();
 	const ext = img.deduceExtensionFromMime(file.mimetype);
-	const filename = img.buildAvatarFilename(id, ext);
-	const destPath = img.buildAvatarPath(filename);
 	
-	// 3) Stream upload to final destination
-	await img.writeStreamToFile(file.file, destPath);
-	await img.assertMagicMimeAllowed(destPath);
-
-	// 4) Post conditions
-	img.assertNotTruncated(file);
-
-	// 5) Persist URL
+	const filename = img.buildAvatarFilename(id, ext);
+	const destPath = img.buildPath(AVATARS_DIR, filename);
+	
+	// 5) Commit: move tmp -> final (atomic)
+	await img.deleteUserAvatars(id)
+	await (await import('node:fs/promises')).rename(tmpPath, destPath);
+	console.log("renamed file: ")
+	
+	// 6) Persist URL
 	const publicUrl = img.buildPublicUrl(filename);
-	await prisma.user.update({
-	where: { id },
-	data: { avatarUrl: publicUrl },
-	});
+	console.log("publicUrl: ", publicUrl)
+	await prisma.user.update({ where: { id }, data: { avatarUrl: publicUrl } });
 
 	return reply.status(200).send({ avatarUrl: publicUrl });
 }
