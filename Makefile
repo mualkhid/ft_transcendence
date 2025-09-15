@@ -15,8 +15,8 @@ init-dirs:
 
 # Build Docker images
 build: init-dirs
-	@echo "🐳 Building Docker images with IP: $(GET_IP)"
-	HOST_IP=$(GET_IP) docker-compose build 
+	@echo  "Starting with IP: $(GET_IP)"
+	HOST_IP=$(GET_IP) docker-compose build
 
 # Start all services with Docker
 up: init-dirs
@@ -24,10 +24,15 @@ up: init-dirs
 	HOST_IP=$(GET_IP) docker-compose up --build -d
 	@echo "✅ Services started! Check status with 'make status'"
 
-# Start services in foreground (for debugging)
-up-logs: init-dirs
-	@echo "🐳 Starting services with logs visible"
-	HOST_IP=$(GET_IP) docker-compose up --build
+clean:
+	docker-compose down --remove-orphans
+	docker-compose rm -f
+
+fclean: clean
+	docker-compose down -v
+	docker system prune -af --volumes
+	docker builder prune -af
+	rm -rf node_modules
 
 # Check service status
 status:

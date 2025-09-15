@@ -38,12 +38,12 @@ const __dirname = path.dirname(__filename);
 
 fastify.addHook('onRequest', (request, reply, done) => {
     console.log("---- Incoming Request ----");
-    console.log("Method:", request.method);
-    console.log("URL:", request.url);
-    console.log("Origin:", request.headers.origin || "N/A");
-    console.log("Access-Control-Request-Method:", request.headers["access-control-request-method"] || "N/A");
-    console.log("Access-Control-Request-Headers:", request.headers["access-control-request-headers"] || "N/A");
-    console.log("All Headers:", request.headers);
+    console.log("Method:", request.method,"  ", request.url );
+    // console.log("URL:", request.url);
+    // console.log("Origin:", request.headers.origin || "N/A");
+    // console.log("Access-Control-Request-Method:", request.headers["access-control-request-method"] || "N/A");
+    // console.log("Access-Control-Request-Headers:", request.headers["access-control-request-headers"] || "N/A");
+    // console.log("All Headers:", request.headers);
     console.log("--------------------------");
     done ()
 })
