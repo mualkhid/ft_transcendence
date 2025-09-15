@@ -14,16 +14,36 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            background-image: url('/imgs/powerpuff-bg.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
             color: #ffffff;
             min-height: 100vh;
             overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Add a subtle overlay to improve text readability */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.2);
+            z-index: 0;
+            pointer-events: none;
         }
 
         .dashboard-container {
             max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
+            position: relative;
+            z-index: 10;
         }
 
         .header {
@@ -259,6 +279,8 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             margin-bottom: 30px;
+            max-height: 80vh;
+            overflow-y: auto;
         }
 
         .achievements-section h3 {
@@ -270,11 +292,132 @@
 
         .achievements-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 15px;
         }
 
         .achievement-item {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            padding: 15px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .achievement-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .achievement-item.unlocked {
+            background: rgba(255, 215, 0, 0.1);
+            border-color: rgba(255, 215, 0, 0.3);
+        }
+
+        .achievement-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .achievement-item.unlocked .achievement-icon {
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        }
+
+        .achievement-name {
+            font-weight: 600;
+            color: #e2e8f0;
+            margin-bottom: 5px;
+        }
+
+        .achievement-description {
+            font-size: 0.9rem;
+            color: #a0aec0;
+            margin-bottom: 8px;
+        }
+
+        .achievement-requirement {
+            font-size: 0.8rem;
+            color: #718096;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 5px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4299e1, #9f7aea);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-text {
+            font-size: 0.75rem;
+            color: #a0aec0;
+        }
+
+        .unlocked-text {
+            font-size: 0.75rem;
+            color: #ffd700;
+            font-weight: 600;
+        }
+
+        /* Colorblind Mode Styles for Dashboard */
+        .colorblind-mode .achievement-item.unlocked {
+            background: #00ff00 !important;
+            border-color: #ffffff !important;
+            color: #000000 !important;
+        }
+        
+        .colorblind-mode .achievement-item {
+            background: #000000 !important;
+            color: #ffffff !important;
+            border: 2px solid #ff6b00 !important;
+        }
+        
+        .colorblind-mode .progress-fill {
+            background: #ff6b00 !important;
+        }
+        
+        .colorblind-mode .dashboard-nav-btn.active {
+            background: #ff6b00 !important;
+            color: #000000 !important;
+        }
+        
+        .colorblind-mode .dashboard-nav-btn {
+            background: #000000 !important;
+            color: #ffffff !important;
+            border: 1px solid #ff6b00 !important;
+        }
+        
+        .colorblind-mode .dashboard-nav-btn:hover {
+            background: #ff6b00 !important;
+            color: #000000 !important;
+        }
+        
+        .colorblind-mode .main-nav-link {
+            color: #ffffff !important;
+            border: 1px solid #ff6b00 !important;
+        }
+        
+        .colorblind-mode .main-nav-link:hover {
+            background: #ff6b00 !important;
+            color: #000000 !important;
+        }
             background: rgba(255, 255, 255, 0.03);
             border-radius: 10px;
             padding: 20px;
@@ -394,6 +537,7 @@
             top: 0;
             z-index: 1000;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            position: relative;
         }
 
         .main-nav-content {
@@ -489,7 +633,7 @@
     <nav class="main-nav">
         <div class="main-nav-content">
             <div class="main-nav-brand">
-                <img src="imgs/logo.png" alt="Powerpuff Girls Logo" class="main-nav-logo">
+                <img src="/imgs/logo.png" alt="Powerpuff Girls Logo" class="main-nav-logo">
                 <span class="main-nav-title">Powerpuff Pong</span>
             </div>
             <ul class="main-nav-links">
@@ -520,6 +664,7 @@
         <div class="navigation">
             <button class="nav-button active" onclick="showSection('overview')">Overview</button>
             <button class="nav-button" onclick="showSection('ai-games')">AI Games</button>
+            <button class="nav-button" onclick="showSection('local-games')">Local Games</button>
             <button class="nav-button" onclick="showSection('multiplayer')">Multiplayer</button>
             <button class="nav-button" onclick="showSection('tournaments')">Tournaments</button>
         </div>
@@ -639,6 +784,47 @@
             </div>
         </div>
 
+        <!-- Local Games Section -->
+        <div id="local-games-section" class="dashboard-section" style="display: none;">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon">🏠</div>
+                        <div class="stat-title">Local Games Won</div>
+                    </div>
+                    <div class="stat-value" id="local-games-won">--</div>
+                    <div class="stat-description">Victories in 1 vs 1 games</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-title">Local Win Rate</div>
+                    </div>
+                    <div class="stat-value" id="local-win-rate">--</div>
+                    <div class="stat-description">Success rate in local games</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon">🎯</div>
+                        <div class="stat-title">Best Score</div>
+                    </div>
+                    <div class="stat-value" id="local-best-score">--</div>
+                    <div class="stat-description">Highest score achieved</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon">⚡</div>
+                        <div class="stat-title">Average Score</div>
+                    </div>
+                    <div class="stat-value" id="local-avg-score">--</div>
+                    <div class="stat-description">Typical performance level</div>
+                </div>
+            </div>
+        </div>
+
         <!-- Multiplayer Section -->
         <div id="multiplayer-section" class="dashboard-section" style="display: none;">
             <div class="stats-grid">
@@ -746,11 +932,15 @@
 
             async loadDashboardData() {
                 try {
-                    // Load dashboard data directly without authentication
-                    const response = await fetch('/api/dashboard');
-                    
+                    // Load authenticated user dashboard data so stats reflect recent games
+                    const response = await fetch('/api/dashboard/user', {
+                        method: 'GET',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+
                     if (!response.ok) throw new Error('Failed to fetch dashboard data');
-                    
+
                     this.dashboardData = await response.json();
                 } catch (error) {
                     console.error('Error loading dashboard data:', error);
@@ -810,6 +1000,19 @@
                 event.target.classList.add('active');
 
                 this.currentSection = sectionName;
+
+                // Ensure stats are rendered when switching tabs
+                if (this.dashboardData && this.dashboardData.data) {
+                    if (sectionName === 'local-games') {
+                        this.renderLocalGames(this.dashboardData.data.localGameStats);
+                    } else if (sectionName === 'ai-games') {
+                        this.renderAIGames(this.dashboardData.data.aiGameStats);
+                    } else if (sectionName === 'multiplayer') {
+                        this.renderMultiplayer(this.dashboardData.data.multiplayerStats);
+                    } else if (sectionName === 'tournaments') {
+                        this.renderTournaments(this.dashboardData.data.tournamentStats);
+                    }
+                }
             }
 
             renderDashboard() {
@@ -822,6 +1025,9 @@
                 
                 // Render AI games section
                 this.renderAIGames(data.aiGameStats);
+                
+                // Render local games section
+                this.renderLocalGames(data.localGameStats);
                 
                 // Render multiplayer section
                 this.renderMultiplayer(data.multiplayerStats);
@@ -870,38 +1076,97 @@
             renderAchievements(achievements) {
                 const container = document.getElementById('achievements-grid');
                 if (!achievements || achievements.length === 0) {
-                    container.innerHTML = '<div class="loading">No achievements unlocked yet</div>';
+                    container.innerHTML = '<div class="loading">Loading achievements...</div>';
                     return;
                 }
 
-                container.innerHTML = achievements.map(achievement => `
-                    <div class="achievement-item">
-                        <div class="achievement-icon">${achievement.icon}</div>
-                        <div class="achievement-name">${achievement.name}</div>
-                        <div class="achievement-description">${achievement.description}</div>
-                    </div>
-                `).join('');
+                // Group achievements by category
+                const categories = {
+                    milestone: { name: '🏆 Milestones', achievements: [] },
+                    game_type: { name: '🎮 Game Types', achievements: [] },
+                    performance: { name: '📊 Performance', achievements: [] },
+                    variety: { name: '🎮 Variety', achievements: [] },
+                    activity: { name: '🏃‍♂️ Activity', achievements: [] },
+                    special: { name: '✨ Special', achievements: [] }
+                };
+
+                achievements.forEach(achievement => {
+                    if (categories[achievement.category]) {
+                        categories[achievement.category].achievements.push(achievement);
+                    }
+                });
+
+                container.innerHTML = Object.values(categories).map(category => {
+                    if (category.achievements.length === 0) return '';
+                    
+                    return `
+                        <div class="mb-8">
+                            <h4 class="text-xl font-bold text-white mb-4 border-b border-gray-600 pb-2">${category.name}</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                ${category.achievements.map(achievement => `
+                                    <div class="achievement-item ${achievement.unlocked ? 'unlocked' : ''}">
+                                        <div class="achievement-icon">${achievement.icon}</div>
+                                        <div class="achievement-name">${achievement.name} ${achievement.unlocked ? '✓' : ''}</div>
+                                        <div class="achievement-description">${achievement.description}</div>
+                                        <div class="achievement-requirement">Requirement: ${achievement.requirement}</div>
+                                        ${!achievement.unlocked ? `
+                                            <div class="progress-bar">
+                                                <div class="progress-fill" style="width: ${Math.round(achievement.progress)}%"></div>
+                                            </div>
+                                            <div class="progress-text">${Math.round(achievement.progress)}% complete</div>
+                                        ` : `
+                                            <div class="unlocked-text">UNLOCKED!</div>
+                                        `}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
             }
 
             renderAIGames(stats) {
-                document.getElementById('ai-games-won').textContent = stats.wins;
-                document.getElementById('ai-win-rate').textContent = `${stats.winRate}%`;
-                document.getElementById('ai-best-score').textContent = stats.bestScore;
-                document.getElementById('ai-avg-score').textContent = stats.averageScore;
+                if (!stats) return;
+                document.getElementById('ai-games-won').textContent = stats.wins ?? '0';
+                document.getElementById('ai-win-rate').textContent = `${stats.winRate ?? 0}%`;
+                document.getElementById('ai-best-score').textContent = stats.bestScore ?? '0';
+                document.getElementById('ai-avg-score').textContent = stats.averageScore ?? '0';
+            }
+
+            renderLocalGames(stats) {
+                 try {
+                    console.log('Rendering Local Games stats:', stats);
+                    // Fallback to zeros if stats missing
+                    const safe = stats || { wins: 0, winRate: 0, bestScore: 0, averageScore: 0 };
+
+                    const wonEl = document.getElementById('local-games-won');
+                    const rateEl = document.getElementById('local-win-rate');
+                    const bestEl = document.getElementById('local-best-score');
+                    const avgEl = document.getElementById('local-avg-score');
+
+                    if (wonEl) wonEl.textContent = (safe.wins ?? 0).toString();
+                    if (rateEl) rateEl.textContent = `${safe.winRate ?? 0}%`;
+                    if (bestEl) bestEl.textContent = (safe.bestScore ?? 0).toString();
+                    if (avgEl) avgEl.textContent = (safe.averageScore ?? 0).toString();
+                } catch (e) {
+                    console.error('Error rendering Local Games stats:', e);
+                }
             }
 
             renderMultiplayer(stats) {
-                document.getElementById('mp-wins').textContent = stats.wins;
-                document.getElementById('mp-win-rate').textContent = `${stats.winRate}%`;
+                if (!stats) return;
+                document.getElementById('mp-wins').textContent = stats.wins ?? '0';
+                document.getElementById('mp-win-rate').textContent = `${stats.winRate ?? 0}%`;
                 document.getElementById('best-opponent').textContent = 'Player123';
-                document.getElementById('mp-total').textContent = stats.totalGames;
+                document.getElementById('mp-total').textContent = stats.totalGames ?? '0';
             }
 
             renderTournaments(stats) {
-                document.getElementById('tournaments-won').textContent = stats.tournamentsWon;
-                document.getElementById('tournament-win-rate').textContent = `${stats.winRate}%`;
+                if (!stats) return;
+                document.getElementById('tournaments-won').textContent = (stats.wins ?? 0).toString();
+                document.getElementById('tournament-win-rate').textContent = `${stats.winRate ?? 0}%`;
                 document.getElementById('best-finish').textContent = '1st Place';
-                document.getElementById('tournament-matches').textContent = stats.totalMatches;
+                document.getElementById('tournament-matches').textContent = (stats.totalGames ?? 0).toString();
             }
 
 

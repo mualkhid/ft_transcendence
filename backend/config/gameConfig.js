@@ -163,7 +163,7 @@ export function isWithinCanvasBounds(x, y) {
 
 // Helper function to get paddle bounds for collision detection
 export function getPaddleBounds(paddleY, isPlayer = true) {
-    const x = isPlayer ? GAME_CONFIG.PADDLE.WIDTH : GAME_CONFIG.CANVAS.WIDTH - GAME_CONFIG.PADDLE.WIDTH * 2;
+    const x = isPlayer ? 0 : GAME_CONFIG.CANVAS.WIDTH - GAME_CONFIG.PADDLE.WIDTH;
     
     return {
         left: x,

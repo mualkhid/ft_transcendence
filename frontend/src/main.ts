@@ -1,4 +1,4 @@
-// Declare process for TypeScript without installing @types/node
+ // Declare process for TypeScript without installing @types/node
 const config = {
     hostIp: '__HOST_IP__'
   };
@@ -22,18 +22,20 @@ class SimpleAuth {
         ballY: 300,
         ballSpeedX: 5,
         ballSpeedY: 3,
-        ballRadius: 8,
+        ballRadius: 10,
         playerPaddleY: 250,
         aiPaddleY: 250,
         playerScore: 0,
         aiScore: 0,
-        currentDifficulty: 'easy'
+        currentDifficulty: 'easy',
+        gameStarted: false
     };
+    
     
     private aiGameConfig = {
         CANVAS: { WIDTH: 800, HEIGHT: 600 },
         PADDLE: { WIDTH: 15, HEIGHT: 100, SPEED: 5 },
-        BALL: { RADIUS: 8, SPEED: 5 },
+        BALL: { RADIUS: 10, SPEED: 5 },
         WINNING_SCORE: 5
     };
     
@@ -43,37 +45,16 @@ class SimpleAuth {
     private aiGameAvailableDifficulties: any = {};
 
     constructor() {
-        console.log('SimpleAuth constructor called');
         this.init();
     }
 
     private init(): void {
-        console.log('=== SimpleAuth initializing... ===');
-        console.log('Init method called at:', new Date().toISOString());
-        console.log('Document ready state:', document.readyState);
-        console.log('Current cookies at init:', document.cookie);
-        
-        console.log('About to call checkAuthStatus...');
         this.checkAuthStatus();
-        console.log('checkAuthStatus completed');
-        
-        console.log('About to call setupEventListeners...');
         this.setupEventListeners();
-        console.log('setupEventListeners completed');
-        
-        console.log('About to call setupMainAppNavigation...');
         this.setupMainAppNavigation();
-        console.log('setupMainAppNavigation completed');
-        
-        console.log('About to call setupGameOptions...');
         this.setupGameOptions();
-        console.log('setupGameOptions completed');
-        
-        console.log('About to call setupDashboardNavigation...');
         this.setupDashboardNavigation();
-        console.log('setupDashboardNavigation completed');
-        
-        console.log('=== SimpleAuth initialization complete ===');
+        this.initializeColorblindMode();
     }
 
     private setupEventListeners(): void {
@@ -82,10 +63,8 @@ class SimpleAuth {
         if (registrationForm) {
             registrationForm.addEventListener('submit', (e) => {
                 e.preventDefault();
-                console.log('Registration form submitted, calling handleRegistration');
                 this.handleRegistration();
             });
-            console.log('Registration form listener attached');
         } else {
             console.error('Registration form not found!');
         }
@@ -96,34 +75,18 @@ class SimpleAuth {
                 e.preventDefault();
                 this.handleLogin();
             });
-            console.log('Login form listener attached');
         }
 
         // Page navigation
         const showLoginBtn = document.getElementById('showLoginPage');
-        console.log('Show login button element:', showLoginBtn);
-        console.log('Show login button HTML:', showLoginBtn?.outerHTML);
         
         if (showLoginBtn) {
             showLoginBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                console.log('Login button clicked!');
                 this.showPage('loginPage');
             });
-            console.log('Show login button listener attached');
-            
-            // Test if the button is clickable
-            console.log('Button clickable test:', showLoginBtn.onclick);
         } else {
             console.error('Show login button not found!');
-            // Try to find it again with different selector
-            const allButtons = document.querySelectorAll('button');
-            console.log('All buttons found:', allButtons.length);
-            allButtons.forEach((btn, index) => {
-                if (btn.textContent?.includes('Login here')) {
-                    console.log(`Found login button at index ${index}:`, btn);
-                }
-            });
         }
 
         const showRegBtn = document.getElementById('showRegistrationPage');
@@ -132,7 +95,6 @@ class SimpleAuth {
                 e.preventDefault();
                 this.showPage('registrationPage');
             });
-            console.log('Show registration button listener attached');
         }
 
         // Password validation
@@ -141,7 +103,6 @@ class SimpleAuth {
             passwordInput.addEventListener('input', (e) => {
                 this.updatePasswordRequirements((e.target as HTMLInputElement).value);
             });
-            console.log('Password input listener attached');
         }
 
         // Main app navigation
@@ -184,13 +145,6 @@ class SimpleAuth {
             });
         }
 
-        // Test authentication button (for debugging)
-        const testAuthBtn = document.getElementById('testAuthBtn');
-        if (testAuthBtn) {
-            testAuthBtn.addEventListener('click', () => {
-                this.testAuthentication();
-            });
-        }
 
         // Friends functionality
         this.setupFriendsEventListeners();
@@ -267,31 +221,6 @@ class SimpleAuth {
         }
     }
 
-    private async testAuthentication(): Promise<void> {
-        try {
-            console.log('Testing authentication...');
-            const response = await fetch(`https://${HOST_IP}/api/profile/test-auth`, {
-                method: 'GET',
-                credentials: 'include'
-            });
-
-            console.log('Test auth response status:', response.status);
-            console.log('Test auth response headers:', response.headers);
-
-            if (response.ok) {
-                const data = await response.json();
-                console.log('Test auth success:', data);
-                alert('Authentication is working! Check console for details.');
-            } else {
-                const errorData = await response.json();
-                console.error('Test auth failed:', errorData);
-                alert(`Authentication failed: ${errorData.error}`);
-            }
-        } catch (error) {
-            console.error('Test auth error:', error);
-            alert('Network error testing authentication');
-        }
-    }
 
     private async handleUsernameChange(): Promise<void> {
         const newUsernameInput = document.getElementById('newUsername') as HTMLInputElement;
@@ -307,7 +236,6 @@ class SimpleAuth {
             return;
         }
 
-        // Debug: Check if we have a token in localStorage
         console.log('Current user:', this.currentUser);
         console.log('localStorage user:', localStorage.getItem('user'));
         console.log('Current cookies:', document.cookie);
@@ -418,7 +346,6 @@ class SimpleAuth {
             return;
         }
 
-        // Debug: Check authentication state
         console.log('Password change - Current user:', this.currentUser);
         console.log('Password change - Current cookies:', document.cookie);
 
@@ -1430,6 +1357,14 @@ class SimpleAuth {
                 setTimeout(() => {
                     this.loadUserProfile();
                 }, 100);
+            }
+            
+            // If showing home section, update the dashboard
+            if (sectionId === 'homeSection' && this.currentUser) {
+                console.log('Home section shown, updating dashboard...');
+                this.updateHomeDashboard();
+                // Also load detailed dashboard data for individual game type stats
+                this.loadDashboardData();
             } else if (sectionId === 'dashboardSection') {
                 console.log('Dashboard section shown, loading dashboard data...');
                 // Load dashboard data even if user is not logged in (for demo purposes)
@@ -1515,8 +1450,6 @@ class SimpleAuth {
 
         // Add clear cache button listener - removed
 
-        // Add test auth button listener - removed
-        // Add test game stats button listener - removed
 
         if (navLogout) {
             navLogout.addEventListener('click', (e) => {
@@ -1524,6 +1457,9 @@ class SimpleAuth {
                 this.handleLogout();
             });
         }
+
+        // Colorblind mode toggle - try multiple times to ensure it's found
+        this.setupColorblindToggle();
 
         // Set up periodic refresh of friends list for real-time online status
         this.setupFriendsRefresh();
@@ -1580,7 +1516,7 @@ class SimpleAuth {
     private async loadDashboardData(): Promise<void> {
         try {
             console.log('Loading dashboard data...');
-            const response = await fetch(`https://${HOST_IP}/api/dashboard`, {
+            const response = await fetch(`https://${HOST_IP}/api/dashboard/user`, {
                 method: 'GET',
                 credentials: 'include',
                 headers: {
@@ -1590,9 +1526,10 @@ class SimpleAuth {
 
             if (response.ok) {
                 const data = await response.json();
+                console.log('Dashboard API response:', data);
                 this.renderDashboardData(data);
             } else {
-                console.error('Failed to load dashboard data');
+                console.error('Failed to load dashboard data:', response.status, response.statusText);
             }
         } catch (error) {
             console.error('Error loading dashboard data:', error);
@@ -1626,16 +1563,27 @@ class SimpleAuth {
         if (aiBestScore) aiBestScore.textContent = dashboardData.aiGameStats.bestScore;
         if (aiAvgScore) aiAvgScore.textContent = dashboardData.aiGameStats.averageScore;
 
+        // Update Local games stats (SPA dashboard)
+        const localGamesWon = document.getElementById('local-games-won');
+        const localWinRate = document.getElementById('local-win-rate');
+        const localBestScore = document.getElementById('local-best-score');
+        const localAvgScore = document.getElementById('local-avg-score');
+
+        if (localGamesWon) localGamesWon.textContent = (dashboardData.localGameStats?.wins ?? 0).toString();
+        if (localWinRate) localWinRate.textContent = `${dashboardData.localGameStats?.winRate ?? 0}%`;
+        if (localBestScore) localBestScore.textContent = (dashboardData.localGameStats?.bestScore ?? 0).toString();
+        if (localAvgScore) localAvgScore.textContent = (dashboardData.localGameStats?.averageScore ?? 0).toString();
+
         // Update multiplayer stats
         const mpWins = document.getElementById('mp-wins');
         const mpWinRate = document.getElementById('mp-win-rate');
         const bestOpponent = document.getElementById('best-opponent');
         const mpTotal = document.getElementById('mp-total');
         
-        if (mpWins) mpWins.textContent = dashboardData.multiplayerStats.wins;
-        if (mpWinRate) mpWinRate.textContent = `${dashboardData.multiplayerStats.winRate}%`;
-        if (bestOpponent) bestOpponent.textContent = 'Player123';
-        if (mpTotal) mpTotal.textContent = dashboardData.multiplayerStats.totalGames;
+        if (mpWins) mpWins.textContent = (dashboardData.multiplayerStats?.wins ?? 0).toString();
+        if (mpWinRate) mpWinRate.textContent = `${dashboardData.multiplayerStats?.winRate ?? 0}%`;
+        if (bestOpponent) bestOpponent.textContent = '—';
+        if (mpTotal) mpTotal.textContent = (dashboardData.multiplayerStats?.totalGames ?? 0).toString();
 
         // Update tournament stats
         const tournamentsWon = document.getElementById('tournaments-won');
@@ -1643,10 +1591,13 @@ class SimpleAuth {
         const bestFinish = document.getElementById('best-finish');
         const tournamentMatches = document.getElementById('tournament-matches');
         
-        if (tournamentsWon) tournamentsWon.textContent = dashboardData.tournamentStats.tournamentsWon;
-        if (tournamentWinRate) tournamentWinRate.textContent = `${dashboardData.tournamentStats.winRate}%`;
-        if (bestFinish) bestFinish.textContent = '1st Place';
-        if (tournamentMatches) tournamentMatches.textContent = dashboardData.tournamentStats.totalMatches;
+        if (tournamentsWon) tournamentsWon.textContent = (dashboardData.tournamentStats?.wins ?? 0).toString();
+        if (tournamentWinRate) tournamentWinRate.textContent = `${dashboardData.tournamentStats?.winRate ?? 0}%`;
+        if (bestFinish) bestFinish.textContent = '—';
+        if (tournamentMatches) tournamentMatches.textContent = (dashboardData.tournamentStats?.totalGames ?? 0).toString();
+
+        // Update home page individual game type stats
+        this.updateHomeGameTypeStats(dashboardData);
 
         // Render recent games
         this.renderRecentGames(dashboardData.recentGames);
@@ -1654,6 +1605,59 @@ class SimpleAuth {
         // Render achievements
         this.renderAchievements(dashboardData.achievements);
     }
+
+    private updateHomeGameTypeStats(dashboardData: any): void {
+        console.log('=== UPDATE HOME GAME TYPE STATS ===');
+        console.log('Dashboard data received:', dashboardData);
+        console.log('AI Game Stats:', dashboardData.aiGameStats);
+        console.log('Local Game Stats:', dashboardData.localGameStats);
+        console.log('Multiplayer Stats:', dashboardData.multiplayerStats);
+        console.log('Tournament Stats:', dashboardData.tournamentStats);
+        
+        // Update AI Games stats on home page
+        const homeAIGames = document.getElementById('homeAIGames');
+        const homeAIWins = document.getElementById('homeAIWins');
+        const homeAIWinRate = document.getElementById('homeAIWinRate');
+
+        if (homeAIGames) homeAIGames.textContent = dashboardData.aiGameStats?.totalGames || '0';
+        if (homeAIWins) homeAIWins.textContent = dashboardData.aiGameStats?.wins || '0';
+        if (homeAIWinRate) homeAIWinRate.textContent = `${dashboardData.aiGameStats?.winRate || 0}%`;
+
+        // Update Local Games stats on home page
+        const homeLocalGames = document.getElementById('homeLocalGames');
+        const homeLocalWins = document.getElementById('homeLocalWins');
+        const homeLocalWinRate = document.getElementById('homeLocalWinRate');
+
+        if (homeLocalGames) homeLocalGames.textContent = dashboardData.localGameStats?.totalGames || '0';
+        if (homeLocalWins) homeLocalWins.textContent = dashboardData.localGameStats?.wins || '0';
+        if (homeLocalWinRate) homeLocalWinRate.textContent = `${dashboardData.localGameStats?.winRate || 0}%`;
+
+        // Update Multiplayer stats on home page
+        const homeMPGames = document.getElementById('homeMPGames');
+        const homeMPWins = document.getElementById('homeMPWins');
+        const homeMPWinRate = document.getElementById('homeMPWinRate');
+
+        if (homeMPGames) homeMPGames.textContent = dashboardData.multiplayerStats?.totalGames || '0';
+        if (homeMPWins) homeMPWins.textContent = dashboardData.multiplayerStats?.wins || '0';
+        if (homeMPWinRate) homeMPWinRate.textContent = `${dashboardData.multiplayerStats?.winRate || 0}%`;
+
+        // Update Tournament stats on home page
+        const homeTournamentGames = document.getElementById('homeTournamentGames');
+        const homeTournamentWins = document.getElementById('homeTournamentWins');
+        const homeTournamentWinRate = document.getElementById('homeTournamentWinRate');
+
+        if (homeTournamentGames) homeTournamentGames.textContent = dashboardData.tournamentStats?.totalGames || '0';
+        if (homeTournamentWins) homeTournamentWins.textContent = dashboardData.tournamentStats?.wins || '0';
+        if (homeTournamentWinRate) homeTournamentWinRate.textContent = `${dashboardData.tournamentStats?.winRate || 0}%`;
+
+        console.log('Updated home page game type stats:', {
+            aiGames: dashboardData.aiGameStats,
+            localGames: dashboardData.localGameStats,
+            multiplayer: dashboardData.multiplayerStats,
+            tournament: dashboardData.tournamentStats
+        });
+    }
+
 
     private renderRecentGames(games: any[]): void {
         const container = document.getElementById('recent-games-list');
@@ -1671,41 +1675,90 @@ class SimpleAuth {
                         <span class="text-white font-bold">${game.result === 'WIN' ? 'W' : 'L'}</span>
                     </div>
                     <div>
-                        <div class="text-white font-semibold">${game.opponent || 'AI'}</div>
-                        <div class="text-gray-400 text-sm">${new Date(game.date).toLocaleDateString()}</div>
+                        <div class="text-white font-semibold">${game.type || 'Game'}</div>
+                        <div class="text-gray-300 text-sm">vs ${game.opponent || 'AI'}</div>
                     </div>
                 </div>
                 <div class="text-right">
                     <div class="text-white font-bold">${game.score}</div>
-                    <div class="text-gray-400 text-sm">${game.duration}</div>
+                    <div class="text-gray-400 text-sm">${game.date ? new Date(game.date).toLocaleDateString() : 'Unknown'}</div>
+                    <div class="text-gray-500 text-xs">${game.duration || 'N/A'}</div>
                 </div>
             </div>
         `).join('');
     }
 
     private renderAchievements(achievements: any[]): void {
-        const container = document.getElementById('achievements-list');
+        const container = document.getElementById('achievements-grid');
         if (!container) return;
 
         if (!achievements || achievements.length === 0) {
-            container.innerHTML = '<div class="text-center text-white">No achievements yet</div>';
+            container.innerHTML = '<div class="text-center text-white">Loading achievements...</div>';
             return;
         }
 
-        container.innerHTML = achievements.map(achievement => `
-            <div class="flex items-center space-x-4 p-4 bg-gray-700/50 rounded-lg">
-                <div class="w-12 h-12 rounded-full flex items-center justify-center ${achievement.unlocked ? 'bg-yellow-500' : 'bg-gray-600'}">
-                    <span class="text-white text-xl">${achievement.icon}</span>
+        // Define achievement interface
+        interface Achievement {
+            name: string;
+            description: string;
+            icon: string;
+            category: string;
+            requirement: string;
+            unlocked: boolean;
+            progress: number;
+        }
+
+        // Group achievements by category
+        const categories: { [key: string]: { name: string; achievements: Achievement[] } } = {
+            milestone: { name: '🏆 Milestones', achievements: [] },
+            game_type: { name: '🎮 Game Types', achievements: [] },
+            performance: { name: '📊 Performance', achievements: [] },
+            variety: { name: '🎮 Variety', achievements: [] },
+            activity: { name: '🏃‍♂️ Activity', achievements: [] },
+            special: { name: '✨ Special', achievements: [] }
+        };
+
+        achievements.forEach((achievement: Achievement) => {
+            if (categories[achievement.category]) {
+                categories[achievement.category].achievements.push(achievement);
+            }
+        });
+
+        container.innerHTML = Object.values(categories).map(category => {
+            if (category.achievements.length === 0) return '';
+            
+            return `
+                <div class="mb-8">
+                    <h4 class="text-xl font-bold text-white mb-4 border-b border-gray-600 pb-2">${category.name}</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        ${category.achievements.map(achievement => `
+                            <div class="flex items-center space-x-4 p-4 bg-gray-700/50 rounded-lg border ${achievement.unlocked ? 'border-yellow-500/50 bg-yellow-500/10' : 'border-gray-600'} transition-all duration-300 hover:bg-gray-600/50">
+                                <div class="w-12 h-12 rounded-full flex items-center justify-center ${achievement.unlocked ? 'bg-yellow-500 shadow-lg shadow-yellow-500/25' : 'bg-gray-600'} transition-all duration-300">
+                                    <span class="text-white text-xl">${achievement.icon}</span>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-white font-semibold flex items-center gap-2">
+                                        ${achievement.name}
+                                        ${achievement.unlocked ? '<span class="text-yellow-400 text-sm">✓</span>' : ''}
+                                    </div>
+                                    <div class="text-gray-400 text-sm mb-2">${achievement.description}</div>
+                                    <div class="text-xs text-gray-500 mb-2">Requirement: ${achievement.requirement}</div>
+                                    ${!achievement.unlocked ? `
+                                        <div class="w-full bg-gray-600 rounded-full h-2">
+                                            <div class="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500" 
+                                                 style="width: ${Math.round(achievement.progress)}%"></div>
+                                        </div>
+                                        <div class="text-xs text-gray-400 mt-1">${Math.round(achievement.progress)}% complete</div>
+                                    ` : `
+                                        <div class="text-xs text-yellow-400 font-semibold">UNLOCKED!</div>
+                                    `}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
                 </div>
-                <div class="flex-1">
-                    <div class="text-white font-semibold">${achievement.name}</div>
-                    <div class="text-gray-400 text-sm">${achievement.description}</div>
-                </div>
-                <div class="text-gray-400 text-sm">
-                    ${achievement.unlocked ? 'Unlocked' : 'Locked'}
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     private setupGameOptions(): void {
@@ -1762,6 +1815,10 @@ class SimpleAuth {
             // AI games don't require authentication
             console.log('AI game selected, navigating to AI pong section...');
             this.showSection('aiPongSection');
+            setTimeout(() => {
+                this.initializeAIGameCanvas();
+                this.setupAIGameEventListeners();
+            }, 100); // Small delay to ensure DOM is ready
             return;
         } else if (gameType === 'tournament') {
             // Redirect to tournament section
@@ -1897,6 +1954,7 @@ class SimpleAuth {
             scorePlayer1: 0,
             scorePlayer2: 0,
             maxScore: 5,
+            gameOver: false,
             player1Keys: { up: false, down: false },
             player2Keys: { up: false, down: false }
         };
@@ -1949,15 +2007,19 @@ class SimpleAuth {
         switch (event.key.toLowerCase()) {
             case 'w':
                 this.gameState.player1Keys.up = true;
+                event.preventDefault();
                 break;
             case 's':
                 this.gameState.player1Keys.down = true;
+                event.preventDefault();
                 break;
             case 'arrowup':
                 this.gameState.player2Keys.up = true;
+                event.preventDefault();
                 break;
             case 'arrowdown':
                 this.gameState.player2Keys.down = true;
+                event.preventDefault();
                 break;
         }
     }
@@ -1968,15 +2030,19 @@ class SimpleAuth {
         switch (event.key.toLowerCase()) {
             case 'w':
                 this.gameState.player1Keys.up = false;
+                event.preventDefault();
                 break;
             case 's':
                 this.gameState.player1Keys.down = false;
+                event.preventDefault();
                 break;
             case 'arrowup':
                 this.gameState.player2Keys.up = false;
+                event.preventDefault();
                 break;
             case 'arrowdown':
                 this.gameState.player2Keys.down = false;
+                event.preventDefault();
                 break;
         }
     }
@@ -2029,12 +2095,9 @@ class SimpleAuth {
     };
 
     private startLocalGame(): void {
-        console.log('=== START LOCAL GAME CALLED ===');
-        console.log('Starting local game...');
         
         // Reset game state completely
         this.resetGameState();
-        console.log('Game state reset for local game:', this.gameState);
 
         // Initialize game state
         this.gameState = {
@@ -2090,7 +2153,6 @@ class SimpleAuth {
             this.updateGame();
         }, 16); // ~60 FPS
 
-        console.log('Local game started successfully');
     }
 
     private updateGame(): void {
@@ -2113,7 +2175,6 @@ class SimpleAuth {
         if (this.gameState.ballPositionX - this.gameState.radius <= 0) {
             console.log('Player 2 scored! Previous score:', this.gameState.scorePlayer2);
             this.gameState.scorePlayer2++;
-            console.log('Player 2 new score:', this.gameState.scorePlayer2);
             this.resetBall();
             this.updateScoreDisplay();
             
@@ -2127,7 +2188,6 @@ class SimpleAuth {
         if (this.gameState.ballPositionX + this.gameState.radius >= this.gameState.canvasWidth) {
             console.log('Player 1 scored! Previous score:', this.gameState.scorePlayer1);
             this.gameState.scorePlayer1++;
-            console.log('Player 1 new score:', this.gameState.scorePlayer1);
             this.resetBall();
             this.updateScoreDisplay();
             
@@ -2206,13 +2266,6 @@ class SimpleAuth {
         const player1Score = document.getElementById('player1Score');
         const player2Score = document.getElementById('player2Score');
         
-        console.log('Updating score display:', {
-            gameStateScore1: this.gameState?.scorePlayer1,
-            gameStateScore2: this.gameState?.scorePlayer2,
-            player1Element: !!player1Score,
-            player2Element: !!player2Score
-        });
-        
         if (player1Score) player1Score.textContent = this.gameState.scorePlayer1.toString();
         if (player2Score) player2Score.textContent = this.gameState.scorePlayer2.toString();
     }
@@ -2256,6 +2309,14 @@ class SimpleAuth {
                     // Also update remote game if active
                     if (this.onlineGameState.isConnected) {
                         this.drawRemoteGame();
+                    }
+                    
+                    // Also update AI game if active
+                    if (this.aiGameAnimationId) {
+                        this.drawAIGame();
+                    } else {
+                        // If AI game is not running, just update background
+                        this.drawAIGameBackground();
                     }
                     
                     // Add visual feedback
@@ -2324,13 +2385,16 @@ class SimpleAuth {
     }
 
     private async endGame(winner: number): Promise<void> {
-        console.log('=== GAME ENDED ===');
-        console.log('Winner:', winner);
-        console.log('Current user:', this.currentUser);
         
         if (this.gameLoopInterval) {
             clearInterval(this.gameLoopInterval);
             this.gameLoopInterval = null;
+        }
+
+        // Update stats immediately when game ends
+        if (this.currentUser) {
+            console.log('Updating stats immediately for game end');
+            await this.updateUserStats(winner === 1, 'LOCAL', this.gameState.scorePlayer1, this.gameState.scorePlayer2);
         }
 
         // Show the game over modal
@@ -2395,8 +2459,7 @@ class SimpleAuth {
                 newPlayAgainBtn.setAttribute('data-handler-attached', 'true');
                 
                 newPlayAgainBtn.onclick = async () => {
-                    console.log('Play Again clicked, updating stats...');
-                    await this.updateUserStats(winner === 1);
+                    console.log('Play Again clicked');
                     gameOverModal.classList.add('hidden');
                     this.startNewGame();
                 };
@@ -2411,8 +2474,7 @@ class SimpleAuth {
                 newGoHomeBtn.setAttribute('data-handler-attached', 'true');
                 
                 newGoHomeBtn.onclick = async () => {
-                    console.log('Go to Home clicked, updating stats...');
-                    await this.updateUserStats(winner === 1);
+                    console.log('Go to Home clicked');
                     gameOverModal.classList.add('hidden');
                     this.goHome();
                 };
@@ -2518,25 +2580,74 @@ class SimpleAuth {
     }
 
     private updateHomeDashboard(): void {
-        if (!this.currentUser) return;
+        if (!this.currentUser) {
+            console.log('No current user found for updateHomeDashboard');
+            return;
+        }
 
-        const homeGamesPlayed = document.getElementById('homeGamesPlayed');
-        const homeWins = document.getElementById('homeWins');
-        const homeLosses = document.getElementById('homeLosses');
+        console.log('Updating home dashboard with user stats:', {
+            gamesPlayed: this.currentUser.gamesPlayed,
+            wins: this.currentUser.wins,
+            losses: this.currentUser.losses
+        });
 
-        if (homeGamesPlayed) homeGamesPlayed.textContent = this.currentUser.gamesPlayed || '0';
-        if (homeWins) homeWins.textContent = this.currentUser.wins || '0';
-        if (homeLosses) homeLosses.textContent = this.currentUser.losses || '0';
+        // Update main stats
+        const homeTotalGames = document.getElementById('homeTotalGames');
+        const homeTotalWins = document.getElementById('homeTotalWins');
+        const homeWinRate = document.getElementById('homeWinRate');
+
+        if (homeTotalGames) {
+            homeTotalGames.textContent = this.currentUser.gamesPlayed || '0';
+            console.log('Updated homeTotalGames to:', this.currentUser.gamesPlayed || '0');
+        } else {
+            console.log('homeTotalGames element not found');
+        }
+        
+        if (homeTotalWins) {
+            homeTotalWins.textContent = this.currentUser.wins || '0';
+            console.log('Updated homeTotalWins to:', this.currentUser.wins || '0');
+        } else {
+            console.log('homeTotalWins element not found');
+        }
+        
+        // Calculate win rate
+        const gamesPlayed = this.currentUser.gamesPlayed || 0;
+        const wins = this.currentUser.wins || 0;
+        const winRate = gamesPlayed > 0 ? Math.round((wins / gamesPlayed) * 100) : 0;
+        if (homeWinRate) {
+            homeWinRate.textContent = `${winRate}%`;
+            console.log('Updated homeWinRate to:', `${winRate}%`);
+        } else {
+            console.log('homeWinRate element not found');
+        }
+
+        // Update profile stats (if they exist)
+        const profileGames = document.getElementById('profileGames');
+        const profileWins = document.getElementById('profileWins');
+        const profileLosses = document.getElementById('profileLosses');
+
+        if (profileGames) {
+            profileGames.textContent = this.currentUser.gamesPlayed || '0';
+            console.log('Updated profileGames to:', this.currentUser.gamesPlayed || '0');
+        }
+        if (profileWins) {
+            profileWins.textContent = this.currentUser.wins || '0';
+            console.log('Updated profileWins to:', this.currentUser.wins || '0');
+        }
+        if (profileLosses) {
+            profileLosses.textContent = this.currentUser.losses || '0';
+            console.log('Updated profileLosses to:', this.currentUser.losses || '0');
+        }
     }
 
-    private async updateUserStats(userWon: boolean): Promise<void> {
+    private async updateUserStats(userWon: boolean, gameType: string = 'LOCAL', player1Score?: number, player2Score?: number): Promise<void> {
         // Update stats for all games including tournament games
         if (!this.currentUser) {
             console.log('No current user found, cannot update stats');
             return;
         }
 
-        console.log('Updating user stats, user won:', userWon);
+        console.log('Updating user stats, user won:', userWon, 'game type:', gameType, 'scores:', player1Score, player2Score);
         
         try {
             const response = await fetch(`https://${HOST_IP}/api/profile/update-stats`, {
@@ -2546,7 +2657,11 @@ class SimpleAuth {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    won: userWon
+                    userId: this.currentUser.id,
+                    won: userWon,
+                    gameType: gameType,
+                    player1Score: player1Score,
+                    player2Score: player2Score
                 })
             });
 
@@ -2557,6 +2672,8 @@ class SimpleAuth {
                 localStorage.setItem('user', JSON.stringify(data.user));
                 this.updateProfileDisplay();
                 this.updateHomeDashboard();
+                // Also refresh dashboard data if dashboard is currently shown
+                this.loadDashboardData();
             } else {
                 console.error('Failed to update stats:', response.status, response.statusText);
                 const errorText = await response.text();
@@ -2571,9 +2688,52 @@ class SimpleAuth {
         }
     }
 
-    private updateDebugInfo(): void {
-        // Removed - no longer needed
+    private async updateTournamentStats(userWon: boolean, player1Score: number, player2Score: number, opponentName: string): Promise<void> {
+        // Update stats specifically for tournament games with complete game data
+        if (!this.currentUser) {
+            console.log('No current user found, cannot update tournament stats');
+            return;
+        }
+
+        console.log('Updating tournament stats, user won:', userWon);
+        
+        try {
+            const response = await fetch(`https://${HOST_IP}/api/profile/update-stats`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    userId: this.currentUser.id,
+                    won: userWon,
+                    gameType: 'TOURNAMENT',
+                    player1Score: player1Score,
+                    player2Score: player2Score,
+                    opponentName: opponentName
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Tournament stats updated successfully:', data);
+                this.currentUser = data.user;
+                localStorage.setItem('user', JSON.stringify(data.user));
+                this.updateProfileDisplay();
+                this.updateHomeDashboard();
+                this.loadDashboardData();
+            } else {
+                console.error('Failed to update tournament stats:', response.status, response.statusText);
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
+                this.showStatus(`Failed to update tournament stats: ${response.status} ${response.statusText}`, 'error');
+            }
+        } catch (error) {
+            console.error('Error updating tournament stats:', error);
+            this.showStatus('Network error updating tournament stats', 'error');
+        }
     }
+
 
     private updateProfileDisplay(): void {
         if (!this.currentUser) {
@@ -2672,6 +2832,8 @@ class SimpleAuth {
                 
                 // Update display
                 this.updateProfileDisplay();
+                this.updateHomeDashboard();
+                this.loadDashboardData();
                 
                 console.log('✅ User data refreshed successfully');
             } else {
@@ -2770,6 +2932,7 @@ class SimpleAuth {
 
     private currentTournamentMatch: {player1: string, player2: string, winner?: string} | null = null;
     private originalEndGame: ((winner: number) => Promise<void>) | null = null;
+    private colorblindMode: boolean = false;
 
     private async recordTournamentResult(winner: string, loser: string): Promise<void> {
         console.log('=== RECORDING TOURNAMENT RESULT ===');
@@ -3129,8 +3292,6 @@ class SimpleAuth {
     }
 
     private initializeTournamentGame(match: {player1: string, player2: string, winner?: string}): void {
-        console.log('=== INITIALIZING TOURNAMENT GAME ===');
-        
         // Set up the game canvas and controls
         const canvas = document.getElementById('gameCanvas') as HTMLCanvasElement;
         const ctx = canvas.getContext('2d');
@@ -3140,16 +3301,6 @@ class SimpleAuth {
         const player1Name = document.getElementById('player1Name');
         const player2Name = document.getElementById('player2Name');
 
-        console.log('Tournament game elements found:', {
-            canvas: !!canvas,
-            ctx: !!ctx,
-            startButton: !!startButton,
-            gameOverlay: !!gameOverlay,
-            gameMessage: !!gameMessage,
-            player1Name: !!player1Name,
-            player2Name: !!player2Name
-        });
-
         if (!canvas || !ctx || !startButton || !gameOverlay || !gameMessage || !player1Name || !player2Name) {
             console.error('Tournament game elements not found');
             return;
@@ -3157,7 +3308,9 @@ class SimpleAuth {
 
         // Reset game state completely
         this.resetGameState();
-        console.log('Game state reset for tournament game:', this.gameState);
+
+        // Draw the initial game state with reset positions
+        this.drawGame();
 
         // Set tournament player names
         player1Name.textContent = match.player1;
@@ -3196,8 +3349,6 @@ class SimpleAuth {
             startButton.parentNode?.replaceChild(newStartButton, startButton);
             
             newStartButton.addEventListener('click', () => {
-                console.log('Tournament game start button clicked');
-                console.log('Game state before tournament start:', this.gameState);
                 this.startLocalGame();
             });
         }
@@ -3210,7 +3361,6 @@ class SimpleAuth {
             customizeBtn.parentNode?.replaceChild(newCustomizeBtn, customizeBtn);
             
             newCustomizeBtn.addEventListener('click', () => {
-                console.log('Tournament customize button clicked');
                 this.showCustomizationModal();
             });
         }
@@ -3225,9 +3375,15 @@ class SimpleAuth {
         
         // Override the normal game end to handle tournament progression
         this.endGame = async (winner: number) => {
-            // Don't call original endGame - we don't want the "Play Again/Go Home" UI
-            // Just handle tournament progression immediately
-            this.handleTournamentGameEnd(winner);
+            // Only handle tournament game end if we're in a tournament match
+            if (this.currentTournamentMatch) {
+                this.handleTournamentGameEnd(winner);
+            } else {
+                // If not in tournament, call the original endGame method
+                if (this.originalEndGame) {
+                    this.originalEndGame.call(this, winner);
+                }
+            }
         };
     }
 
@@ -3252,12 +3408,22 @@ class SimpleAuth {
         if (this.currentUser && (currentMatch.player1 === this.currentUser.username || currentMatch.player2 === this.currentUser.username)) {
             const userWon = winnerName === this.currentUser.username;
             console.log('Updating tournament stats for user:', this.currentUser.username, 'Won:', userWon);
+            await this.updateTournamentStats(userWon, this.gameState.scorePlayer1, this.gameState.scorePlayer2, currentMatch.player1 === this.currentUser.username ? currentMatch.player2 : currentMatch.player1);
         } else {
             console.log('Current user not participating in this tournament match, skipping stats update');
         }
 
         // Update bracket display
         this.displayBracket();
+
+        // Restore original endGame method
+        if (this.originalEndGame) {
+            this.endGame = this.originalEndGame;
+            this.originalEndGame = null;
+        }
+
+        // Clear tournament match reference
+        this.currentTournamentMatch = null;
 
         // Go directly to tournament section
         this.showSection('localTournamentSection');
@@ -4050,6 +4216,7 @@ class SimpleAuth {
                 scoreDisplay.style.display = 'block';
                 scoreDisplay.style.visibility = 'visible';
                 scoreDisplay.style.opacity = '1';
+                scoreDisplay.style.textAlign = 'center';
             }
             
             // Update the scores
@@ -4248,7 +4415,8 @@ class SimpleAuth {
         if (scoreDisplay) {
             console.log('🎮 Current display style:', scoreDisplay.style.display);
             scoreDisplay.style.display = 'block';
-            console.log('🎮 Set display to block');
+            scoreDisplay.style.textAlign = 'center';
+            console.log('🎮 Set display to block and text-align to center');
             console.log('🎮 Score display shown');
         } else {
             console.error('❌ Score display element not found');
@@ -4433,6 +4601,12 @@ class SimpleAuth {
         
         // Clear tournament match reference
         this.currentTournamentMatch = null;
+        
+        // Restore original endGame method if it was overridden
+        if (this.originalEndGame) {
+            this.endGame = this.originalEndGame;
+            this.originalEndGame = null;
+        }
         
         // Hide all game overlays and modals
         this.hideScoreDisplay();
@@ -4834,74 +5008,32 @@ class SimpleAuth {
         // Connect to AI game WebSocket
         this.connectAIGame();
         
-        // Setup AI game controls
-        this.setupAIGameControls();
         
         // Setup keyboard controls
         this.setupAIKeyboardControls();
     }
 
-    private setupAIGameControls(): void {
-        // Start button
-        const startBtn = document.getElementById('aiStartBtn');
-        if (startBtn) {
-            startBtn.addEventListener('click', () => this.startAIGame());
-        }
-
-        // Pause button
-        const pauseBtn = document.getElementById('aiPauseBtn');
-        if (pauseBtn) {
-            pauseBtn.addEventListener('click', () => this.pauseAIGame());
-        }
-
-        // Restart button
-        const restartBtn = document.getElementById('aiRestartBtn');
-        if (restartBtn) {
-            restartBtn.addEventListener('click', () => this.restartAIGame());
-        }
-
-        // Difficulty buttons
-        const difficultyBtns = document.querySelectorAll('.ai-difficulty-btn');
-        difficultyBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const difficulty = (e.target as HTMLElement).dataset.difficulty;
-                if (difficulty && this.aiGameWs && this.aiGameWs.readyState === WebSocket.OPEN) {
-                    this.aiGameWs.send(JSON.stringify({ type: 'change-difficulty', difficulty }));
-                }
-            });
-        });
-
-        // Game over modal buttons
-        const gameOverModal = document.getElementById('aiGameOverModal');
-        if (gameOverModal) {
-            const playAgainBtn = gameOverModal.querySelector('#aiPlayAgainBtn');
-            if (playAgainBtn) {
-                playAgainBtn.addEventListener('click', () => {
-                    if (gameOverModal) {
-                        gameOverModal.classList.add('hidden');
-                    }
-                    this.restartAIGame();
-                });
-            }
-        }
-    }
 
     private setupAIKeyboardControls(): void {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'w' || e.key === 'W') {
                 this.aiGameKeys.w = true;
+                e.preventDefault();
             }
             if (e.key === 's' || e.key === 'S') {
                 this.aiGameKeys.s = true;
+                e.preventDefault();
             }
         });
 
         document.addEventListener('keyup', (e) => {
             if (e.key === 'w' || e.key === 'W') {
                 this.aiGameKeys.w = false;
+                e.preventDefault();
             }
             if (e.key === 's' || e.key === 'S') {
                 this.aiGameKeys.s = false;
+                e.preventDefault();
             }
         });
     }
@@ -4912,8 +5044,6 @@ class SimpleAuth {
             
             this.aiGameWs.onopen = () => {
                 this.logAIGame('Connected to AI Pong Game!');
-                this.updateAIGameStatus('Connected');
-                this.updateAIGameButtons(true, false, false, false);
             };
 
             this.aiGameWs.onmessage = (event) => {
@@ -4927,8 +5057,6 @@ class SimpleAuth {
 
             this.aiGameWs.onclose = () => {
                 this.logAIGame('Disconnected from AI Pong Game');
-                this.updateAIGameStatus('Disconnected');
-                this.updateAIGameButtons(false, false, false, false);
             };
 
             this.aiGameWs.onerror = (error) => {
@@ -4958,6 +5086,7 @@ class SimpleAuth {
         if (this.aiGameWs && this.aiGameWs.readyState === WebSocket.OPEN) {
             this.aiGameWs.send(JSON.stringify({ type: 'restart-game' }));
             this.logAIGame('Restarting game...');
+            this.aiGameState.gameStarted = false;
         }
     }
 
@@ -4967,12 +5096,26 @@ class SimpleAuth {
         switch (data.type) {
             case 'connection-established':
                 this.logAIGame(data.message);
-                this.updateAIGameStatus('Ready');
-                this.updateAIGameButtons(true, false, false, false);
                 break;
                 
             case 'game-state':
-                this.aiGameState = { ...this.aiGameState, ...data.gameState };
+                // Only update non-ball related state before game starts
+                if (data.gameState) {
+                    // Update only non-ball properties before game starts
+                    if (data.gameState.currentDifficulty) {
+                        this.aiGameState.currentDifficulty = data.gameState.currentDifficulty;
+                    }
+                    if (data.gameState.playerScore !== undefined) {
+                        this.aiGameState.playerScore = data.gameState.playerScore;
+                    }
+                    if (data.gameState.aiScore !== undefined) {
+                        this.aiGameState.aiScore = data.gameState.aiScore;
+                    }
+                    // Only update ball and paddle positions if game is started
+                    if (this.aiGameState.gameStarted) {
+                        this.aiGameState = { ...this.aiGameState, ...data.gameState };
+                    }
+                }
                 if (data.availableDifficulties) {
                     this.aiGameAvailableDifficulties = data.availableDifficulties.reduce((acc: any, diff: any) => {
                         acc[diff.key] = diff;
@@ -4993,36 +5136,38 @@ class SimpleAuth {
                 
             case 'game-started':
                 this.logAIGame(data.message);
-                this.updateAIGameStatus('Game Running');
-                this.updateAIGameButtons(true, true, false, false);
+                this.aiGameState.gameStarted = true;
                 this.startAIGameLoop();
                 break;
                 
             case 'game-update':
-                this.aiGameState = { ...this.aiGameState, ...data.gameState };
-                this.updateAIScore();
+                // Only update game state if game is actually started
+                if (this.aiGameState.gameStarted) {
+                    this.aiGameState = { ...this.aiGameState, ...data.gameState };
+                    this.updateAIScore();
+                }
                 break;
                 
             case 'game-paused':
                 this.logAIGame(data.message);
-                this.updateAIGameStatus('Game Paused');
-                this.updateAIGameButtons(true, false, true, false);
                 this.stopAIGameLoop();
                 break;
                 
             case 'game-resumed':
                 this.logAIGame(data.message);
-                this.updateAIGameStatus('Game Running');
-                this.updateAIGamePauseButton('⏸️ Pause');
                 this.startAIGameLoop();
                 break;
                 
             case 'game-over':
                 this.logAIGame(data.message);
-                this.updateAIGameStatus('Game Over');
-                this.updateAIGameButtons(false, false, false, true);
                 this.stopAIGameLoop();
-                this.showAIGameOverModal(data.winner, data.finalScore);
+                this.aiGameState.gameStarted = false;
+                
+                // Update user stats based on game result
+                const userWon = data.winner === 'player';
+                this.updateUserStats(userWon, 'AI', data.playerScore, data.aiScore);
+                
+                this.showAIGameOverModal(data.winner, data.playerScore, data.aiScore);
                 break;
                 
             case 'error':
@@ -5068,80 +5213,418 @@ class SimpleAuth {
         }
     }
 
-    private drawAIGame(): void {
+    private initializeAIGameCanvas(): void {
+        console.log('=== INITIALIZING AI GAME CANVAS ===');
         const canvas = document.getElementById('aiGameCanvas') as HTMLCanvasElement;
-        if (!canvas) return;
+        const aiGameOverlay = document.getElementById('aiGameOverlay');
+        const aiStartButton = document.getElementById('aiStartButton');
+        const aiGameMessage = document.getElementById('aiGameMessage');
+        
+        console.log('AI game elements found:', {
+            canvas: !!canvas,
+            aiGameOverlay: !!aiGameOverlay,
+            aiStartButton: !!aiStartButton,
+            aiGameMessage: !!aiGameMessage
+        });
+        
+        if (!canvas) {
+            console.error('AI game canvas not found');
+            return;
+        }
 
         const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+        console.log('AI game canvas context found:', !!ctx);
+        
+        if (!ctx) {
+            console.error('AI game canvas context not found');
+            return;
+        }
 
-        // Clear canvas
-        ctx.fillStyle = '#0f0f23';
+        // Set up canvas dimensions (same as local game)
+        canvas.width = this.aiGameConfig.CANVAS.WIDTH;
+        canvas.height = this.aiGameConfig.CANVAS.HEIGHT;
+        console.log('AI game canvas dimensions set to:', canvas.width, 'x', canvas.height);
+
+        // Reset AI game state
+        this.resetAIGameState();
+
+        // Show game overlay with start button
+        if (aiGameOverlay) {
+            aiGameOverlay.style.display = 'flex';
+            console.log('AI game overlay display set to:', aiGameOverlay.style.display);
+        }
+        
+        if (aiGameMessage) {
+            aiGameMessage.textContent = 'Ready to play against AI?';
+        }
+        
+        if (aiStartButton) {
+            aiStartButton.style.display = 'block';
+            aiStartButton.textContent = 'Start AI Game';
+        }
+
+        // Draw only background and paddles initially (no ball)
+        this.drawAIGameBackground();
+
+        console.log('AI game canvas initialized successfully');
+    }
+
+    private resetAIGameState(): void {
+        // Reset AI game state to initial values
+        this.aiGameState = {
+            ballX: 400,
+            ballY: 300,
+            ballSpeedX: 5,
+            ballSpeedY: 3,
+            ballRadius: 10,
+            playerPaddleY: 250,
+            aiPaddleY: 250,
+            playerScore: 0,
+            aiScore: 0,
+            currentDifficulty: 'easy',
+            gameStarted: false
+        };
+        
+        // Update score display
+        this.updateAIScore();
+        
+        console.log('AI game state reset');
+    }
+
+    private startAIGameFromOverlay(): void {
+        console.log('=== STARTING AI GAME FROM OVERLAY ===');
+        
+        // Hide the start button and overlay
+        const aiGameOverlay = document.getElementById('aiGameOverlay');
+        const aiStartButton = document.getElementById('aiStartButton');
+        
+        if (aiStartButton) {
+            aiStartButton.style.display = 'none';
+            console.log('AI start button hidden');
+        }
+        
+        if (aiGameOverlay) {
+            aiGameOverlay.style.display = 'none';
+            console.log('AI game overlay hidden');
+        }
+
+        // Connect to AI game WebSocket and start the game
+        this.connectAIGame();
+        
+        // Send start-game message after a short delay to ensure connection is established
+        setTimeout(() => {
+            if (this.aiGameWs && this.aiGameWs.readyState === WebSocket.OPEN) {
+                this.aiGameWs.send(JSON.stringify({ type: 'start-game' }));
+                this.logAIGame('Starting game...');
+            }
+        }, 100);
+        
+        console.log('AI game started from overlay');
+    }
+
+    private setupAIGameEventListeners(): void {
+        console.log('=== SETTING UP AI GAME EVENT LISTENERS ===');
+        
+        // AI Start button
+        const aiStartButton = document.getElementById('aiStartButton');
+        if (aiStartButton) {
+            // Remove existing listeners
+            const newAiStartButton = aiStartButton.cloneNode(true) as HTMLButtonElement;
+            aiStartButton.parentNode?.replaceChild(newAiStartButton, aiStartButton);
+            
+            newAiStartButton.addEventListener('click', () => {
+                console.log('AI start button clicked!');
+                this.startAIGameFromOverlay();
+            });
+            console.log('AI start button event listener added');
+        } else {
+            console.error('AI start button not found');
+        }
+
+        // AI Customize button
+        const aiCustomizeBtn = document.getElementById('aiCustomizeBtn');
+        if (aiCustomizeBtn) {
+            // Remove existing listeners
+            const newAiCustomizeBtn = aiCustomizeBtn.cloneNode(true) as HTMLButtonElement;
+            aiCustomizeBtn.parentNode?.replaceChild(newAiCustomizeBtn, aiCustomizeBtn);
+            
+            newAiCustomizeBtn.addEventListener('click', () => {
+                console.log('AI customize button clicked!');
+                this.showCustomizationModal();
+            });
+            console.log('AI customize button event listener added');
+        } else {
+            console.error('AI customize button not found');
+        }
+
+
+        // Difficulty buttons
+        const easyBtn = document.getElementById('aiEasyBtn');
+        if (easyBtn) {
+            easyBtn.addEventListener('click', () => this.changeAIDifficulty('EASY'));
+        }
+
+        const mediumBtn = document.getElementById('aiMediumBtn');
+        if (mediumBtn) {
+            mediumBtn.addEventListener('click', () => this.changeAIDifficulty('MEDIUM'));
+        }
+
+        const hardBtn = document.getElementById('aiHardBtn');
+        if (hardBtn) {
+            hardBtn.addEventListener('click', () => this.changeAIDifficulty('HARD'));
+        }
+
+        const expertBtn = document.getElementById('aiExpertBtn');
+        if (expertBtn) {
+            expertBtn.addEventListener('click', () => this.changeAIDifficulty('EXPERT'));
+        }
+
+        // Game overlay buttons
+        const replayBtn = document.getElementById('replayBtn');
+        if (replayBtn) {
+            replayBtn.addEventListener('click', () => {
+                this.hideAIGameOverlay();
+                this.restartAIGame();
+            });
+        }
+
+        const backBtn = document.getElementById('backBtn');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                this.hideAIGameOverlay();
+                this.showSection('homeSection');
+            });
+        }
+
+        // AI Game Over Modal buttons
+        const aiReplayBtn = document.getElementById('aiReplayBtn');
+        if (aiReplayBtn) {
+            aiReplayBtn.addEventListener('click', () => {
+                this.hideAIGameOverModal();
+                this.restartAIGame();
+            });
+        }
+
+        const aiGoHomeBtn = document.getElementById('aiGoHomeBtn');
+        if (aiGoHomeBtn) {
+            aiGoHomeBtn.addEventListener('click', () => {
+                this.hideAIGameOverModal();
+                this.showSection('homeSection');
+            });
+        }
+
+        // Set up keyboard controls
+        this.setupAIKeyboardControls();
+        
+        console.log('AI game event listeners set up successfully');
+    }
+
+    private disconnectAIGame(): void {
+        if (this.aiGameWs) {
+            this.aiGameWs.close(1000, 'Manual disconnect');
+            this.logAIGame('Disconnecting...');
+        }
+    }
+
+    private changeAIDifficulty(difficulty: string): void {
+        this.aiGameState.currentDifficulty = difficulty.toLowerCase();
+        this.logAIGame(`Changing difficulty to: ${difficulty}`);
+        
+        // Update difficulty button states immediately for visual feedback
+        this.updateAIDifficultyButtons(difficulty);
+        
+        // Ensure WebSocket connection is established
+        if (!this.aiGameWs || this.aiGameWs.readyState !== WebSocket.OPEN) {
+            this.logAIGame('WebSocket not connected, establishing connection...');
+            this.connectAIGame();
+            
+            // Wait for connection to be established, then send difficulty change
+            setTimeout(() => {
+                if (this.aiGameWs && this.aiGameWs.readyState === WebSocket.OPEN) {
+                    this.aiGameWs.send(JSON.stringify({ 
+                        type: 'change-difficulty', 
+                        difficulty: difficulty 
+                    }));
+                    this.logAIGame(`Sent difficulty change to backend: ${difficulty}`);
+                } else {
+                    this.logAIGame('Failed to establish WebSocket connection for difficulty change');
+                }
+            }, 500);
+        } else {
+            // WebSocket is already connected, send difficulty change immediately
+            this.aiGameWs.send(JSON.stringify({ 
+                type: 'change-difficulty', 
+                difficulty: difficulty 
+            }));
+            this.logAIGame(`Sent difficulty change to backend: ${difficulty}`);
+        }
+    }
+
+    private updateAIDifficultyButtons(activeDifficulty: string): void {
+        const difficulties = ['EASY', 'MEDIUM', 'HARD', 'EXPERT'];
+        difficulties.forEach(diff => {
+            const btn = document.getElementById(`ai${diff}Btn`);
+            if (btn) {
+                // Remove all active states
+                btn.classList.remove('ring-4', 'ring-white', 'ring-opacity-50', 'border-4', 'border-white', 'scale-110');
+                
+                // Add active state to selected difficulty
+                if (diff === activeDifficulty) {
+                    btn.classList.add('ring-4', 'ring-white', 'ring-opacity-50', 'border-4', 'border-white', 'scale-110');
+                }
+            }
+        });
+        
+        // Update difficulty text display
+        const difficultyText = document.getElementById('currentDifficultyText');
+        if (difficultyText) {
+            difficultyText.textContent = activeDifficulty;
+        }
+    }
+
+    private hideAIGameOverlay(): void {
+        const gameOverlay = document.getElementById('gameOverlay');
+        if (gameOverlay) {
+            gameOverlay.classList.add('hidden');
+        }
+    }
+
+    private hideAIGameOverModal(): void {
+        const modal = document.getElementById('aiGameOverModal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    }
+
+    private drawAIGame(): void {
+        console.log('=== DRAWING AI GAME ===');
+        const canvas = document.getElementById('aiGameCanvas') as HTMLCanvasElement;
+        console.log('AI game canvas found for drawing:', !!canvas);
+        
+        if (!canvas) {
+            console.error('AI game canvas not found for drawing');
+            return;
+        }
+
+        const ctx = canvas.getContext('2d');
+        console.log('AI game canvas context found for drawing:', !!ctx);
+        
+        if (!ctx) {
+            console.error('AI game canvas context not found for drawing');
+            return;
+        }
+
+        console.log('AI game canvas dimensions:', canvas.width, 'x', canvas.height);
+        console.log('AI game config dimensions:', this.aiGameConfig.CANVAS.WIDTH, 'x', this.aiGameConfig.CANVAS.HEIGHT);
+
+        // Clear canvas with custom table color (same as local game)
+        ctx.fillStyle = this.customizationSettings.tableColor;
         ctx.fillRect(0, 0, this.aiGameConfig.CANVAS.WIDTH, this.aiGameConfig.CANVAS.HEIGHT);
+        console.log('Canvas cleared with color:', this.customizationSettings.tableColor);
 
-        // Draw center line
-        ctx.strokeStyle = '#ffffff';
-        ctx.setLineDash([5, 5]);
+        // Draw center line (same style as local game)
+        ctx.strokeStyle = '#533483';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 15]);
         ctx.beginPath();
         ctx.moveTo(this.aiGameConfig.CANVAS.WIDTH / 2, 0);
         ctx.lineTo(this.aiGameConfig.CANVAS.WIDTH / 2, this.aiGameConfig.CANVAS.HEIGHT);
         ctx.stroke();
         ctx.setLineDash([]);
+        console.log('Center line drawn');
 
-        // Draw player paddle (left)
-        ctx.fillStyle = '#60a5fa';
-        ctx.fillRect(this.aiGameConfig.PADDLE.WIDTH, this.aiGameState.playerPaddleY, this.aiGameConfig.PADDLE.WIDTH, this.aiGameConfig.PADDLE.HEIGHT);
+        // Draw player paddle (left) with custom color (same as local game)
+        ctx.fillStyle = this.customizationSettings.myPaddleColor;
+        ctx.fillRect(50, this.aiGameState.playerPaddleY, this.aiGameConfig.PADDLE.WIDTH, this.aiGameConfig.PADDLE.HEIGHT);
+        console.log('Player paddle drawn at:', 50, this.aiGameState.playerPaddleY, 'color:', this.customizationSettings.myPaddleColor);
 
-        // Draw AI paddle (right) with difficulty-based color
-        const aiColor = this.aiGameAvailableDifficulties[this.aiGameState.currentDifficulty]?.color || '#f87171';
-        ctx.fillStyle = aiColor;
-        ctx.fillRect(this.aiGameConfig.CANVAS.WIDTH - this.aiGameConfig.PADDLE.WIDTH * 2, this.aiGameState.aiPaddleY, this.aiGameConfig.PADDLE.WIDTH, this.aiGameConfig.PADDLE.HEIGHT);
+        // Draw AI paddle (right) with custom color (same as local game)
+        ctx.fillStyle = this.customizationSettings.opponentPaddleColor;
+        ctx.fillRect(735, this.aiGameState.aiPaddleY, this.aiGameConfig.PADDLE.WIDTH, this.aiGameConfig.PADDLE.HEIGHT);
+        console.log('AI paddle drawn at:', 735, this.aiGameState.aiPaddleY, 'color:', this.customizationSettings.opponentPaddleColor);
 
-        // Draw ball
-        ctx.fillStyle = '#facc15';
+        // Draw ball only when game is started (same color as local game)
+        console.log('AI Game drawAIGame - gameStarted:', this.aiGameState.gameStarted);
+        if (this.aiGameState.gameStarted) {
+            ctx.fillStyle = '#f5f5f5';
+            ctx.beginPath();
+            ctx.arc(this.aiGameState.ballX, this.aiGameState.ballY, this.aiGameState.ballRadius, 0, Math.PI * 2);
+            ctx.fill();
+            console.log('Ball drawn at:', this.aiGameState.ballX, this.aiGameState.ballY, 'radius:', this.aiGameState.ballRadius);
+        } else {
+            console.log('Ball not drawn - game not started, gameStarted =', this.aiGameState.gameStarted);
+        }
+        
+        console.log('=== AI GAME DRAWING COMPLETE ===');
+    }
+
+    private drawAIGameBackground(): void {
+        console.log('=== DRAWING AI GAME BACKGROUND ===');
+        const canvas = document.getElementById('aiGameCanvas') as HTMLCanvasElement;
+        if (!canvas) {
+            console.error('AI game canvas not found');
+            return;
+        }
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            console.error('AI game canvas context not found');
+            return;
+        }
+
+        // Clear canvas with custom table color
+        ctx.fillStyle = this.customizationSettings.tableColor;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw center line
+        ctx.strokeStyle = '#533483';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 15]);
         ctx.beginPath();
-        ctx.arc(this.aiGameState.ballX, this.aiGameState.ballY, this.aiGameState.ballRadius, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.moveTo(canvas.width / 2, 0);
+        ctx.lineTo(canvas.width / 2, canvas.height);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Draw player paddle (left) with custom color
+        ctx.fillStyle = this.customizationSettings.myPaddleColor;
+        ctx.fillRect(50, this.aiGameState.playerPaddleY, this.aiGameConfig.PADDLE.WIDTH, this.aiGameConfig.PADDLE.HEIGHT);
+
+        // Draw AI paddle (right) with custom color
+        ctx.fillStyle = this.customizationSettings.opponentPaddleColor;
+        ctx.fillRect(735, this.aiGameState.aiPaddleY, this.aiGameConfig.PADDLE.WIDTH, this.aiGameConfig.PADDLE.HEIGHT);
+
+        console.log('=== AI GAME BACKGROUND DRAWING COMPLETE ===');
     }
 
     private updateAIScore(): void {
+        // Update individual score elements
+        const playerScoreElement = document.getElementById('aiPlayerScore');
+        const aiScoreElement = document.getElementById('aiOpponentScore');
+        
+        if (playerScoreElement) {
+            playerScoreElement.textContent = this.aiGameState.playerScore.toString();
+        }
+        if (aiScoreElement) {
+            aiScoreElement.textContent = this.aiGameState.aiScore.toString();
+        }
+        
+        // Also update the combined score display if it exists
         const scoreDisplay = document.getElementById('aiScoreDisplay');
         if (scoreDisplay) {
             scoreDisplay.textContent = `Player: ${this.aiGameState.playerScore} - AI: ${this.aiGameState.aiScore}`;
         }
     }
 
-    private updateAIGameStatus(status: string): void {
-        const statusElement = document.getElementById('aiGameStatus');
-        if (statusElement) {
-            statusElement.textContent = status;
-        }
-    }
-
-    private updateAIGameButtons(start: boolean, pause: boolean, resume: boolean, restart: boolean): void {
-        const startBtn = document.getElementById('aiStartBtn') as HTMLButtonElement;
-        const pauseBtn = document.getElementById('aiPauseBtn') as HTMLButtonElement;
-        const resumeBtn = document.getElementById('aiResumeBtn') as HTMLButtonElement;
-        const restartBtn = document.getElementById('aiRestartBtn') as HTMLButtonElement;
-
-        if (startBtn) startBtn.disabled = !start;
-        if (pauseBtn) pauseBtn.disabled = !pause;
-        if (resumeBtn) resumeBtn.disabled = !resume;
-        if (restartBtn) restartBtn.disabled = !restart;
-    }
-
-    private updateAIGamePauseButton(text: string): void {
-        const pauseBtn = document.getElementById('aiPauseBtn');
-        if (pauseBtn) {
-            pauseBtn.textContent = text;
-        }
-    }
 
     private updateAIDifficultyDisplay(difficulty: string, config: any): void {
         const difficultyDisplay = document.getElementById('aiDifficultyDisplay');
         if (difficultyDisplay) {
             difficultyDisplay.textContent = `Difficulty: ${config.name} (${config.speed}x)`;
         }
+        
+        // Also update the button visual states
+        this.updateAIDifficultyButtons(difficulty);
     }
 
     private logAIGame(message: string): void {
@@ -5153,20 +5636,123 @@ class SimpleAuth {
         }
     }
 
-    private showAIGameOverModal(winner: string, finalScore: string): void {
+    private showAIGameOverModal(winner: string, playerScore: number, aiScore: number): void {
         const modal = document.getElementById('aiGameOverModal');
         if (modal) {
             const title = document.getElementById('aiGameOverTitle');
             const message = document.getElementById('aiGameOverMessage');
-            const score = document.getElementById('aiGameOverScore');
+            const playerScoreElement = document.getElementById('aiGameOverPlayerScore');
+            const aiScoreElement = document.getElementById('aiGameOverAIScore');
 
             if (title) title.textContent = winner === 'player' ? 'You Won!' : 'AI Won!';
-            if (message) message.textContent = `Final Score: ${finalScore}`;
-            if (score) score.textContent = finalScore;
+            if (message) message.textContent = `Final Score: ${playerScore} - ${aiScore}`;
+            if (playerScoreElement) playerScoreElement.textContent = playerScore.toString();
+            if (aiScoreElement) aiScoreElement.textContent = aiScore.toString();
+
+            // Set up button event listeners
+            this.setupAIGameOverButtons();
 
             modal.classList.remove('hidden');
         }
     }
+
+    private setupAIGameOverButtons(): void {
+        // Play Again button
+        const playAgainBtn = document.getElementById('aiPlayAgainBtn');
+        if (playAgainBtn) {
+            // Remove existing listeners
+            const newPlayAgainBtn = playAgainBtn.cloneNode(true) as HTMLButtonElement;
+            playAgainBtn.parentNode?.replaceChild(newPlayAgainBtn, playAgainBtn);
+            
+            newPlayAgainBtn.onclick = () => {
+                this.hideAIGameOverModal();
+                this.restartAIGame();
+            };
+        }
+
+        // Go Home button
+        const goHomeBtn = document.getElementById('aiGoHomeBtn');
+        if (goHomeBtn) {
+            // Remove existing listeners
+            const newGoHomeBtn = goHomeBtn.cloneNode(true) as HTMLButtonElement;
+            goHomeBtn.parentNode?.replaceChild(newGoHomeBtn, goHomeBtn);
+            
+            newGoHomeBtn.onclick = () => {
+                this.hideAIGameOverModal();
+                this.goHome();
+            };
+        }
+    }
+
+    /**
+     * Initialize colorblind mode from localStorage
+     */
+    private initializeColorblindMode(): void {
+        const savedMode = localStorage.getItem('colorblindMode');
+        if (savedMode === 'true') {
+            this.colorblindMode = true;
+            this.applyColorblindMode();
+        }
+    }
+
+    /**
+     * Toggle colorblind mode
+     */
+    public toggleColorblindMode(): void {
+        console.log('toggleAccessibilityMode called, current mode:', this.colorblindMode);
+        this.colorblindMode = !this.colorblindMode;
+        console.log('New accessibility mode:', this.colorblindMode);
+        this.applyColorblindMode();
+        
+        // Save preference to localStorage
+        localStorage.setItem('colorblindMode', this.colorblindMode.toString());
+        
+        // Update button text
+        const colorblindToggle = document.getElementById('colorblindToggle');
+        if (colorblindToggle) {
+            colorblindToggle.textContent = this.colorblindMode ? '♿ Normal' : '♿ Accessibility';
+            colorblindToggle.title = this.colorblindMode ? 'Switch to Normal Mode' : 'Switch to Accessibility Mode';
+            console.log('Button text updated to:', colorblindToggle.textContent);
+        }
+    }
+
+    /**
+     * Apply or remove colorblind mode styles
+     */
+    private applyColorblindMode(): void {
+        const body = document.body;
+        
+        if (this.colorblindMode) {
+            body.classList.add('colorblind-mode');
+        } else {
+            body.classList.remove('colorblind-mode');
+        }
+    }
+
+    /**
+     * Setup colorblind toggle with retry logic
+     */
+    private setupColorblindToggle(): void {
+        const trySetup = () => {
+            const colorblindToggle = document.getElementById('colorblindToggle');
+            if (colorblindToggle) {
+                console.log('Colorblind toggle button found:', colorblindToggle);
+                colorblindToggle.addEventListener('click', (e) => {
+                    console.log('Colorblind toggle clicked!');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.toggleColorblindMode();
+                });
+                console.log('Colorblind toggle event listener attached');
+            } else {
+                console.log('Colorblind toggle button not found, retrying in 100ms...');
+                setTimeout(trySetup, 100);
+            }
+        };
+        
+        trySetup();
+    }
+
 }
 
 // Initialize when DOM is loaded
@@ -5174,7 +5760,6 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded, initializing SimpleAuth...');
     const simpleAuth = new SimpleAuth();
     
-    // Make it globally accessible for testing
     (window as any).simpleAuth = simpleAuth;
     
     console.log('SimpleAuth initialized and made global');
@@ -5184,4 +5769,14 @@ document.addEventListener('DOMContentLoaded', () => {
 (window as any).startGame = function(gameType: string) {
     console.log('Global startGame called with:', gameType);
     // This will be handled by the SimpleAuth instance
+};
+
+// Global function for colorblind toggle
+(window as any).toggleColorblind = function() {
+    console.log('Global toggleColorblind called');
+    if ((window as any).simpleAuth && (window as any).simpleAuth.toggleColorblindMode) {
+        (window as any).simpleAuth.toggleColorblindMode();
+    } else {
+        console.error('SimpleAuth instance not found or toggleColorblindMode method not available');
+    }
 }; 

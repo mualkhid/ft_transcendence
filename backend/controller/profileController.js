@@ -157,9 +157,19 @@ export async function updateStats(req, reply) {
             throw new notFoundError('User not found');
         }
 
-        // Save game result as a match record for local, multiplayer, and tournament games
-        if ((gameType === 'LOCAL' || gameType === 'MULTIPLAYER' || gameType === 'TOURNAMENT') && player1Score !== undefined && player2Score !== undefined) {
+        // Save game result as a match record for all game types
+        if ((gameType === 'AI' || gameType === 'LOCAL' || gameType === 'MULTIPLAYER' || gameType === 'TOURNAMENT') && player1Score !== undefined && player2Score !== undefined) {
             try {
+                // Determine player2Alias based on game type
+                let player2Alias;
+                if (gameType === 'AI') {
+                    player2Alias = 'AI';
+                } else if (gameType === 'LOCAL') {
+                    player2Alias = 'Local Player';
+                } else {
+                    player2Alias = opponentName || 'Opponent';
+                }
+
                 const match = await prisma.match.create({
                     data: {
                         tournamentId: gameType === 'TOURNAMENT' ? 1 : null, // Set tournament ID for tournament games
@@ -167,8 +177,8 @@ export async function updateStats(req, reply) {
                         matchNumber: 1,
                         status: 'FINISHED',
                         player1Alias: user.username,
-                        player2Alias: opponentName || (gameType === 'LOCAL' ? 'Local Player' : 'Opponent'),
-                        winnerAlias: won ? user.username : (opponentName || (gameType === 'LOCAL' ? 'Local Player' : 'Opponent')),
+                        player2Alias: player2Alias,
+                        winnerAlias: won ? user.username : player2Alias,
                         startedAt: new Date(),
                         finishedAt: new Date()
                     }
@@ -185,7 +195,7 @@ export async function updateStats(req, reply) {
                         },
                         {
                             matchId: match.id,
-                            alias: opponentName || (gameType === 'LOCAL' ? 'Local Player' : 'Opponent'),
+                            alias: player2Alias,
                             score: won ? player2Score : player1Score,
                             result: won ? 'LOSS' : 'WIN'
                         }

@@ -1,4 +1,5 @@
 import DashboardService from '../services/dashboardService.js';
+import { authenticate } from '../services/jwtService.js';
 
 /**
  * Dashboard Routes
@@ -12,6 +13,23 @@ import DashboardService from '../services/dashboardService.js';
 
 async function dashboardRoutes(fastify, options) {
     
+    // Get user-specific dashboard data (authenticated)
+    fastify.get('/dashboard/user', { 
+        preHandler: [authenticate] 
+    }, async (request, reply) => {
+        try {
+            const userId = request.user.id;
+            console.log('Getting user dashboard for userId:', userId);
+            const dashboardData = await DashboardService.getUserDashboard(userId);
+            console.log('Dashboard data retrieved successfully');
+            return reply.send(dashboardData);
+        } catch (error) {
+            console.error('Error getting user dashboard:', error);
+            console.error('Error stack:', error.stack);
+            return reply.status(500).send({ error: 'Failed to load dashboard data: ' + error.message });
+        }
+    });
+
     // Get general dashboard data (public access)
     fastify.get('/dashboard', async (request, reply) => {
         try {
@@ -30,7 +48,10 @@ async function dashboardRoutes(fastify, options) {
                 where: {
                     player2Alias: 'AI',
                     status: 'FINISHED',
-                    winnerAlias: 'Player'
+                    OR: [
+                        { winnerAlias: 'Player' },  // Old format
+                        { winnerAlias: { not: 'AI' } }  // New format (any non-AI winner)
+                    ]
                 }
             });
 
@@ -120,16 +141,27 @@ async function dashboardRoutes(fastify, options) {
 
             const formattedRecentGames = recentGames.map(game => {
                 // Determine if the player won based on the winner alias
-                // For AI games: winnerAlias is 'Player' or 'AI'
+                // For AI games: winnerAlias is the username or 'AI' (or 'Player' for old format)
                 // For local games: winnerAlias is the username or 'Local Player'
                 const isPlayerWin = game.player2Alias === 'AI' ? 
-                    game.winnerAlias === 'Player' : 
+                    (game.winnerAlias !== 'AI') : 
                     game.winnerAlias !== 'Local Player';
                 
                 // Get scores from match players
                 const playerScore = game.players.find(p => p.alias === game.player1Alias)?.score || 0;
                 const opponentScore = game.players.find(p => p.alias === game.player2Alias)?.score || 0;
                 
+                // Calculate game duration
+                const startTime = game.startedAt || game.createdAt;
+                const endTime = game.finishedAt;
+                let duration = 'N/A';
+                if (startTime && endTime) {
+                    const durationMs = new Date(endTime) - new Date(startTime);
+                    const minutes = Math.floor(durationMs / 60000);
+                    const seconds = Math.floor((durationMs % 60000) / 1000);
+                    duration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                }
+
                 return {
                     type: game.player2Alias === 'AI' ? 'AI Game' : 
                           game.player2Alias === 'Local Player' ? 'Local Game' :
@@ -138,6 +170,7 @@ async function dashboardRoutes(fastify, options) {
                     result: isPlayerWin ? 'WIN' : 'LOSS',
                     score: `${playerScore}-${opponentScore}`,
                     date: game.startedAt || game.createdAt || game.finishedAt,
+                    duration: duration,
                     startedAt: game.startedAt,
                     createdAt: game.createdAt,
                     finishedAt: game.finishedAt

@@ -17,7 +17,6 @@ COPY --from=build /app/dist/ /usr/share/nginx/html/dist/
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY index.html /usr/share/nginx/html/
-COPY ai-pong.html /usr/share/nginx/html/
 COPY dashboard.html /usr/share/nginx/html/
 COPY imgs/ /usr/share/nginx/html/imgs/
 

@@ -24,8 +24,12 @@ export async function handleAIGame(socket, request) {
         ballSpeedX: GAME_CONFIG.BALL.SPEED_X,
         ballSpeedY: GAME_CONFIG.BALL.SPEED_Y,
         ballRadius: GAME_CONFIG.BALL.RADIUS,
+        playerPaddleX: 50, // Left paddle X position
         playerPaddleY: paddlePositions.player,
+        aiPaddleX: 735, // Right paddle X position
         aiPaddleY: paddlePositions.ai,
+        paddleWidth: GAME_CONFIG.PADDLE.WIDTH,
+        paddleHeight: GAME_CONFIG.PADDLE.HEIGHT,
         playerScore: 0,
         aiScore: 0,
         gameStarted: false,
@@ -102,29 +106,26 @@ export async function handleAIGame(socket, request) {
             gameState.ballSpeedY = -gameState.ballSpeedY;
         }
 
-        // Paddle collisions using helper functions
-        // Player paddle (left)
-        const playerPaddleBounds = getPaddleBounds(gameState.playerPaddleY, true);
-        
-        if (gameState.ballX <= playerPaddleBounds.right && 
-            gameState.ballY >= playerPaddleBounds.top && 
-            gameState.ballY <= playerPaddleBounds.bottom) {
-            gameState.ballSpeedX = -gameState.ballSpeedX;
-            // Add some angle based on where ball hits paddle
-            const offset = (gameState.ballY - playerPaddleBounds.center) / (GAME_CONFIG.PADDLE.HEIGHT / 2);
-            gameState.ballSpeedY = GAME_CONFIG.BALL.SPEED_X * offset;
+        // Left paddle (player) collision - EXACT copy from (1 vs 1) game
+        if (gameState.ballX - gameState.ballRadius <= gameState.playerPaddleX + gameState.paddleWidth &&
+            gameState.ballY >= gameState.playerPaddleY &&
+            gameState.ballY <= gameState.playerPaddleY + gameState.paddleHeight) {
+            gameState.ballSpeedX = Math.abs(gameState.ballSpeedX);
+            // Add some spin
+            const spin = (Math.random() - 0.5) * 2;
+            gameState.ballSpeedY += spin;
+            gameState.ballSpeedY = Math.max(-8, Math.min(8, gameState.ballSpeedY));
         }
 
-        // AI paddle (right)
-        const aiPaddleBounds = getPaddleBounds(gameState.aiPaddleY, false);
-        
-        if (gameState.ballX >= aiPaddleBounds.left && 
-            gameState.ballY >= aiPaddleBounds.top && 
-            gameState.ballY <= aiPaddleBounds.bottom) {
-            gameState.ballSpeedX = -gameState.ballSpeedX;
-            // Add some angle based on where ball hits paddle
-            const offset = (gameState.ballY - aiPaddleBounds.center) / (GAME_CONFIG.PADDLE.HEIGHT / 2);
-            gameState.ballSpeedY = GAME_CONFIG.BALL.SPEED_X * offset;
+        // Right paddle (AI) collision - EXACT copy from (1 vs 1) game
+        if (gameState.ballX + gameState.ballRadius >= gameState.aiPaddleX &&
+            gameState.ballY >= gameState.aiPaddleY &&
+            gameState.ballY <= gameState.aiPaddleY + gameState.paddleHeight) {
+            gameState.ballSpeedX = -Math.abs(gameState.ballSpeedX);
+            // Add some spin
+            const spin = (Math.random() - 0.5) * 2;
+            gameState.ballSpeedY += spin;
+            gameState.ballSpeedY = Math.max(-8, Math.min(8, gameState.ballSpeedY));
         }
 
         // Scoring
@@ -140,13 +141,8 @@ export async function handleAIGame(socket, request) {
         if (gameState.playerScore >= gameState.winningScore || gameState.aiScore >= gameState.winningScore) {
             gameState.gameOver = true;
             
-            // Save game result to database
-            try {
-                await saveAIGameResult(null, gameState.playerScore, gameState.aiScore, 'AI_PONG');
-                console.log('AI game result saved to database');
-            } catch (error) {
-                console.error('Failed to save AI game result:', error);
-            }
+            // Game result will be saved by the frontend through the authenticated endpoint
+            console.log('AI game finished - result will be saved by frontend');
             
             socket.send(JSON.stringify({
                 type: 'game-over',
@@ -344,11 +340,21 @@ export async function handleAIGame(socket, request) {
 // Save AI game result to database
 export async function saveAIGameResult(userId, playerScore, aiScore, gameType) {
     try {
+        // Get user info to get the actual username
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { username: true }
+        });
+
+        if (!user) {
+            throw new Error('User not found');
+        }
+
         const result = await prisma.match.create({
             data: {
-                player1Alias: 'Player',
+                player1Alias: user.username,
                 player2Alias: 'AI',
-                winnerAlias: playerScore > aiScore ? 'Player' : 'AI',
+                winnerAlias: playerScore > aiScore ? user.username : 'AI',
                 status: 'FINISHED',
                 finishedAt: new Date(),
                 roundNumber: 1,  // AI games are always round 1
@@ -361,7 +367,7 @@ export async function saveAIGameResult(userId, playerScore, aiScore, gameType) {
             data: [
                 {
                     matchId: result.id,
-                    alias: 'Player',
+                    alias: user.username,
                     score: playerScore,
                     result: playerScore > aiScore ? 'WIN' : 'LOSS'
                 },

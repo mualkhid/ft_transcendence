@@ -25,7 +25,7 @@
 
 /* Background image classes */
 .bg-home {
-    background-image: url('../imgs/powerpuff-bg.png') !important;
+    background-image: url('/imgs/powerpuff-bg.png') !important;
 }
 
 .bg-friends {
@@ -70,6 +70,7 @@
 .section.active {
     display: block;
 }
+
 
 /* Status message styles */
 .status {
@@ -134,9 +135,15 @@
     opacity: 1 !important;
     position: relative !important;
     z-index: 10 !important;
+    text-align: center !important;
 }
 
-#onlineScoreDisplay * {
+#onlineScoreDisplay .flex {
+    display: flex !important;
+    justify-content: center !important;
+}
+
+#onlineScoreDisplay .bg-powerpuff-pink {
     display: block !important;
     visibility: visible !important;
 }
