@@ -3781,125 +3781,7 @@ class SimpleAuth {
 
         // Set up input handling
         this.setupRemoteGameInput();
-        this.setupRemoteGameLeaveDetection();
         console.log('Remote game initialized successfully');
-    }
-     //check if necessary
-    private setupRemoteGameLeaveDetection(): void {
-        console.log('Setting up remote game leave detection...');
-        
-        // Prevent multiple event listeners
-        if (this.remoteGameLeaveHandlersSetup) {
-            return;
-        }
-        this.remoteGameLeaveHandlersSetup = true;
-        
-        // Store references to handlers so we can remove them later
-        const beforeUnloadHandler = (event: BeforeUnloadEvent) => {
-            if (this.onlineGameState.gameSocket && 
-                this.onlineGameState.gameSocket.readyState === WebSocket.OPEN && 
-                !this.onlineGameState.gameFinished) {
-                
-                console.log('Player leaving remote game page - sending leave message');
-                
-                // Send immediate leave notification
-                const leaveMessage = { 
-                    type: 'leave', 
-                    username: this.currentUser?.username,
-                    reason: 'page_unload'
-                };
-                
-                try {
-                    this.onlineGameState.gameSocket.send(JSON.stringify(leaveMessage));
-                    // Give a small delay to ensure message is sent
-                    this.onlineGameState.gameSocket.close(1001, 'Page unload');
-                } catch (error) {
-                    console.error('Error sending leave message on page unload:', error);
-                }
-            }
-        };
-    
-        const visibilityChangeHandler = () => {
-            if (document.visibilityState === 'hidden' && 
-                this.onlineGameState.gameSocket && 
-                this.onlineGameState.gameSocket.readyState === WebSocket.OPEN && 
-                !this.onlineGameState.gameFinished) {
-                
-                console.log('Remote game - player left (page hidden)');
-                
-                const leaveMessage = { 
-                    type: 'leave', 
-                    username: this.currentUser?.username,
-                    reason: 'page_hidden'
-                };
-                
-                try {
-                    this.onlineGameState.gameSocket.send(JSON.stringify(leaveMessage));
-                    this.onlineGameState.gameSocket.close(1001, 'Page hidden');
-                } catch (error) {
-                    console.error('Error sending leave message on visibility change:', error);
-                }
-            }
-        };
-    
-        // Additional: Handle tab/window focus loss for better detection
-        const blurHandler = () => {
-            if (this.onlineGameState.gameSocket && 
-                this.onlineGameState.gameSocket.readyState === WebSocket.OPEN && 
-                !this.onlineGameState.gameFinished) {
-                
-                console.log('Remote game - window lost focus');
-                // You might want to pause game or send a "focus lost" message
-                // For now, just log it as it might indicate the player is switching away
-            }
-        };
-    
-        const focusHandler = () => {
-            if (this.onlineGameState.gameSocket && 
-                this.onlineGameState.gameSocket.readyState === WebSocket.OPEN && 
-                !this.onlineGameState.gameFinished) {
-                
-                console.log('Remote game - window regained focus');
-            }
-        };
-    
-        // Network connectivity detection
-        const offlineHandler = () => {
-            console.log('Remote game - network went offline');
-            if (this.onlineGameState.gameSocket && !this.onlineGameState.gameFinished) {
-                // Network is lost, game will likely disconnect
-                this.updateRemoteGameStatus('Network Lost', 'Connection lost. Attempting to reconnect...');
-            }
-        };
-    
-        const onlineHandler = () => {
-            console.log('Remote game - network back online');
-            if (this.onlineGameState.gameSocket?.readyState === WebSocket.CLOSED && 
-                !this.onlineGameState.gameFinished) {
-                console.log('Attempting to reconnect to remote game...');
-                this.connectToRemoteGame();
-            }
-        };
-    
-        // Add all event listeners
-        window.addEventListener('beforeunload', beforeUnloadHandler);
-        document.addEventListener('visibilitychange', visibilityChangeHandler);
-        window.addEventListener('blur', blurHandler);
-        window.addEventListener('focus', focusHandler);
-        window.addEventListener('offline', offlineHandler);
-        window.addEventListener('online', onlineHandler);
-        
-        // Store handler references for cleanup
-        this.remoteGameEventHandlers = {
-            beforeUnloadHandler,
-            visibilityChangeHandler,
-            blurHandler,
-            focusHandler,
-            offlineHandler,
-            onlineHandler
-        };
-        
-        console.log('Remote game leave detection handlers set up successfully');
     }
 
     private initializeRemoteGameState(): void {
@@ -3923,28 +3805,6 @@ class SimpleAuth {
             }
         };
     }
-    private cleanupRemoteGameLeaveDetection(): void {
-        if (!this.remoteGameLeaveHandlersSetup || !this.remoteGameEventHandlers) {
-            return;
-        }
-        
-        console.log('Cleaning up remote game leave detection handlers...');
-        
-        // Remove all event listeners
-        window.removeEventListener('beforeunload', this.remoteGameEventHandlers.beforeUnloadHandler);
-        document.removeEventListener('visibilitychange', this.remoteGameEventHandlers.visibilityChangeHandler);
-        window.removeEventListener('blur', this.remoteGameEventHandlers.blurHandler);
-        window.removeEventListener('focus', this.remoteGameEventHandlers.focusHandler);
-        window.removeEventListener('offline', this.remoteGameEventHandlers.offlineHandler);
-        window.removeEventListener('online', this.remoteGameEventHandlers.onlineHandler);
-        
-        // Clear references
-        this.remoteGameEventHandlers = null;
-        this.remoteGameLeaveHandlersSetup = false;
-        
-        console.log('Remote game leave detection cleanup complete');
-    }
-    
 
     private setupRemoteGameControls(): void {
         const customizeButton = document.getElementById('onlineCustomizeBtn');
@@ -4088,50 +3948,6 @@ class SimpleAuth {
                 
                 // Don't update status here - wait for success message
                 console.log('🎮 Match assigned, waiting for connection confirmation...');
-                break;
-                case 'game-abandoned':
-                    console.log('Game abandoned due to disconnect:', data);
-                    this.onlineGameState.gameFinished = true;
-                    
-                    // Update final scores
-                    this.onlineGameState.gameState.player1Score = data.player1Score || 0;
-                    this.onlineGameState.gameState.player2Score = data.player2Score || 0;
-                    this.updateRemoteScore();
-                    
-                    if (this.gameLoopInterval) {
-                        clearInterval(this.gameLoopInterval);
-                        this.gameLoopInterval = null;
-                        console.log('Stopped frontend game loop due to abandonment');
-                    }
-                    // Determine if current user won by disconnect
-                    // Show game over screen with disconnect info
-                    const gameOverScreenData = {
-                        winner: data.winnerAlias,
-                        winnerScore: Math.max(data.player1Score || 0, data.player2Score || 0),
-                        loserScore: Math.min(data.player1Score || 0, data.player2Score || 0),
-                        player1Username: data.player1Username,
-                        player2Username: data.player2Username,
-                        player1Score: data.player1Score || 0,
-                        player2Score: data.player2Score || 0,
-                        reason: 'disconnect'
-                    };
-                    this.showGameOverScreen(gameOverScreenData);
-                    
-                    const currentUsername = this.currentUser?.username;
-                    const isWinnerByDisconnect = (currentUsername === data.winnerAlias);
-                    
-                    
-                    // Update status
-                    if (isWinnerByDisconnect) {
-                        this.updateRemoteGameStatus('Victory!', 'You won because your opponent disconnected');
-                    } else {
-                        this.updateRemoteGameStatus('Game Over', 'Game ended due to disconnection');
-                    }
-                    
-                    // Show a temporary message
-                    this.showRemoteGameMessage(data.message);
-                    this.refreshUserData();
-                    break;
                         case 'success':
                             this.onlineGameState.playerNumber = data.playerNumber;
                             this.updateRemoteGameStatus(`Connected as Player ${data.playerNumber}`, 'Searching for opponent...', true);
@@ -4220,6 +4036,7 @@ class SimpleAuth {
                             break;
                             
                         case 'game-over':
+                            console.log('Game abandoned due to disconnect:', data);
                             this.onlineGameState.gameFinished = true;
                             this.onlineGameState.gameState.player1Score = data.player1Score;
                             this.onlineGameState.gameState.player2Score = data.player2Score;
@@ -4244,59 +4061,7 @@ class SimpleAuth {
                             
                             // Refresh user data to update dashboard
                             this.refreshUserData();
-                            break;
-                            
-                        case 'game-restart':
-                            console.log('🔄 Game restart received:', data);
-                            this.hideRemoteGameMessage();
-                            this.hideScoreDisplay();
-                            this.updateRemoteGameStatus('Restarting', 'Both players agreed to play again!');
-                             this.onlineGameState.gameFinished = false;
-                            this.onlineGameState.gameState = {
-                                ballX: 400,
-                                ballY: 300,
-                                leftPaddleY: 250,
-                                rightPaddleY: 250,
-                                player1Score: 0,
-                                player2Score: 0,
-                                speedX: 5,
-                                speedY: 3
-                            };
-                            
-                            // ✅ ADD: Hide game over modal
-                            const gameOverModal = document.getElementById('gameOverModal');
-                            if (gameOverModal) {
-                                gameOverModal.classList.add('hidden');
-                            }
-                            break;
-                            
-                        case 'play-again-waiting':
-                            console.log('⏳ Play again waiting:', data);
-                            this.updateRemoteGameStatus('Waiting', 'Waiting for other player to agree...');
-                            break;
-                            
-                        case 'opponent-disconnected':
-                            console.log('🔌 Opponent disconnected:', data.message);
-                            this.onlineGameState.gameFinished = true;
-                            if (!this.onlineGameState.gameFinished)
-                            {
-                                this.showRemoteGameMessage('Opponent disconnected. Waiting...');
-                                this.updateRemoteGameStatus('Waiting', 'Opponent disconnected, determining game outcome...');
-                                
-                            }
-                            this.showRemoteGameMessage('Opponent disconnected. Game ended.');
-                            this.updateRemoteGameStatus('Disconnected', data.message);
-                            // Stop any ongoing game loop
-                            if (this.gameLoopInterval) {
-                                clearInterval(this.gameLoopInterval);
-                                this.gameLoopInterval = null;
-                            }
-                            break;
-                            
-                        case 'disconnect':
-                            console.log(`❌ ${data.message}`);
-                            break;
-                            
+                        break;
                         case 'error':
                             console.log(`🚨 Server Error: ${data.message}`);
                             if (data.message === 'You are already in this match!') {
@@ -4327,7 +4092,6 @@ class SimpleAuth {
             this.onlineGameState.gameSocket.onclose = (event) => {
                 console.log(`🔌 Remote game connection closed: ${event.code} ${event.reason}`);
                 this.onlineGameState.isConnected = false;
-                this.cleanupRemoteGameLeaveDetection();
                 // Only show disconnect message if game wasn't finished
                 if (this.onlineGameState.gameFinished) {
                     console.log('Game finished normally, not showing disconnect message');
@@ -4785,56 +4549,11 @@ class SimpleAuth {
         
         this.isGoingHome = true;
         console.log('Going home...');
-        
-        this.cleanupRemoteGameLeaveDetection();
 
         // Close remote game connection if active
-        if (this.onlineGameState.gameSocket) {
-            this.onlineGameState.gameSocket.close();
-        }
-        
-        if (this.onlineGameState.gameSocket && this.onlineGameState.gameSocket.readyState === WebSocket.OPEN && !this.onlineGameState.gameFinished) 
-        {
-            try
-            {
-                this.onlineGameState.gameSocket.send(JSON.stringify({
-                    type: 'leave',
-                    username: this.currentUser?.username,
-                    reason: 'user_went_home'
-                }));
-            }catch (e) {
-                console.error('Error sending leave message:', e);
-            }
-    
-            // Show a modal to the user that they left the game
-            this.showGameOverScreen({
-                winner: null,
-                winnerScore: '',
-                loserScore: '',
-                player1Username: this.currentUser?.username,
-                player2Username: 'Opponent',
-                player1Score: this.onlineGameState.gameState.player1Score,
-                player2Score: this.onlineGameState.gameState.player2Score,
-                reason: 'left'
-            });
-            
-            // Now close the socket AFTER sending the leave message and showing the modal
-            this.onlineGameState.gameSocket.close();
-        }
         if (this.onlineGameState.gameSocket)
-        {
-            this.onlineGameState.gameSocket.onopen = null;
-            this.onlineGameState.gameSocket.onmessage = null;
-            this.onlineGameState.gameSocket.onerror = null;
-            this.onlineGameState.gameSocket.onclose = null;
             this.onlineGameState.gameSocket.close();
-            this.onlineGameState.gameSocket = null;
-        }
-        if (this.remoteGameAnimationFrameId !== null) {
-            console.log('Cancelling remote game animation frame', this.remoteGameAnimationFrameId);
-            cancelAnimationFrame(this.remoteGameAnimationFrameId);
-            this.remoteGameAnimationFrameId = null;
-        }
+        
         // Reset remote game state
         this.onlineGameState = {
             matchmakingSocket: null,
