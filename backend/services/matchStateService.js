@@ -240,19 +240,49 @@ function updatePaddlePosition(match)
 }
 
 function checkCollisions(match) {
-    // Left paddle
-    if (match.state.ballPositionX - match.state.radius <= match.state.leftPaddleX + match.state.paddleWidth &&
-       match.state.ballPositionY >= match.state.leftPaddleY &&
-       match.state.ballPositionY <= match.state.leftPaddleY + match.state.paddleHeight) {
+    // Compute previous position for continuous collision detection
+    const previousX = match.state.ballPositionX - match.state.speedX;
+    const previousY = match.state.ballPositionY - match.state.speedY;
+
+    // Left paddle collision - ball moving left and crossing paddle plane
+    const leftPaddleRightEdge = match.state.leftPaddleX + match.state.paddleWidth;
+    const ballLeftEdge = match.state.ballPositionX - match.state.radius;
+    
+    if (match.state.speedX < 0 && 
+        previousX > leftPaddleRightEdge && ballLeftEdge <= leftPaddleRightEdge &&
+        match.state.ballPositionY >= match.state.leftPaddleY &&
+        match.state.ballPositionY <= match.state.leftPaddleY + match.state.paddleHeight) {
+        
+        // Clamp ball to paddle surface to prevent tunneling
+        match.state.ballPositionX = leftPaddleRightEdge + match.state.radius;
         match.state.speedX = Math.abs(match.state.speedX);
+        
+        // Additional safety: ensure ball is not behind paddle
+        if (match.state.ballPositionX < leftPaddleRightEdge) {
+            match.state.ballPositionX = leftPaddleRightEdge + match.state.radius + 1;
+        }
+        
         addSpin(match);
     }
 
-    // Right paddle
-    if (match.state.ballPositionX + match.state.radius >= match.state.rightPaddleX &&
-       match.state.ballPositionY >=match.state.rightPaddleY &&
-       match.state.ballPositionY <=match.state.rightPaddleY + match.state.paddleHeight) {
+    // Right paddle collision - ball moving right and crossing paddle plane
+    const rightPaddleLeftEdge = match.state.rightPaddleX;
+    const ballRightEdge = match.state.ballPositionX + match.state.radius;
+    
+    if (match.state.speedX > 0 && 
+        previousX < rightPaddleLeftEdge && ballRightEdge >= rightPaddleLeftEdge &&
+        match.state.ballPositionY >= match.state.rightPaddleY &&
+        match.state.ballPositionY <= match.state.rightPaddleY + match.state.paddleHeight) {
+        
+        // Clamp ball to paddle surface to prevent tunneling
+        match.state.ballPositionX = rightPaddleLeftEdge - match.state.radius;
         match.state.speedX = -Math.abs(match.state.speedX);
+        
+        // Additional safety: ensure ball is not behind paddle
+        if (match.state.ballPositionX > rightPaddleLeftEdge) {
+            match.state.ballPositionX = rightPaddleLeftEdge - match.state.radius - 1;
+        }
+        
         addSpin(match);
     }
 }

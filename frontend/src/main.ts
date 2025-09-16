@@ -9,6 +9,31 @@ const config = {
 const HOST_IP=config.hostIp
 
 // Simple Authentication System
+// Game types and interfaces
+interface GameObject {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    speedX: number;
+    speedY: number;
+}
+
+interface Paddle extends GameObject {
+    score: number;
+    color: string;
+}
+
+interface Ball extends GameObject {
+    radius: number;
+}
+
+interface PowerUp extends GameObject {
+    type: 'speed' | 'size' | 'multi';
+    active: boolean;
+    duration: number;
+}
+
 class SimpleAuth {
     private currentUser: any = null;
     private authToken: string | null = null;
@@ -46,6 +71,9 @@ class SimpleAuth {
     };
     
     private aiGameWs: WebSocket | null = null;
+    private paddleHitAudio: HTMLAudioElement | null = null;
+    private scoreAudio: HTMLAudioElement | null = null;
+    private endGameAudio: HTMLAudioElement | null = null;
     private aiGameAnimationId: number | null = null;
     private aiGameKeys = { w: false, s: false };
     private aiGameAvailableDifficulties: any = {};
@@ -169,6 +197,7 @@ class SimpleAuth {
         if (navFriends) {
             navFriends.addEventListener('click', (e) => {
                 e.preventDefault();
+                console.log('🏠 Friends navigation clicked - saving section');
                 this.showSection('friendsSection');
                 this.loadFriendsData();
             });
@@ -1093,22 +1122,19 @@ class SimpleAuth {
                         this.clearUsersList();
                     }
                     
-                                    // Check URL parameters first, then saved section preference
-                const urlSection = this.getUrlSection();
+                                    // Always prioritize saved section on page load/refresh
                 const savedSection = localStorage.getItem('lastActiveSection');
-                const activeSection = document.querySelector('.section.active');
+                const urlSection = this.getUrlSection();
                 
-                if (urlSection) {
-                    console.log('🌐 URL section parameter found:', urlSection);
-                    this.showSection(urlSection);
-                } else if (savedSection && !activeSection) {
+                if (savedSection) {
                     console.log('🔄 Restoring saved section:', savedSection);
                     this.showSection(savedSection);
-                } else if (!activeSection) {
+                } else if (urlSection) {
+                    console.log('🌐 URL section parameter found:', urlSection);
+                    this.showSection(urlSection);
+                } else {
                     console.log('🏠 No saved section, showing home');
                     this.showSection('homeSection');
-                } else {
-                    console.log('✅ Keeping current active section');
                 }
                     
                     return;
@@ -1127,22 +1153,19 @@ class SimpleAuth {
                     this.clearUsersList();
                 }
                 
-                // Check URL parameters first, then saved section preference
-                const urlSection = this.getUrlSection();
-                const savedSection = localStorage.getItem('lastActiveSection');
-                const activeSection = document.querySelector('.section.active');
+                // Always prioritize saved section on page load/refresh
+                const savedSection2 = localStorage.getItem('lastActiveSection');
+                const urlSection2 = this.getUrlSection();
                 
-                if (urlSection) {
-                    console.log('🌐 URL section parameter found:', urlSection);
-                    this.showSection(urlSection);
-                } else if (savedSection && !activeSection) {
-                    console.log('🔄 Restoring saved section:', savedSection);
-                    this.showSection(savedSection);
-                } else if (!activeSection) {
+                if (savedSection2) {
+                    console.log('🔄 Restoring saved section:', savedSection2);
+                    this.showSection(savedSection2);
+                } else if (urlSection2) {
+                    console.log('🌐 URL section parameter found:', urlSection2);
+                    this.showSection(urlSection2);
+                } else {
                     console.log('🏠 No saved section, showing home');
                     this.showSection('homeSection');
-                } else {
-                    console.log('✅ Keeping current active section');
                 }
                 
                 // Don't load fresh data immediately to avoid authentication issues
@@ -1175,22 +1198,19 @@ class SimpleAuth {
                 this.updateHomeDashboard();
                 this.updateProfileDisplay();
                 
-                // Check URL parameters first, then saved section preference
-                const urlSection = this.getUrlSection();
+                // Always prioritize saved section on page load/refresh
                 const savedSection = localStorage.getItem('lastActiveSection');
-                const activeSection = document.querySelector('.section.active');
+                const urlSection = this.getUrlSection();
                 
-                if (urlSection) {
-                    console.log('🌐 URL section parameter found after token refresh:', urlSection);
-                    this.showSection(urlSection);
-                } else if (savedSection && !activeSection) {
+                if (savedSection) {
                     console.log('🔄 Restoring saved section after token refresh:', savedSection);
                     this.showSection(savedSection);
-                } else if (!activeSection) {
+                } else if (urlSection) {
+                    console.log('🌐 URL section parameter found after token refresh:', urlSection);
+                    this.showSection(urlSection);
+                } else {
                     console.log('🏠 No saved section, showing home');
                     this.showSection('homeSection');
-                } else {
-                    console.log('✅ Keeping current active section');
                 }
             } else {
                 console.log('❌ Token refresh failed, clearing localStorage');
@@ -1209,22 +1229,19 @@ class SimpleAuth {
             this.updateHomeDashboard();
             this.updateProfileDisplay();
             
-            // Check URL parameters first, then saved section preference
-            const urlSection = this.getUrlSection();
+            // Always prioritize saved section on page load/refresh
             const savedSection = localStorage.getItem('lastActiveSection');
-            const activeSection = document.querySelector('.section.active');
+            const urlSection = this.getUrlSection();
             
-            if (urlSection) {
-                console.log('🌐 URL section parameter found after error:', urlSection);
-                this.showSection(urlSection);
-            } else if (savedSection && !activeSection) {
+            if (savedSection) {
                 console.log('🔄 Restoring saved section after error:', savedSection);
                 this.showSection(savedSection);
-            } else if (!activeSection) {
+            } else if (urlSection) {
+                console.log('🌐 URL section parameter found after error:', urlSection);
+                this.showSection(urlSection);
+            } else {
                 console.log('🏠 No saved section, showing home');
                 this.showSection('homeSection');
-            } else {
-                console.log('✅ Keeping current active section');
             }
         }
     }
@@ -1304,6 +1321,7 @@ class SimpleAuth {
     }
 
     private showSection(sectionId: string): void {
+        console.log(`🎯 showSection called with: ${sectionId}`);
         const sections = document.querySelectorAll('.section');
         sections.forEach(section => {
             section.classList.remove('active');
@@ -1312,7 +1330,7 @@ class SimpleAuth {
         const targetSection = document.getElementById(sectionId);
         if (targetSection) {
             targetSection.classList.add('active');
-            console.log(`Showing section: ${sectionId}`);
+            console.log(`✅ Switched to section: ${sectionId}`);
             
             // Update main app background based on active section
             const mainApp = document.getElementById('mainApp');
@@ -1910,6 +1928,44 @@ class SimpleAuth {
             return;
         }
 
+        // Preload paddle hit sound, score sound, and end game sound
+        try {
+            this.paddleHitAudio = new Audio('/imgs/Ping-pong-ball-bouncing.mp3');
+            this.paddleHitAudio.preload = 'auto';
+            
+            this.scoreAudio = new Audio('/imgs/point-smooth-beep-230573.mp3');
+            this.scoreAudio.preload = 'auto';
+            
+            this.endGameAudio = new Audio('/imgs/077512_end-game-90582.mp3');
+            this.endGameAudio.preload = 'auto';
+            
+            // Attempt to unlock on first user interaction
+            const unlock = () => {
+                if (!this.paddleHitAudio || !this.scoreAudio || !this.endGameAudio) return;
+                this.paddleHitAudio.muted = true;
+                this.scoreAudio.muted = true;
+                this.endGameAudio.muted = true;
+                this.paddleHitAudio.play().catch(() => {});
+                this.scoreAudio.play().catch(() => {});
+                this.endGameAudio.play().catch(() => {});
+                this.paddleHitAudio.pause();
+                this.scoreAudio.pause();
+                this.endGameAudio.pause();
+                this.paddleHitAudio.currentTime = 0;
+                this.scoreAudio.currentTime = 0;
+                this.endGameAudio.currentTime = 0;
+                this.paddleHitAudio.muted = false;
+                this.scoreAudio.muted = false;
+                this.endGameAudio.muted = false;
+                window.removeEventListener('click', unlock);
+                window.removeEventListener('touchstart', unlock);
+            };
+            window.addEventListener('click', unlock, { once: true });
+            window.addEventListener('touchstart', unlock, { once: true });
+        } catch (e) {
+            console.warn('Audio initialization failed', e);
+        }
+
         // Reset game state completely
         this.resetGameState();
 
@@ -1991,7 +2047,21 @@ class SimpleAuth {
             maxScore: 5,
             gameOver: false,
             player1Keys: { up: false, down: false },
-            player2Keys: { up: false, down: false }
+            player2Keys: { up: false, down: false },
+            // Serve logic
+            currentServer: Math.random() < 0.5 ? 1 : 2,
+            servesLeftForServer: 2,
+            // Power-ups (simplified: squares that add points, max 2 per game)
+            powerUps: [] as Array<{
+                x: number, y: number, width: number, height: number,
+                type: 'point', active: boolean, duration: number,
+                speedX: number, speedY: number
+            }>,
+            powerUpSpawnTimer: 0,
+            powerUpsSpawned: 0,
+            maxPowerUpsPerGame: 2,
+            leftPaddleBuffUntil: 0,
+            rightPaddleBuffUntil: 0
         };
 
         // Clear any existing game loop
@@ -2101,6 +2171,8 @@ class SimpleAuth {
             speedX: number;
             speedY: number;
         };
+        prevBallX?: number | null;
+        prevBallY?: number | null;
     } = {
         matchmakingSocket: null,
         gameSocket: null,
@@ -2118,7 +2190,9 @@ class SimpleAuth {
             player2Score: 0,
             speedX: 5,
             speedY: 3
-        }
+        },
+        prevBallX: null,
+        prevBallY: null
     };
 
     // Customization settings
@@ -2151,13 +2225,32 @@ class SimpleAuth {
             rightPaddleY: 250,
             paddleWidth: 15,
             paddleHeight: 100,
+            leftPaddleHeight: 100,
+            rightPaddleHeight: 100,
             canvasWidth: 800,
             scorePlayer1: 0,
             scorePlayer2: 0,
             maxScore: 5,
             player1Keys: { up: false, down: false },
-            player2Keys: { up: false, down: false }
+            player2Keys: { up: false, down: false },
+            // Serve logic
+            currentServer: Math.random() < 0.5 ? 1 : 2,
+            servesLeftForServer: 2,
+            // Power-ups (simplified: squares that add points, max 2 per game)
+            powerUps: [] as Array<{
+                x: number, y: number, width: number, height: number,
+                type: 'point', active: boolean, duration: number,
+                speedX: number, speedY: number
+            }>,
+            powerUpSpawnTimer: 0,
+            powerUpsSpawned: 0,
+            maxPowerUpsPerGame: 2,
+            leftPaddleBuffUntil: 0,
+            rightPaddleBuffUntil: 0
         };
+
+        // Set initial serve direction from currentServer
+        this.setServeDirection();
 
         // Update score display to reflect reset scores
         this.updateScoreDisplay();
@@ -2213,10 +2306,13 @@ class SimpleAuth {
         if (this.gameState.ballPositionX - this.gameState.radius <= 0) {
             console.log('Player 2 scored! Previous score:', this.gameState.scorePlayer2);
             this.gameState.scorePlayer2++;
+            this.playScoreSound();
             this.resetBall();
             this.updateScoreDisplay();
+            this.advanceServeAfterPoint(2);
             
             if (this.gameState.scorePlayer2 >= this.gameState.maxScore) {
+                this.gameState.gameOver = true;
                 this.endGame(2);
                 return;
             }
@@ -2226,10 +2322,13 @@ class SimpleAuth {
         if (this.gameState.ballPositionX + this.gameState.radius >= this.gameState.canvasWidth) {
             console.log('Player 1 scored! Previous score:', this.gameState.scorePlayer1);
             this.gameState.scorePlayer1++;
+            this.playScoreSound();
             this.resetBall();
             this.updateScoreDisplay();
+            this.advanceServeAfterPoint(1);
             
             if (this.gameState.scorePlayer1 >= this.gameState.maxScore) {
+                this.gameState.gameOver = true;
                 this.endGame(1);
                 return;
             }
@@ -2237,6 +2336,9 @@ class SimpleAuth {
 
         // Check paddle collisions
         this.checkPaddleCollisions();
+
+        // Check power-ups (improved system: ball collision, duration, scoring)
+        this.updatePowerUps();
 
         // Draw the game
         this.drawGame();
@@ -2269,21 +2371,173 @@ class SimpleAuth {
     }
 
     private checkPaddleCollisions(): void {
-        // Left paddle collision
-        if (this.gameState.ballPositionX - this.gameState.radius <= this.gameState.leftPaddleX + this.gameState.paddleWidth &&
+        // Store previous position for continuous collision detection
+        const prevX = this.gameState.ballPositionX - this.gameState.speedX;
+        const prevY = this.gameState.ballPositionY - this.gameState.speedY;
+        
+        // Left paddle collision - check if ball crossed the paddle plane
+        const leftPaddleRightEdge = this.gameState.leftPaddleX + this.gameState.paddleWidth;
+        const leftPaddleLeftEdge = this.gameState.leftPaddleX;
+        const ballLeftEdge = this.gameState.ballPositionX - this.gameState.radius;
+        const ballRightEdge = this.gameState.ballPositionX + this.gameState.radius;
+        
+        // Check if ball is moving left and crossed the paddle plane
+        if (this.gameState.speedX < 0 && 
+            prevX > leftPaddleRightEdge && ballLeftEdge <= leftPaddleRightEdge &&
             this.gameState.ballPositionY >= this.gameState.leftPaddleY &&
             this.gameState.ballPositionY <= this.gameState.leftPaddleY + this.gameState.paddleHeight) {
+            
+            // Clamp ball to paddle surface to prevent tunneling
+            this.gameState.ballPositionX = leftPaddleRightEdge + this.gameState.radius;
             this.gameState.speedX = Math.abs(this.gameState.speedX);
+            
+            // Additional safety: ensure ball is not behind paddle
+            if (this.gameState.ballPositionX < leftPaddleRightEdge) {
+                this.gameState.ballPositionX = leftPaddleRightEdge + this.gameState.radius + 1;
+            }
+            
             this.addSpin();
+            this.playPaddleHit();
         }
 
-        // Right paddle collision
-        if (this.gameState.ballPositionX + this.gameState.radius >= this.gameState.rightPaddleX &&
+        // Right paddle collision - check if ball crossed the paddle plane
+        const rightPaddleLeftEdge = this.gameState.rightPaddleX;
+        const rightPaddleRightEdge = this.gameState.rightPaddleX + this.gameState.paddleWidth;
+        
+        // Check if ball is moving right and crossed the paddle plane
+        if (this.gameState.speedX > 0 && 
+            prevX < rightPaddleLeftEdge && ballRightEdge >= rightPaddleLeftEdge &&
             this.gameState.ballPositionY >= this.gameState.rightPaddleY &&
             this.gameState.ballPositionY <= this.gameState.rightPaddleY + this.gameState.paddleHeight) {
+            
+            // Clamp ball to paddle surface to prevent tunneling
+            this.gameState.ballPositionX = rightPaddleLeftEdge - this.gameState.radius;
             this.gameState.speedX = -Math.abs(this.gameState.speedX);
+            
+            // Additional safety: ensure ball is not behind paddle
+            if (this.gameState.ballPositionX > rightPaddleLeftEdge) {
+                this.gameState.ballPositionX = rightPaddleLeftEdge - this.gameState.radius - 1;
+            }
+            
             this.addSpin();
+            this.playPaddleHit();
         }
+    }
+
+    private updatePowerUps(): void {
+        // Spawn power-ups (max 2 per game total)
+        if (this.gameState.powerUpsSpawned < this.gameState.maxPowerUpsPerGame && 
+            this.gameState.powerUps.length === 0 && 
+            Math.random() < 0.05) {
+            console.log(`Attempting to spawn power-up ${this.gameState.powerUpsSpawned + 1}/${this.gameState.maxPowerUpsPerGame}`);
+            this.spawnPowerUp();
+        }
+        
+        // Debug: Log power-up status
+        if (this.gameState.powerUps.length > 0 && Math.random() < 0.1) {
+            console.log(`Active power-ups: ${this.gameState.powerUps.length}, Spawned: ${this.gameState.powerUpsSpawned}/${this.gameState.maxPowerUpsPerGame}`);
+        }
+        
+        // Update existing power-ups (decrease duration, remove expired)
+        this.gameState.powerUps = this.gameState.powerUps.filter((powerUp: any) => {
+            powerUp.duration--;
+            return powerUp.duration > 0;
+        });
+        
+        // Check ball collision with power-ups
+        this.gameState.powerUps.forEach((powerUp: any, index: number) => {
+            const ballX = this.gameState.ballPositionX;
+            const ballY = this.gameState.ballPositionY;
+            const ballRadius = this.gameState.radius;
+            
+            // Debug logging
+            if (Math.random() < 0.01) { // Log occasionally to avoid spam
+                console.log(`Ball: (${ballX}, ${ballY}), Power-up: (${powerUp.x}, ${powerUp.y}), Size: ${powerUp.width}x${powerUp.height}`);
+            }
+            
+            if (
+                ballX + ballRadius > powerUp.x &&
+                ballX - ballRadius < powerUp.x + powerUp.width &&
+                ballY + ballRadius > powerUp.y &&
+                ballY - ballRadius < powerUp.y + powerUp.height
+            ) {
+                console.log('COLLISION DETECTED!');
+                
+                // Determine which player gets the point based on ball direction
+                // If ball is moving right (positive speedX), Player 1 gets the point
+                // If ball is moving left (negative speedX), Player 2 gets the point
+                const player1GetsPoint = this.gameState.speedX > 0;
+                
+                if (player1GetsPoint) {
+                    this.gameState.scorePlayer1++;
+                    console.log('Player 1 gets the point!');
+                } else {
+                    this.gameState.scorePlayer2++;
+                    console.log('Player 2 gets the point!');
+                }
+                
+                this.playScoreSound();
+                this.updateScoreDisplay();
+                
+                // Remove power-up
+                this.gameState.powerUps.splice(index, 1);
+                
+                console.log(`Power-up collected! Player ${player1GetsPoint ? '1' : '2'} gets a point!`);
+            }
+        });
+    }
+
+    private spawnPowerUp(): void {
+        const powerUp = {
+            x: Math.random() * (this.gameState.canvasWidth - 30),
+            y: Math.random() * (this.gameState.canvasHeight - 30),
+            width: 25,
+            height: 25,
+            speedX: 0,
+            speedY: 0,
+            type: 'point' as 'point',
+            active: true,
+            duration: 600 // 10 seconds at 60fps
+        };
+        
+        this.gameState.powerUps.push(powerUp);
+        this.gameState.powerUpsSpawned++;
+        console.log(`Spawned power-up square at (${powerUp.x}, ${powerUp.y}) - ${this.gameState.powerUpsSpawned}/${this.gameState.maxPowerUpsPerGame}`);
+    }
+
+
+    private advanceServeAfterPoint(scoredPlayer: number): void {
+        // Decrement serves left for current server; switch after two serves
+        if (this.gameState.servesLeftForServer > 1) {
+            this.gameState.servesLeftForServer -= 1;
+        } else {
+            this.gameState.currentServer = this.gameState.currentServer === 1 ? 2 : 1;
+            this.gameState.servesLeftForServer = 2;
+        }
+    }
+
+    private playPaddleHit(): void {
+        if (!this.paddleHitAudio) return;
+        try {
+            this.paddleHitAudio.currentTime = 0;
+            void this.paddleHitAudio.play();
+        } catch {}
+    }
+
+    private playScoreSound(): void {
+        if (!this.scoreAudio) return;
+        try {
+            this.scoreAudio.currentTime = 0;
+            void this.scoreAudio.play();
+        } catch {}
+    }
+
+    private playEndGameSound(): void {
+        if (!this.endGameAudio) return;
+        try {
+            this.endGameAudio.currentTime = 0;
+            void this.endGameAudio.play();
+        } catch {}
     }
 
     private addSpin(): void {
@@ -2296,7 +2550,13 @@ class SimpleAuth {
     private resetBall(): void {
         this.gameState.ballPositionX = this.gameState.canvasWidth / 2;
         this.gameState.ballPositionY = this.gameState.canvasHeight / 2;
-        this.gameState.speedX = Math.random() > 0.5 ? 5 : -5;
+        // Serve direction depends on current server (1 = left player serves right, 2 = right player serves left)
+        this.gameState.speedX = this.gameState.currentServer === 1 ? 5 : -5;
+        this.gameState.speedY = (Math.random() - 0.5) * 6;
+    }
+
+    private setServeDirection(): void {
+        this.gameState.speedX = this.gameState.currentServer === 1 ? 5 : -5;
         this.gameState.speedY = (Math.random() - 0.5) * 6;
     }
 
@@ -2411,15 +2671,38 @@ class SimpleAuth {
 
         // Draw paddles with custom color
         ctx.fillStyle = this.customizationSettings.myPaddleColor;
-        ctx.fillRect(this.gameState.leftPaddleX, this.gameState.leftPaddleY, this.gameState.paddleWidth, this.gameState.paddleHeight);
+        const lpH = this.gameState.leftPaddleBuffUntil > Date.now() ? (this.gameState.leftPaddleHeight || this.gameState.paddleHeight) : this.gameState.paddleHeight;
+        const rpH = this.gameState.rightPaddleBuffUntil > Date.now() ? (this.gameState.rightPaddleHeight || this.gameState.paddleHeight) : this.gameState.paddleHeight;
+        ctx.fillRect(this.gameState.leftPaddleX, this.gameState.leftPaddleY, this.gameState.paddleWidth, lpH);
         ctx.fillStyle = this.customizationSettings.opponentPaddleColor;
-        ctx.fillRect(this.gameState.rightPaddleX, this.gameState.rightPaddleY, this.gameState.paddleWidth, this.gameState.paddleHeight);
+        ctx.fillRect(this.gameState.rightPaddleX, this.gameState.rightPaddleY, this.gameState.paddleWidth, rpH);
 
         // Draw ball
         ctx.fillStyle = '#f5f5f5';
         ctx.beginPath();
         ctx.arc(this.gameState.ballPositionX, this.gameState.ballPositionY, this.gameState.radius, 0, Math.PI * 2);
         ctx.fill();
+
+        // Draw power-ups (improved system)
+        this.gameState.powerUps.forEach((powerUp: any) => {
+            // Draw square power-up with Powerpuff colors
+            const colors = ['#FF69B4', '#87CEEB', '#98FB98']; // Pink, Blue, Green
+            const color = colors[this.gameState.powerUpsSpawned % colors.length];
+            
+            ctx.save();
+            ctx.fillStyle = color;
+            ctx.fillRect(powerUp.x, powerUp.y, powerUp.width, powerUp.height);
+            
+            // Add sparkle effect
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.fillRect(powerUp.x + 3, powerUp.y + 3, powerUp.width - 6, powerUp.height - 6);
+            
+            // Add border
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(powerUp.x, powerUp.y, powerUp.width, powerUp.height);
+            ctx.restore();
+        });
     }
 
     private async endGame(winner: number): Promise<void> {
@@ -2428,6 +2711,7 @@ class SimpleAuth {
             clearInterval(this.gameLoopInterval);
             this.gameLoopInterval = null;
         }
+        this.playEndGameSound();
 
         // Update stats immediately when game ends
         if (this.currentUser) {
@@ -2447,6 +2731,7 @@ class SimpleAuth {
         const gameOverPlayer2Score = document.getElementById('gameOverPlayer2Score');
         
         if (gameOverModal && gameOverIcon && gameOverTitle && gameOverMessage) {
+            this.playEndGameSound();
             // Set winner icon and title
             gameOverIcon.textContent = '🏆';
             gameOverTitle.textContent = 'Game Over!';
@@ -3263,7 +3548,7 @@ class SimpleAuth {
                 const boxClass = 'bg-white/20 rounded-lg border border-white/30 mb-3';
                 matchDiv.className = boxClass;
                 matchDiv.innerHTML = `
-                    <div class="text-white text-base">
+                    <div class="text-white text-base text-center">
                         <div class="${match.winner === match.player1 ? 'font-bold text-powerpuff-green text-lg' : 'text-lg'}">${match.player1}</div>
                         <div class="text-sm text-gray-300 mb-1">vs</div>
                         <div class="${match.winner === match.player2 ? 'font-bold text-powerpuff-green text-lg' : 'text-lg'}">${match.player2}</div>
@@ -3662,6 +3947,10 @@ class SimpleAuth {
         
         if (tournamentResults) tournamentResults.classList.remove('hidden');
         if (championInfo) {
+            // Persist section so refresh stays on tournament page
+            localStorage.setItem('lastActiveSection', 'localTournamentSection');
+            // Play end-of-game sound for tournament completion
+            this.playEndGameSound();
             // Create comprehensive tournament summary
             const playerCount = this.tournamentState.players.length;
             const allPlayers = this.tournamentState.players.join(', ');
@@ -4038,6 +4327,27 @@ class SimpleAuth {
                             break;
                             
                         case 'game-state':
+                            // Detect paddle-hit sound by checking plane crossing since last state
+                            if (this.onlineGameState.prevBallX !== null) {
+                                const prevX = this.onlineGameState.prevBallX as number;
+                                const leftPlane = 50 + 15 + 10; // leftPaddleX + paddleWidth + radius
+                                const rightPlane = 735 - 10;     // rightPaddleX - radius
+                                const crossedLeft = prevX > leftPlane && data.ballX <= leftPlane &&
+                                    data.ballY >= data.leftPaddleY && data.ballY <= data.leftPaddleY + 100;
+                                const crossedRight = prevX < rightPlane && data.ballX >= rightPlane &&
+                                    data.ballY >= data.rightPaddleY && data.ballY <= data.rightPaddleY + 100;
+                                if (crossedLeft || crossedRight) this.playPaddleHit();
+                            }
+                            
+                            // Detect scoring sound by checking if scores increased
+                            const prevPlayer1Score = this.onlineGameState.gameState.player1Score;
+                            const prevPlayer2Score = this.onlineGameState.gameState.player2Score;
+                            if (data.player1Score > prevPlayer1Score || data.player2Score > prevPlayer2Score) {
+                                this.playScoreSound();
+                            }
+                            
+                            this.onlineGameState.prevBallX = data.ballX;
+                            this.onlineGameState.prevBallY = data.ballY;
                             // Update game state
                             this.onlineGameState.gameState.ballX = data.ballX;
                             this.onlineGameState.gameState.ballY = data.ballY;
@@ -5163,7 +5473,17 @@ class SimpleAuth {
             case 'game-update':
                 // Only update game state if game is actually started
                 if (this.aiGameState.gameStarted) {
+                    // Check for score changes to play scoring sound
+                    const prevPlayerScore = this.aiGameState.playerScore;
+                    const prevAiScore = this.aiGameState.aiScore;
+                    
                     this.aiGameState = { ...this.aiGameState, ...data.gameState };
+                    
+                    // Play scoring sound if scores increased
+                    if (this.aiGameState.playerScore > prevPlayerScore || this.aiGameState.aiScore > prevAiScore) {
+                        this.playScoreSound();
+                    }
+                    
                     this.updateAIScore();
                 }
                 break;
@@ -5660,6 +5980,7 @@ class SimpleAuth {
     private showAIGameOverModal(winner: string, playerScore: number, aiScore: number): void {
         const modal = document.getElementById('aiGameOverModal');
         if (modal) {
+            this.playEndGameSound();
             const title = document.getElementById('aiGameOverTitle');
             const message = document.getElementById('aiGameOverMessage');
             const playerScoreElement = document.getElementById('aiGameOverPlayerScore');

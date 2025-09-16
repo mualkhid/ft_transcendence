@@ -108,26 +108,52 @@ export async function handleAIGame(socket, request) {
             gameState.ballSpeedY = -gameState.ballSpeedY;
         }
 
-        // Left paddle (player) collision - EXACT copy from (1 vs 1) game
-        if (gameState.ballX - gameState.ballRadius <= gameState.playerPaddleX + gameState.paddleWidth &&
+        // Reduce tunneling: use previous position and crossing checks against paddle planes
+        const prevX = gameState.ballX - gameState.ballSpeedX;
+        const prevY = gameState.ballY - gameState.ballSpeedY;
+
+        // Left paddle (player) - ball moving left and crossing paddle plane
+        const leftPaddleRightEdge = gameState.playerPaddleX + gameState.paddleWidth;
+        const ballLeftEdge = gameState.ballX - gameState.ballRadius;
+        
+        if (gameState.ballSpeedX < 0 && 
+            prevX > leftPaddleRightEdge && ballLeftEdge <= leftPaddleRightEdge &&
             gameState.ballY >= gameState.playerPaddleY &&
             gameState.ballY <= gameState.playerPaddleY + gameState.paddleHeight) {
+            
+            // Clamp ball to paddle surface to prevent tunneling
+            gameState.ballX = leftPaddleRightEdge + gameState.ballRadius;
             gameState.ballSpeedX = Math.abs(gameState.ballSpeedX);
-            // Add some spin
+            
+            // Additional safety: ensure ball is not behind paddle
+            if (gameState.ballX < leftPaddleRightEdge) {
+                gameState.ballX = leftPaddleRightEdge + gameState.ballRadius + 1;
+            }
+            
             const spin = (Math.random() - 0.5) * 2;
-            gameState.ballSpeedY += spin;
-            gameState.ballSpeedY = Math.max(-8, Math.min(8, gameState.ballSpeedY));
+            gameState.ballSpeedY = Math.max(-8, Math.min(8, gameState.ballSpeedY + spin));
         }
 
-        // Right paddle (AI) collision - EXACT copy from (1 vs 1) game
-        if (gameState.ballX + gameState.ballRadius >= gameState.aiPaddleX &&
+        // Right paddle (AI) - ball moving right and crossing paddle plane
+        const rightPaddleLeftEdge = gameState.aiPaddleX;
+        const ballRightEdge = gameState.ballX + gameState.ballRadius;
+        
+        if (gameState.ballSpeedX > 0 && 
+            prevX < rightPaddleLeftEdge && ballRightEdge >= rightPaddleLeftEdge &&
             gameState.ballY >= gameState.aiPaddleY &&
             gameState.ballY <= gameState.aiPaddleY + gameState.paddleHeight) {
+            
+            // Clamp ball to paddle surface to prevent tunneling
+            gameState.ballX = rightPaddleLeftEdge - gameState.ballRadius;
             gameState.ballSpeedX = -Math.abs(gameState.ballSpeedX);
-            // Add some spin
+            
+            // Additional safety: ensure ball is not behind paddle
+            if (gameState.ballX > rightPaddleLeftEdge) {
+                gameState.ballX = rightPaddleLeftEdge - gameState.ballRadius - 1;
+            }
+            
             const spin = (Math.random() - 0.5) * 2;
-            gameState.ballSpeedY += spin;
-            gameState.ballSpeedY = Math.max(-8, Math.min(8, gameState.ballSpeedY));
+            gameState.ballSpeedY = Math.max(-8, Math.min(8, gameState.ballSpeedY + spin));
         }
 
         // Scoring
