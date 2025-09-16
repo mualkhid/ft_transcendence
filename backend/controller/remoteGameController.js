@@ -60,7 +60,6 @@ export async function handleRemoteGame(socket, matchId, username = null)
             match.player2.send(readyMessage);
         if (match.state.gameLoopInterval)
         {
-            console.log(`Clearing existing game loop for match ${matchId}`);
             clearInterval(match.state.gameLoopInterval);
             match.state.gameLoopInterval = null;
         }
@@ -84,10 +83,6 @@ export async function handleRemoteGame(socket, matchId, username = null)
             
             if (data.type === 'input')
                 handlePlayerInputMessage(socket, data, parseInt(matchId), playerNumber);
-            else if (data.type === 'leave') {
-            console.log(`Player ${playerNumber} voluntarily left match ${matchId}: ${data.reason}`);
-            handlePlayerLeave(socket, parseInt(matchId), playerNumber, data.reason || 'voluntarily_left');
-        }
         } catch (error) {
             console.error('Error parsing message from client:', error);
             socket.send(JSON.stringify({
@@ -98,136 +93,27 @@ export async function handleRemoteGame(socket, matchId, username = null)
     });
 
     socket.removeAllListeners('close');
-    socket.on('close', async (code, reason) => {
-        console.log(`Player ${playerNumber} disconnected from match ${matchId} - Code: ${code}, Reason: ${reason}`);
-        
+    socket.on('close', async (code, reason) => { 
         const currentMatch = getMatch(parseInt(matchId));
-        if (!currentMatch) {
-            console.log(`Match ${matchId} not found during disconnect - likely already cleaned up`);
+        if (!currentMatch)
             return;
-        }
-        
-        // CRITICAL FIX: Stop game loop immediately on ANY disconnect during active game
-        if (!currentMatch.state.gameFinished && currentMatch.state.gameLoopInterval) {
-            console.log(`EMERGENCY STOP: Clearing game loop immediately for match ${matchId}`);
-            clearInterval(currentMatch.state.gameLoopInterval);
-            currentMatch.state.gameLoopInterval = null;
-            const remainingPlayer = playerNumber === 1 ? currentMatch.player2 : currentMatch.player1;
-        if (remainingPlayer && remainingPlayer !== socket && remainingPlayer.readyState === 1) {
-            const disconnectMessage = JSON.stringify({
-                type: 'opponent-disconnected',
-                message: `Player ${playerNumber} disconnected unexpectedly`,
-                disconnectedPlayer: playerNumber,
-                reason: 'unexpected_disconnect'
-            });
-            remainingPlayer.send(disconnectMessage);
-            console.log('Sent opponent-disconnected message to remaining player.');
-        }
-            await removePlayerFromMatch(parseInt(matchId), socket);
-        }
-        
-        console.log(`Match state: gameFinished=${currentMatch.state.gameFinished}, connectedPlayers=${currentMatch.state.connectedPlayers}`);
-        
-        // Handle different closure scenarios
-        if (code === 1000) {
-            // Normal closure
-            const normalReasons = ['Game completed normally', 'Match is full', 'User chose to go home'];
-            if (normalReasons.some(normalReason => reason && reason.includes(normalReason))) {
-                console.log(`Normal closure for match ${matchId}: ${reason}`);
-                await removePlayerFromMatch(parseInt(matchId), socket);
-                return;
-            }
-        }
-        
-        // Handle page refresh/navigation (code 1001)
-        if (code === 1001) {
-            console.log(`Page navigation disconnect for match ${matchId}`);
-            // For page refreshes during active games, treat as unexpected disconnect
-            if (!currentMatch.state.gameFinished) {
-                console.log(`Treating page refresh as unexpected disconnect during active game`);
-                
-                // ADDITIONAL SAFETY: Stop game loop again
-                if (currentMatch.state.gameLoopInterval) {
-                    console.log(`SAFETY STOP: Clearing game loop for page refresh`);
-                    clearInterval(currentMatch.state.gameLoopInterval);
-                    currentMatch.state.gameLoopInterval = null;
-                }
-                
-                // Send notification to remaining player before cleanup
-                const disconnectMessage = JSON.stringify({
-                    type: 'opponent-disconnected',
-                    message: `Player ${playerNumber} disconnected (page refresh/navigation)`,
-                    disconnectedPlayer: playerNumber,
-                    reason: 'page_navigation'
-                });
-                
-                // Send to remaining connected player
-                const remainingPlayer = playerNumber === 1 ? currentMatch.player2 : currentMatch.player1;
-                if (remainingPlayer && remainingPlayer !== socket && remainingPlayer.readyState === 1) {
-                    remainingPlayer.send(disconnectMessage);
-                }
-            }
-            await removePlayerFromMatch(parseInt(matchId), socket);
-            return;
-        }
-        
-        // Handle server errors (1002, 1008, 1011)
-        if ([1002, 1008, 1011].includes(code)) {
-            console.log(`Server error closure for match ${matchId}: ${reason}`);
-            // ADDITIONAL SAFETY: Stop game loop for server errors
-            if (currentMatch.state.gameLoopInterval) {
-                console.log(`SAFETY STOP: Clearing game loop for server error`);
-                clearInterval(currentMatch.state.gameLoopInterval);
-                currentMatch.state.gameLoopInterval = null;
-            }
-            await removePlayerFromMatch(parseInt(matchId), socket);
-            return;
-        }
-        
-        // All other cases - treat as unexpected disconnect
-        console.log(`Unexpected disconnect in match ${matchId} - Code: ${code}`);
-        
-        // CRITICAL: Stop game loop for unexpected disconnects
-        if (currentMatch.state.gameLoopInterval) {
-            console.log(`SAFETY STOP: Clearing game loop for unexpected disconnect`);
+        if (!currentMatch.state.gameFinished && currentMatch.state.gameLoopInterval)
+        {
             clearInterval(currentMatch.state.gameLoopInterval);
             currentMatch.state.gameLoopInterval = null;
         }
-        
-        // Only send notification if game is still active
-        if (!currentMatch.state.gameFinished) {
-            const disconnectMessage = JSON.stringify({
-                type: 'opponent-disconnected',
-                message: `Player ${playerNumber} has disconnected unexpectedly`,
-                disconnectedPlayer: playerNumber,
-                reason: 'unexpected_disconnect'
-            });
-            
-            // Send to remaining connected player
-            const remainingPlayer = playerNumber === 1 ? currentMatch.player2 : currentMatch.player1;
-            if (remainingPlayer && remainingPlayer !== socket && remainingPlayer.readyState === 1) {
-                remainingPlayer.send(disconnectMessage);
-            }
-        }
-        
-        // Clean up the disconnected player
         await removePlayerFromMatch(parseInt(matchId), socket);
     });
 }
 
 function handlePlayerInputMessage(socket, data, matchId, playerNumber)
 {
-    // SAFETY CHECK: Get current match and verify it's still active
     const currentMatch = getMatch(matchId);
-    if (!currentMatch) {
-        console.log(`Match ${matchId} not found, ignoring input`);
+    if (!currentMatch)
         return;
-    }
     
-    if (currentMatch.state.gameFinished) {
-        console.log(`Game ${matchId} is finished, ignoring input from player ${playerNumber}`);
-        return;
-    }
+    if (currentMatch.state.gameFinished)
+         return;
     
     // Validate input type
     if (!['keydown', 'keyup'].includes(data.inputType))
@@ -277,10 +163,9 @@ function startGameCountdown(match, matchId)
     let countdown = 3;
     
     const countdownInterval = setInterval(() => {
-        // SAFETY CHECK: Verify match is still active
         const currentMatch = getMatch(matchId);
-        if (!currentMatch || currentMatch.state.gameFinished) {
-            console.log(`Match ${matchId} no longer active, stopping countdown`);
+        if (!currentMatch || currentMatch.state.gameFinished)
+        {
             clearInterval(countdownInterval);
             return;
         }
@@ -301,16 +186,12 @@ function startGameCountdown(match, matchId)
         
         countdown--;
         
-        // Countdown finished, start the game
-        if (countdown < 0) {
+        if (countdown < 0)
+        {
             clearInterval(countdownInterval);
-            
-            // FINAL SAFETY CHECK before starting game loop
             const finalMatch = getMatch(matchId);
-            if (!finalMatch || finalMatch.state.gameFinished || finalMatch.state.connectedPlayers < 2) {
-                console.log(`Cannot start game for match ${matchId}: match invalid or not enough players`);
+            if (!finalMatch || finalMatch.state.gameFinished || finalMatch.state.connectedPlayers < 2)
                 return;
-            }
             
             // Send game start message
             const gameStartMessage = JSON.stringify({
@@ -325,101 +206,22 @@ function startGameCountdown(match, matchId)
             if (match.player2 && match.player2.readyState === 1)
                 match.player2.send(gameStartMessage);
             
-            // Start the main game loop with additional safety checks
-            console.log(`Starting game loop for match ${matchId}`);
             match.state.gameLoopInterval = setInterval(() => {
-                // CRITICAL: Check if game should still be running before each update
                 const activeMatch = getMatch(matchId);
-                if (!activeMatch || activeMatch.state.gameFinished || activeMatch.state.connectedPlayers < 2) {
-                    console.log(`Game loop stopping for match ${matchId}: invalid state`);
-                    if (activeMatch && activeMatch.state.gameLoopInterval) {
+                if (!activeMatch || activeMatch.state.gameFinished || activeMatch.state.connectedPlayers < 2)
+                {
+                    if (activeMatch && activeMatch.state.gameLoopInterval)
+                    {
                         clearInterval(activeMatch.state.gameLoopInterval);
                         activeMatch.state.gameLoopInterval = null;
-                        if (activeMatch) activeMatch.state.gameFinished = true;
+                        if (activeMatch)
+                            activeMatch.state.gameFinished = true;
                     }
                     return;
                 }
                 
                 updateBall(matchId);
             }, 16); // 16ms = roughly 60 FPS
-            
-            console.log(`Game loop started for match ${matchId} with interval ID:`, match.state.gameLoopInterval);
         }
     }, 1000); // 1 second intervals for countdown
-}
-
-async function handlePlayerLeave(socket, matchId, playerNumber, reason) {
-    const match = getMatch(matchId);
-    if (!match) {
-        console.log(`Match ${matchId} not found for leave handling`);
-        return;
-    }
-
-    // If game is already finished, just clean up
-    if (match.state.gameFinished) {
-        console.log(`Game ${matchId} already finished, just cleaning up player ${playerNumber}`);
-        await removePlayerFromMatch(matchId, socket);
-        return;
-    }
-
-    // Stop the game immediately
-    if (match.state.gameLoopInterval) {
-        clearInterval(match.state.gameLoopInterval);
-        match.state.gameLoopInterval = null;
-    }
-    match.state.gameFinished = true;
-
-    // Determine winner (the player who didn't leave)
-    const remainingPlayerNumber = playerNumber === 1 ? 2 : 1;
-    const leavingPlayerUsername = playerNumber === 1 ? match.state.player1Username : match.state.player2Username;
-    const remainingPlayerUsername = playerNumber === 1 ? match.state.player2Username : match.state.player1Username;
-    
-    // Update database stats
-    try {
-        await updateDashboardStats(
-            match.state.player1Username,
-            match.state.player2Username,
-            remainingPlayerUsername // Winner is the one who stayed
-        );
-    } catch (error) {
-        console.error(`Failed to update dashboard stats: ${error.message}`);
-    }
-
-    // Send game-abandoned message to remaining player
-    const remainingPlayer = playerNumber === 1 ? match.player2 : match.player1;
-    if (remainingPlayer && remainingPlayer.readyState === 1) {
-        const abandonMessage = {
-            type: 'game-abandoned',
-            message: `${leavingPlayerUsername} left the game. You win!`,
-            winner: remainingPlayerNumber,
-            winnerAlias: remainingPlayerUsername,
-            player1Username: match.state.player1Username,
-            player2Username: match.state.player2Username,
-            player1Score: match.state.scorePlayer1,
-            player2Score: match.state.scorePlayer2,
-            reason: 'opponent_left'
-        };
-        remainingPlayer.send(JSON.stringify(abandonMessage));
-        console.log(`Sent win-by-leave message to ${remainingPlayerUsername}`);
-    }
-
-    // Update match in database
-    if (match.matchId) {
-        try {
-            await completeMatch(
-                match.matchId,
-                remainingPlayerUsername,
-                match.state.scorePlayer1,
-                match.state.scorePlayer2
-            );
-        } catch (error) {
-            console.error(`Failed to complete match in DB: ${error.message}`);
-        }
-    }
-
-    // Clean up the player who left
-    await removePlayerFromMatch(matchId, socket);
-    
-    // Close the socket with a specific reason
-    socket.close(1000, 'Player voluntarily left the game');
 }

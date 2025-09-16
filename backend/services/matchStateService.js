@@ -11,7 +11,6 @@ const prisma = new PrismaClient();
 const activeMatches = new Map();
 const waitingPlayers = new Map(); 
 
-// Add a counter for sequential match IDs to avoid collisions
 let matchIdCounter = 1;
 const generateMatchId = () => matchIdCounter++;
 
@@ -85,29 +84,6 @@ export async function addPlayerToMatch(matchId, websocket, username = null)
         return null;
     }
 
-    const wasPlayer1 = match.state.player1Username === username;
-    const wasPlayer2 = match.state.player2Username === username;
-
-    if (wasPlayer1) {
-        console.log(`Reconnecting ${username} as player 1`);
-        match.player1 = websocket;
-        if (match.state.connectedPlayers === 0) {
-            match.state.connectedPlayers = 1;
-        }
-        return 1;
-    }
-    
-    if (wasPlayer2) {
-        console.log(`Reconnecting ${username} as player 2`);
-        match.player2 = websocket;
-        if (match.state.connectedPlayers === 1) {
-            match.state.connectedPlayers = 2;
-        } else {
-            match.state.connectedPlayers = 1;
-        }
-        return 2;
-    }
-
     if(!match.player1)
     {
         match.player1 = websocket;
@@ -143,22 +119,20 @@ export function removePlayerFromMatch(matchId, websocket) {
         disconnectedPlayer = 2;
     }
 
-    // Only handle active game disconnects
-    if (disconnectedPlayer && !match.state.gameFinished) {
-        console.log(`🛑 Player ${disconnectedPlayer} disconnected. Handling cleanup.`);
-
-        // CRITICAL: Stop the game loop immediately and mark as finished
-        if (match.state.gameLoopInterval) {
+    if (disconnectedPlayer && !match.state.gameFinished)
+    {
+        if (match.state.gameLoopInterval)
+        {
             clearInterval(match.state.gameLoopInterval);
             match.state.gameLoopInterval = null;
         }
         match.state.gameFinished = true;
 
-        // Notify the remaining player
         const remainingPlayer = disconnectedPlayer === 1 ? match.player2 : match.player1;
         const remainingPlayerUsername = disconnectedPlayer === 1 ? match.state.player2Username : match.state.player1Username;
 
-        if (remainingPlayer && remainingPlayer.readyState === 1) {
+        if (remainingPlayer && remainingPlayer.readyState === 1)
+        {
             const abandonMessage = {
                 type: 'game-abandoned',
                 message: `Opponent disconnected. You win!`,
@@ -168,15 +142,18 @@ export function removePlayerFromMatch(matchId, websocket) {
             remainingPlayer.send(JSON.stringify(abandonMessage));
             console.log('Sent win-by-disconnect message to remaining player.');
         }
-
-        // Update database and clean up
-        // This logic is mostly correct in your original code.
-        // You can keep the setTimeout to delete the match from the map
-        // after a short delay.
         activeMatches.delete(matchId);
         console.log(`Match ${matchId} deleted from memory after cleanup.`);
+        //check if necessary to update stats on disconnect
+        updateDashboardStats(
+            match.state.player1Username, 
+            match.state.player2Username,
+            remainingPlayerUsername
+        ).catch(error => {
+            console.error(`Failed to update dashboard stats after disconnect: ${error.message}`);
+        });
     }
-     if (!match.player1 && !match.player2) {
+    if (!match.player1 && !match.player2) {
         activeMatches.delete(matchId);
         console.log(`Match ${matchId} deleted from memory (both players gone).`);
     }
@@ -197,7 +174,6 @@ export function handlePlayerInput(matchId, playerNumber, inputType, inputState)
     if(!match)
         return (null);
 
-    // SAFETY CHECK: Don't process input if game is finished
     if (match.state.gameFinished) {
         console.log(`Ignoring input for finished game ${matchId}`);
         return null;
@@ -297,10 +273,10 @@ export async function updateBall(matchId)
     if(!match)
         return (null);
 
-    // CRITICAL SAFETY CHECK: Don't update if game is finished or if no game loop interval
-    if (match.state.gameFinished) {
-        console.log(`🛑 Game ${matchId} is finished, stopping ball updates`);
-        if (match.state.gameLoopInterval) {
+    if (match.state.gameFinished)
+    {
+        if (match.state.gameLoopInterval)
+        {
             clearInterval(match.state.gameLoopInterval);
             match.state.gameLoopInterval = null;
         }
@@ -308,9 +284,10 @@ export async function updateBall(matchId)
     }
 
     // Check if both players are still connected
-    if (match.state.connectedPlayers < 2) {
-        console.log(`🛑 Not enough players in match ${matchId} (${match.state.connectedPlayers}/2), stopping game`);
-        if (match.state.gameLoopInterval) {
+    if (match.state.connectedPlayers < 2)
+    {
+        if (match.state.gameLoopInterval)
+        {
             clearInterval(match.state.gameLoopInterval);
             match.state.gameLoopInterval = null;
         }
@@ -342,7 +319,6 @@ export async function updateBall(matchId)
         match.state.scorePlayer2++;
         if(match.state.scorePlayer2 >= match.state.maxScore)
         {
-            console.log(`🏆 Player 2 wins match ${matchId}! Stopping game immediately.`);
             if (match.state.gameLoopInterval)
             {
                 clearInterval(match.state.gameLoopInterval);
@@ -365,7 +341,6 @@ export async function updateBall(matchId)
         match.state.scorePlayer1++; 
         if(match.state.scorePlayer1 >= match.state.maxScore)
         {
-            console.log(`🏆 Player 1 wins match ${matchId}! Stopping game immediately.`);
             if (match.state.gameLoopInterval)
             {
                 clearInterval(match.state.gameLoopInterval);
@@ -389,8 +364,8 @@ export async function updateBall(matchId)
 
 function broadcastGameState(match)
 {
-    // SAFETY CHECK: Don't broadcast if game is finished
-    if (match.state.gameFinished) {
+    if (match.state.gameFinished)
+    {
         console.log(`Game finished, not broadcasting game state`);
         return;
     }
@@ -427,8 +402,6 @@ async function broadcastGameOver(match, winner, matchId)
         player2Username: match.state.player2Username
     });
 
-    console.log(`Broadcasting game over for match ${matchId}: ${winnerUsername} wins`);
-
     // Send to player 1
     if(match.player1 && match.player1.readyState === 1)
         match.player1.send(gameOverData);
@@ -446,13 +419,11 @@ async function broadcastGameOver(match, winner, matchId)
             match.state.scorePlayer2
         );
     }
-    
-    // Clean up game loop - ENSURE it's stopped
+
     if (match.state.gameLoopInterval)
     {
         clearInterval(match.state.gameLoopInterval);
         match.state.gameLoopInterval = null;
-        console.log(`🛑 Game loop stopped for match ${matchId} after game over`);
     }
     
     // Mark as finished
@@ -464,36 +435,21 @@ async function broadcastGameOver(match, winner, matchId)
 // Fixed findOrCreateMatch to prevent reconnection to finished games
 export async function findorCreateMatch(websocket, username)
 {
-    console.log('FindOrCreateMatch called for:', username);
-    console.log('Current waiting players:', Array.from(waitingPlayers.keys()));
-    console.log('Current active matches:', Array.from(activeMatches.keys()));
-    
-    // First, check if user is already in an existing match (reconnection scenario)
-    for (const [matchId, match] of activeMatches) {
+    for (const [matchId, match] of activeMatches)
+    {
         const isPlayer1 = match.state.player1Username === username;
         const isPlayer2 = match.state.player2Username === username;
         
-        if (isPlayer1 || isPlayer2) {
-            console.log(`User ${username} found in existing match ${matchId}`);
-            console.log(`Game finished: ${match.state.gameFinished}`);
-            
-            // Don't allow reconnection to finished games
-            if (match.state.gameFinished) {
-                console.log(`Match ${matchId} is finished, not allowing reconnection`);
-                continue; // Look for other matches or create new one
-            }
-            
+        if (isPlayer1 || isPlayer2)
+        {
+            if (match.state.gameFinished)
+                continue;
             const existingSocket = isPlayer1 ? match.player1 : match.player2;
             
-            if (existingSocket && existingSocket.readyState === 1 && existingSocket !== websocket) {
-                // They have an active connection from elsewhere - reject this one
-                console.log(`User ${username} already has active connection in match ${matchId}`);
+            if (existingSocket && existingSocket.readyState === 1 && existingSocket !== websocket)
                 throw new Error('You are already in this match!');
-            } else {
-                // Their previous connection is dead or this is a reconnection - allow it
-                console.log(`Allowing reconnection for ${username} to match ${matchId}`);
+            else
                 return { matchId, created: false, reconnected: true };
-            }
         }
     }
 
@@ -501,33 +457,17 @@ export async function findorCreateMatch(websocket, username)
     for(const [waitingMatchId, waitingData] of waitingPlayers)
     {
         const match = getMatch(waitingMatchId);
-        if(match && match.state.connectedPlayers === 1 && !match.state.gameFinished) {
-            // Make sure this isn't the same user trying to join their own match
-            if (match.state.player1Username === username || match.state.player2Username === username) {
-                console.log(`User ${username} trying to join their own match ${waitingMatchId}, skipping...`);
+        if(match && match.state.connectedPlayers === 1 && !match.state.gameFinished)
+        {
+            if (match.state.player1Username === username || match.state.player2Username === username)
                 continue;
-            }
-            
-            console.log(`Found available match ${waitingMatchId} for ${username}`);
-            console.log(`Match has ${match.state.connectedPlayers} players`);
-            console.log(`Player1: ${match.state.player1Username}, Player2: ${match.state.player2Username}`);
-            
-            // Remove from waiting list since this match will be full
             waitingPlayers.delete(waitingMatchId);
             return { matchId: waitingMatchId, created: false };
         }
     }
-
-    // No suitable match found, create a new one with sequential ID
     const matchId = generateMatchId();
-    console.log(`Creating new match ${matchId} for ${username}`);
-
-    await createMatchState(matchId, username, 'Player2'); // Start with username as player1
+    await createMatchState(matchId, username, 'Player2');
     waitingPlayers.set(matchId, { username, timestamp: Date.now() });
-    
-    console.log(`New match ${matchId} created and added to waiting list`);
-    console.log('Updated waiting players:', Array.from(waitingPlayers.keys()));
-    
     return { matchId, created: true };
 }
 

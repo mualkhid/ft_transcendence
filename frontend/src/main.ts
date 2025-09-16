@@ -1466,17 +1466,17 @@ class SimpleAuth {
         this.setupColorblindToggle();
 
         // Set up periodic refresh of friends list for real-time online status
-        this.setupFriendsRefresh();
+        // this.setupFriendsRefresh();
     }
 
-    private setupFriendsRefresh(): void {
-        // Refresh friends list every 30 seconds to update online status
-        setInterval(() => {
-            if (this.currentUser && document.getElementById('friendsSection')?.classList.contains('hidden') === false) {
-                this.loadFriendsData();
-            }
-        }, 30000); // 30 seconds
-    }
+    // private setupFriendsRefresh(): void {
+    //     // Refresh friends list every 30 seconds to update online status
+    //     setInterval(() => {
+    //         if (this.currentUser && document.getElementById('friendsSection')?.classList.contains('hidden') === false) {
+    //             this.loadFriendsData();
+    //         }
+    //     }, 30000); // 30 seconds
+    // }
 
     private setupDashboardNavigation(): void {
         // Setup dashboard navigation buttons
@@ -4104,22 +4104,22 @@ class SimpleAuth {
                         console.log('Stopped frontend game loop due to abandonment');
                     }
                     // Determine if current user won by disconnect
-                    const currentUsername = this.currentUser?.username;
-                    const isWinnerByDisconnect = (currentUsername === data.winnerAlias);
-                    
                     // Show game over screen with disconnect info
                     const gameOverScreenData = {
                         winner: data.winnerAlias,
-                        winnerScore: isWinnerByDisconnect ? 'WIN by disconnect' : 'LOSS by disconnect',
-                        loserScore: 'Opponent disconnected',
+                        winnerScore: Math.max(data.player1Score || 0, data.player2Score || 0),
+                        loserScore: Math.min(data.player1Score || 0, data.player2Score || 0),
                         player1Username: data.player1Username,
                         player2Username: data.player2Username,
-                        player1Score: data.player1Score,
-                        player2Score: data.player2Score,
+                        player1Score: data.player1Score || 0,
+                        player2Score: data.player2Score || 0,
                         reason: 'disconnect'
                     };
-                    
                     this.showGameOverScreen(gameOverScreenData);
+                    
+                    const currentUsername = this.currentUser?.username;
+                    const isWinnerByDisconnect = (currentUsername === data.winnerAlias);
+                    
                     
                     // Update status
                     if (isWinnerByDisconnect) {
@@ -4691,9 +4691,14 @@ class SimpleAuth {
         if (gameOverModal && gameOverIcon && gameOverTitle && gameOverMessage) {
             // Determine if current user won
             const currentUsername = this.currentUser?.username;
-            const isWinner = (currentUsername === data.winner) ||
-                            (currentUsername === data.player1Username && data.player1Score > data.player2Score) ||
-                            (currentUsername === data.player2Username && data.player2Score > data.player1Score);
+            let isWinner = false;
+            if (data.winner === currentUsername || data.winnerAlias === currentUsername) {
+                isWinner = true;
+            } else if (data.player1Username === currentUsername && data.player1Score > data.player2Score) {
+                isWinner = true;
+            } else if (data.player2Username === currentUsername && data.player2Score > data.player1Score) {
+                isWinner = true;
+            }
             
             // Set appropriate icon and message
             gameOverIcon.textContent = isWinner ? '🏆' : '💔';
