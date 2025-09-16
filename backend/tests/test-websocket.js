@@ -8,13 +8,12 @@ await fastify.register(fastifyWebsocket);
 
 // Simple matchmaking endpoint
 fastify.get('/api/matchmaking', { websocket: true }, async (connection, request) => {
-    console.log('=== TEST MATCHMAKING CONNECTION ===');
-    console.log('Request headers:', request.headers);
+    // Test matchmaking connection established
     
     const userId = 'test_' + Date.now();
     const username = 'TestUser_' + Math.floor(Math.random() * 1000);
     
-    console.log(`User ${username} (${userId}) connected to test matchmaking`);
+    // User connected to test matchmaking
     
     // Send initial status
     connection.socket.send(JSON.stringify({
@@ -26,10 +25,10 @@ fastify.get('/api/matchmaking', { websocket: true }, async (connection, request)
     connection.socket.on('message', (message) => {
         try {
             const data = JSON.parse(message);
-            console.log('Received test message:', data);
+            // Received test message
             
             if (data.type === 'join-queue') {
-                console.log('User joined queue:', data.username);
+                // User joined queue
                 
                 // Send confirmation
                 connection.socket.send(JSON.stringify({
@@ -45,7 +44,7 @@ fastify.get('/api/matchmaking', { websocket: true }, async (connection, request)
                         message: 'Test match found!'
                     });
                     connection.socket.send(matchFoundMessage);
-                    console.log('Sent test match-found message');
+                    // Sent test match-found message
                 }, 2000);
             }
         } catch (error) {
@@ -55,7 +54,7 @@ fastify.get('/api/matchmaking', { websocket: true }, async (connection, request)
     
     // Handle disconnection
     connection.socket.on('close', (code, reason) => {
-        console.log(`Test user ${username} disconnected. Code: ${code}, Reason: ${reason}`);
+        // Test user disconnected
     });
     
     // Handle errors
@@ -66,8 +65,7 @@ fastify.get('/api/matchmaking', { websocket: true }, async (connection, request)
 
 // Simple game endpoint
 fastify.get('/api/remote-game/:matchId', { websocket: true }, async (connection, request) => {
-    console.log('=== TEST GAME CONNECTION ===');
-    console.log('Match ID:', request.params.matchId);
+    // Test game connection established
     
     const playerNumber = Math.floor(Math.random() * 2) + 1;
     
@@ -81,13 +79,13 @@ fastify.get('/api/remote-game/:matchId', { websocket: true }, async (connection,
     });
     
     connection.socket.send(successMessage);
-    console.log('Sent test success message');
+    // Sent test success message
     
     // Handle messages
     connection.socket.on('message', (message) => {
         try {
             const data = JSON.parse(message);
-            console.log('Received test game message:', data);
+            // Received test game message
             
             // Echo back the message
             connection.socket.send(JSON.stringify({
@@ -101,14 +99,14 @@ fastify.get('/api/remote-game/:matchId', { websocket: true }, async (connection,
     
     // Handle disconnection
     connection.socket.on('close', (code, reason) => {
-        console.log(`Test game connection closed. Code: ${code}, Reason: ${reason}`);
+        // Test game connection closed
     });
 });
 
 // Start server
 try {
     const address = await fastify.listen({ port: 3001, host: '0.0.0.0' });
-    console.log(`Test WebSocket server running at ${address}`);
+    // Test WebSocket server running
 } catch (err) {
     fastify.log.error("Test server error:", err);
     process.exit(1);

@@ -3,10 +3,10 @@ import { generateToken, verifyToken } from '../services/jwtService.js';
 async function testJWT() {
   const payload = { id: 123, username: 'testuser' };
   const token = generateToken(payload);
-  console.log('Generated Token:', token);
+  // Token generated successfully
 
   const decoded = verifyToken(token);
-  console.log('Decoded Payload:', decoded);
+  // Token verified successfully
 }
 
 testJWT();

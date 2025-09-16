@@ -165,7 +165,7 @@ async function dashboardRoutes(fastify, options) {
                 return {
                     type: game.player2Alias === 'AI' ? 'AI Game' : 
                           game.player2Alias === 'Local Player' ? 'Local Game' :
-                          game.tournamentId ? 'Tournament' : 'Multiplayer',
+                          game.tournamentId ? 'Tournament' : 'Remote Game',
                     opponent: game.player2Alias,
                     result: isPlayerWin ? 'WIN' : 'LOSS',
                     score: `${playerScore}-${opponentScore}`,
@@ -202,7 +202,7 @@ async function dashboardRoutes(fastify, options) {
             if (totalLocalGames > totalAIGames && totalLocalGames > multiplayerGames && totalLocalGames > tournamentGames) {
                 favoriteGameType = 'Local Games';
             } else if (multiplayerGames > totalAIGames && multiplayerGames > tournamentGames) {
-                favoriteGameType = 'Multiplayer';
+                favoriteGameType = 'Remote Game';
             } else if (tournamentGames > totalAIGames && tournamentGames > multiplayerGames) {
                 favoriteGameType = 'Tournaments';
             }

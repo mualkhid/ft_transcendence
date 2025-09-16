@@ -520,7 +520,7 @@
         <div class="navigation">
             <button class="nav-button active" onclick="showSection('overview')">Overview</button>
             <button class="nav-button" onclick="showSection('ai-games')">AI Games</button>
-            <button class="nav-button" onclick="showSection('multiplayer')">Multiplayer</button>
+            <button class="nav-button" onclick="showSection('multiplayer')">Remote Game</button>
             <button class="nav-button" onclick="showSection('tournaments')">Tournaments</button>
         </div>
 
@@ -639,13 +639,13 @@
             </div>
         </div>
 
-        <!-- Multiplayer Section -->
+        <!-- Remote Game Section -->
         <div id="multiplayer-section" class="dashboard-section" style="display: none;">
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-header">
                         <div class="stat-icon">👥</div>
-                        <div class="stat-title">Multiplayer Wins</div>
+                        <div class="stat-title">Remote Game Wins</div>
                     </div>
                     <div class="stat-value" id="mp-wins">--</div>
                     <div class="stat-description">Victories against real players</div>
@@ -823,8 +823,8 @@
                 // Render AI games section
                 this.renderAIGames(data.aiGameStats);
                 
-                // Render multiplayer section
-                this.renderMultiplayer(data.multiplayerStats);
+                // Render remote game section
+                this.renderRemoteGame(data.multiplayerStats);
                 
                 // Render tournaments section
                 this.renderTournaments(data.tournamentStats);
@@ -890,7 +890,7 @@
                 document.getElementById('ai-avg-score').textContent = stats.averageScore;
             }
 
-            renderMultiplayer(stats) {
+            renderRemoteGame(stats) {
                 document.getElementById('mp-wins').textContent = stats.wins;
                 document.getElementById('mp-win-rate').textContent = `${stats.winRate}%`;
                 document.getElementById('best-opponent').textContent = 'Player123';

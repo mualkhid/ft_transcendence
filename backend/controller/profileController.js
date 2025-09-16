@@ -121,11 +121,9 @@ export async function updateAvatar(req, reply)
 	// 5) Commit: move tmp -> final (atomic)
 	await img.deleteUserAvatars(id)
 	await (await import('node:fs/promises')).rename(tmpPath, destPath);
-	console.log("renamed file: ")
 	
 	// 6) Persist URL
 	const publicUrl = img.buildPublicUrl(filename);
-	console.log("publicUrl: ", publicUrl)
 	await prisma.user.update({ where: { id }, data: { avatarUrl: publicUrl } });
 
 	return reply.status(200).send({ avatarUrl: publicUrl });
@@ -205,7 +203,6 @@ export async function updateStats(req, reply) {
                     ]
                 });
 
-                console.log(`${gameType} game result saved to database:`, match.id);
             } catch (error) {
                 console.error(`Failed to save ${gameType} game result:`, error);
                 // Continue with stats update even if match saving fails

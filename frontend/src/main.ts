@@ -65,8 +65,6 @@ class SimpleAuth {
                 e.preventDefault();
                 this.handleRegistration();
             });
-        } else {
-            console.error('Registration form not found!');
         }
 
         const loginForm = document.getElementById('loginForm');
@@ -85,8 +83,6 @@ class SimpleAuth {
                 e.preventDefault();
                 this.showPage('loginPage');
             });
-        } else {
-            console.error('Show login button not found!');
         }
 
         const showRegBtn = document.getElementById('showRegistrationPage');
@@ -198,8 +194,6 @@ class SimpleAuth {
                 // Only start match if there's a current match available
                 if (this.tournamentState.matches[this.tournamentState.currentMatch]) {
                     this.startCurrentMatch();
-                } else {
-                    console.log('No match available to start');
                 }
             });
         }
@@ -236,9 +230,6 @@ class SimpleAuth {
             return;
         }
 
-        console.log('Current user:', this.currentUser);
-        console.log('localStorage user:', localStorage.getItem('user'));
-        console.log('Current cookies:', document.cookie);
 
         // Check if backend is running first
         try {
@@ -1611,7 +1602,7 @@ class SimpleAuth {
         console.log('Dashboard data received:', dashboardData);
         console.log('AI Game Stats:', dashboardData.aiGameStats);
         console.log('Local Game Stats:', dashboardData.localGameStats);
-        console.log('Multiplayer Stats:', dashboardData.multiplayerStats);
+        console.log('Remote Game Stats:', dashboardData.multiplayerStats);
         console.log('Tournament Stats:', dashboardData.tournamentStats);
         
         // Update AI Games stats on home page
@@ -1632,7 +1623,7 @@ class SimpleAuth {
         if (homeLocalWins) homeLocalWins.textContent = dashboardData.localGameStats?.wins || '0';
         if (homeLocalWinRate) homeLocalWinRate.textContent = `${dashboardData.localGameStats?.winRate || 0}%`;
 
-        // Update Multiplayer stats on home page
+        // Update Remote Game stats on home page
         const homeMPGames = document.getElementById('homeMPGames');
         const homeMPWins = document.getElementById('homeMPWins');
         const homeMPWinRate = document.getElementById('homeMPWinRate');
@@ -5696,12 +5687,12 @@ class SimpleAuth {
     }
 
     /**
-     * Toggle colorblind mode
+     * Toggle contrast mode
      */
     public toggleColorblindMode(): void {
-        console.log('toggleAccessibilityMode called, current mode:', this.colorblindMode);
+        console.log('toggleContrastMode called, current mode:', this.colorblindMode);
         this.colorblindMode = !this.colorblindMode;
-        console.log('New accessibility mode:', this.colorblindMode);
+        console.log('New contrast mode:', this.colorblindMode);
         this.applyColorblindMode();
         
         // Save preference to localStorage
@@ -5710,8 +5701,8 @@ class SimpleAuth {
         // Update button text
         const colorblindToggle = document.getElementById('colorblindToggle');
         if (colorblindToggle) {
-            colorblindToggle.textContent = this.colorblindMode ? '♿ Normal' : '♿ Accessibility';
-            colorblindToggle.title = this.colorblindMode ? 'Switch to Normal Mode' : 'Switch to Accessibility Mode';
+            colorblindToggle.textContent = this.colorblindMode ? '☀️ Normal' : '☀️ Contrast';
+            colorblindToggle.title = this.colorblindMode ? 'Switch to Normal Mode' : 'Switch to Contrast Mode';
             console.log('Button text updated to:', colorblindToggle.textContent);
         }
     }

@@ -665,7 +665,7 @@
             <button class="nav-button active" onclick="showSection('overview')">Overview</button>
             <button class="nav-button" onclick="showSection('ai-games')">AI Games</button>
             <button class="nav-button" onclick="showSection('local-games')">Local Games</button>
-            <button class="nav-button" onclick="showSection('multiplayer')">Multiplayer</button>
+            <button class="nav-button" onclick="showSection('multiplayer')">Remote Game</button>
             <button class="nav-button" onclick="showSection('tournaments')">Tournaments</button>
         </div>
 
@@ -825,13 +825,13 @@
             </div>
         </div>
 
-        <!-- Multiplayer Section -->
+        <!-- Remote Game Section -->
         <div id="multiplayer-section" class="dashboard-section" style="display: none;">
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-header">
                         <div class="stat-icon">👥</div>
-                        <div class="stat-title">Multiplayer Wins</div>
+                        <div class="stat-title">Remote Game Wins</div>
                     </div>
                     <div class="stat-value" id="mp-wins">--</div>
                     <div class="stat-description">Victories against real players</div>
@@ -1008,7 +1008,7 @@
                     } else if (sectionName === 'ai-games') {
                         this.renderAIGames(this.dashboardData.data.aiGameStats);
                     } else if (sectionName === 'multiplayer') {
-                        this.renderMultiplayer(this.dashboardData.data.multiplayerStats);
+                        this.renderRemoteGame(this.dashboardData.data.multiplayerStats);
                     } else if (sectionName === 'tournaments') {
                         this.renderTournaments(this.dashboardData.data.tournamentStats);
                     }
@@ -1029,8 +1029,8 @@
                 // Render local games section
                 this.renderLocalGames(data.localGameStats);
                 
-                // Render multiplayer section
-                this.renderMultiplayer(data.multiplayerStats);
+                // Render remote game section
+                this.renderRemoteGame(data.multiplayerStats);
                 
                 // Render tournaments section
                 this.renderTournaments(data.tournamentStats);
@@ -1153,7 +1153,7 @@
                 }
             }
 
-            renderMultiplayer(stats) {
+            renderRemoteGame(stats) {
                 if (!stats) return;
                 document.getElementById('mp-wins').textContent = stats.wins ?? '0';
                 document.getElementById('mp-win-rate').textContent = `${stats.winRate ?? 0}%`;

@@ -5,7 +5,7 @@ import { prisma } from '../prisma/prisma_lib.js';
  * 
  * Provides aggregated statistics and analytics for all game types:
  * - AI Pong Games
- * - Remote Multiplayer Games
+ * - Remote Games
  * - Tournament Games
  * - User Performance Metrics
  * - Game Trends and Insights
@@ -271,7 +271,7 @@ export class DashboardService {
     }
 
     /**
-     * Get Multiplayer Game Statistics (Remote/Online games)
+     * Get Remote Game Statistics (Remote/Online games)
      */
     static async getMultiplayerStats(userId) {
         try {
@@ -293,12 +293,23 @@ export class DashboardService {
             }
 
             // Count multiplayer games (exclude AI games, local games, and tournament games)
+            // User can be either player1Alias or player2Alias in remote games
             const totalGames = await prisma.match.count({
                 where: {
-                    player1Alias: user.username,
-                    player2Alias: { 
-                        not: { in: ['AI', 'Local Player'] }
-                    },
+                    OR: [
+                        {
+                            player1Alias: user.username,
+                            player2Alias: { 
+                                not: { in: ['AI', 'Local Player'] }
+                            }
+                        },
+                        {
+                            player2Alias: user.username,
+                            player1Alias: { 
+                                not: { in: ['AI', 'Local Player'] }
+                            }
+                        }
+                    ],
                     tournamentId: null, // Exclude tournament games
                     status: 'FINISHED'
                 }
@@ -306,10 +317,20 @@ export class DashboardService {
 
             const wins = await prisma.match.count({
                 where: {
-                    player1Alias: user.username,
-                    player2Alias: { 
-                        not: { in: ['AI', 'Local Player'] }
-                    },
+                    OR: [
+                        {
+                            player1Alias: user.username,
+                            player2Alias: { 
+                                not: { in: ['AI', 'Local Player'] }
+                            }
+                        },
+                        {
+                            player2Alias: user.username,
+                            player1Alias: { 
+                                not: { in: ['AI', 'Local Player'] }
+                            }
+                        }
+                    ],
                     tournamentId: null, // Exclude tournament games
                     status: 'FINISHED',
                     winnerAlias: user.username
@@ -335,6 +356,50 @@ export class DashboardService {
             };
         } catch (error) {
             console.error('Error getting multiplayer stats:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get General Multiplayer Statistics (for public dashboard)
+     */
+    static async getGeneralMultiplayerStats() {
+        try {
+            // Count all multiplayer games (exclude AI games, local games, and tournament games)
+            const totalGames = await prisma.match.count({
+                where: {
+                    player2Alias: { 
+                        not: { in: ['AI', 'Local Player'] }
+                    },
+                    tournamentId: null, // Exclude tournament games
+                    status: 'FINISHED'
+                }
+            });
+
+            const wins = await prisma.match.count({
+                where: {
+                    player2Alias: { 
+                        not: { in: ['AI', 'Local Player'] }
+                    },
+                    tournamentId: null, // Exclude tournament games
+                    status: 'FINISHED',
+                    winnerAlias: { not: null }
+                }
+            });
+
+            const losses = totalGames - wins;
+            const winRate = totalGames > 0 ? (wins / totalGames * 100).toFixed(1) : 0;
+
+            return {
+                totalGames,
+                wins,
+                losses,
+                winRate: parseFloat(winRate),
+                averageScore: 0, // Would need to calculate from match players
+                bestScore: 0     // Would need to calculate from match players
+            };
+        } catch (error) {
+            console.error('Error getting general multiplayer stats:', error);
             throw error;
         }
     }
@@ -451,7 +516,7 @@ export class DashboardService {
                 const playerScore = game.players.find(p => p.alias === user.username)?.score || 0;
                 const opponentScore = game.players.find(p => p.alias !== user.username)?.score || 0;
                 
-                let gameType = 'Multiplayer';
+                let gameType = 'Remote Game';
                 if (game.player2Alias === 'AI') {
                     gameType = 'AI Game';
                 } else if (game.player2Alias === 'Local Player') {
@@ -580,7 +645,7 @@ export class DashboardService {
             { name: 'Local Legend', description: 'Win 5 local games', icon: '🎮🔥', category: 'game_type', requirement: '5 local wins', requirementValue: 5, requirementType: 'localWins' },
             { name: 'Local King', description: 'Win 10 local games', icon: '🎮👑', category: 'game_type', requirement: '10 local wins', requirementValue: 10, requirementType: 'localWins' },
 
-            // 🔗 Multiplayer Game Achievements
+            // 🔗 Remote Game Achievements
             { name: 'Online Warrior', description: 'Win an online game', icon: '🔗', category: 'game_type', requirement: '1 online win', requirementValue: 1, requirementType: 'multiplayerWins' },
             { name: 'Online Champion', description: 'Win 5 online games', icon: '🔗💪', category: 'game_type', requirement: '5 online wins', requirementValue: 5, requirementType: 'multiplayerWins' },
             { name: 'Online Legend', description: 'Win 10 online games', icon: '🔗👑', category: 'game_type', requirement: '10 online wins', requirementValue: 10, requirementType: 'multiplayerWins' },
@@ -917,7 +982,7 @@ export class DashboardService {
         const gameTypes = [
             { name: 'AI Games', count: stats.aiGameStats.totalGames },
             { name: 'Local Games', count: stats.localGameStats.totalGames },
-            { name: 'Multiplayer', count: stats.multiplayerStats.totalGames },
+            { name: 'Remote Game', count: stats.multiplayerStats.totalGames },
             { name: 'Tournaments', count: stats.tournamentStats.totalGames }
         ];
         const favoriteGameType = gameTypes.reduce((max, current) => 
@@ -942,7 +1007,7 @@ export class DashboardService {
             totalGames,
             totalWins,
             overallWinRate: parseFloat(overallWinRate),
-            favoriteGameType: stats.aiGameStats.totalGames > stats.multiplayerStats.totalGames ? 'AI Games' : 'Multiplayer',
+            favoriteGameType: stats.aiGameStats.totalGames > stats.multiplayerStats.totalGames ? 'AI Games' : 'Remote Game',
             skillLevel: this.calculateSkillLevel(parseFloat(overallWinRate))
         };
     }
