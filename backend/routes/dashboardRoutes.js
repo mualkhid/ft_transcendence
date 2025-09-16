@@ -151,12 +151,14 @@ async function dashboardRoutes(fastify, options) {
                 const playerScore = game.players.find(p => p.alias === game.player1Alias)?.score || 0;
                 const opponentScore = game.players.find(p => p.alias === game.player2Alias)?.score || 0;
                 
-                // Calculate game duration
-                const startTime = game.startedAt || game.createdAt;
-                const endTime = game.finishedAt;
-                let duration = 'N/A';
-                if (startTime && endTime) {
-                    const durationMs = new Date(endTime) - new Date(startTime);
+                // Calculate game duration (avoid N/A by using robust fallbacks)
+                const startCandidate = game.startedAt || game.createdAt;
+                const endCandidate = game.finishedAt || game.startedAt || game.createdAt;
+                let duration = '0:00';
+                if (startCandidate && endCandidate) {
+                    const startMs = new Date(startCandidate).getTime();
+                    const endMs = new Date(endCandidate).getTime();
+                    const durationMs = Math.max(0, endMs - startMs);
                     const minutes = Math.floor(durationMs / 60000);
                     const seconds = Math.floor((durationMs % 60000) / 1000);
                     duration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
@@ -166,7 +168,8 @@ async function dashboardRoutes(fastify, options) {
                     type: game.player2Alias === 'AI' ? 'AI Game' : 
                           game.player2Alias === 'Local Player' ? 'Local Game' :
                           game.tournamentId ? 'Tournament' : 'Remote Game',
-                    opponent: game.player2Alias,
+                    // Show clearly who won
+                    opponent: `Winner: ${game.winnerAlias}`,
                     result: isPlayerWin ? 'WIN' : 'LOSS',
                     score: `${playerScore}-${opponentScore}`,
                     date: game.startedAt || game.createdAt || game.finishedAt,

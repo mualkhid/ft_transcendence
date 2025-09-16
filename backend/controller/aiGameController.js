@@ -39,6 +39,8 @@ export async function handleAIGame(socket, request) {
         aiConfig: aiConfig
     };
 
+    let gameStartTime = null;
+
     let gameLoop = null;
     let aiMoveInterval = null;
 
@@ -183,6 +185,7 @@ export async function handleAIGame(socket, request) {
         gameState.gameOver = false;
         gameState.playerScore = 0;
         gameState.aiScore = 0;
+        gameStartTime = new Date(); // Record actual game start time
         resetBall();
         
         // Start game loop
@@ -338,7 +341,7 @@ export async function handleAIGame(socket, request) {
 }
 
 // Save AI game result to database
-export async function saveAIGameResult(userId, playerScore, aiScore, gameType) {
+export async function saveAIGameResult(userId, playerScore, aiScore, gameType, gameStartTime = null) {
     try {
         // Get user info to get the actual username
         const user = await prisma.user.findUnique({
@@ -350,13 +353,17 @@ export async function saveAIGameResult(userId, playerScore, aiScore, gameType) {
             throw new Error('User not found');
         }
 
+        const now = new Date();
+        const startTime = gameStartTime || new Date(now.getTime() - 60000); // Default to 1 minute ago if no start time
+
         const result = await prisma.match.create({
             data: {
                 player1Alias: user.username,
                 player2Alias: 'AI',
                 winnerAlias: playerScore > aiScore ? user.username : 'AI',
                 status: 'FINISHED',
-                finishedAt: new Date(),
+                startedAt: startTime,
+                finishedAt: now,
                 roundNumber: 1,  // AI games are always round 1
                 matchNumber: 1   // AI games are always match 1
             }

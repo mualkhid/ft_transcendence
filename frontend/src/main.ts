@@ -15,6 +15,7 @@ class SimpleAuth {
     private gameState: any = null;
     private gameLoopInterval: any = null;
     private isGoingHome = false;
+    private localGameStartTime: Date | null = null;
     
     // AI Game state and configuration
     private aiGameState = {
@@ -30,6 +31,8 @@ class SimpleAuth {
         currentDifficulty: 'easy',
         gameStarted: false
     };
+    
+    private aiGameStartTime: Date | null = null;
     
     
     private aiGameConfig = {
@@ -1667,13 +1670,13 @@ class SimpleAuth {
                     </div>
                     <div>
                         <div class="text-white font-semibold">${game.type || 'Game'}</div>
-                        <div class="text-gray-300 text-sm">vs ${game.opponent || 'AI'}</div>
+                        <div class="text-gray-300 text-sm">${game.opponent || 'Winner: AI'}</div>
                     </div>
                 </div>
                 <div class="text-right">
                     <div class="text-white font-bold">${game.score}</div>
                     <div class="text-gray-400 text-sm">${game.date ? new Date(game.date).toLocaleDateString() : 'Unknown'}</div>
-                    <div class="text-gray-500 text-xs">${game.duration || 'N/A'}</div>
+                    <div class="text-gray-500 text-xs">Game Duration: ${game.duration || 'N/A'}</div>
                 </div>
             </div>
         `).join('');
@@ -1684,7 +1687,7 @@ class SimpleAuth {
         if (!container) return;
 
         if (!achievements || achievements.length === 0) {
-            container.innerHTML = '<div class="text-center text-white">Loading achievements...</div>';
+            container.innerHTML = '<div class="text-center text-white py-8">Loading achievements...</div>';
             return;
         }
 
@@ -1699,14 +1702,14 @@ class SimpleAuth {
             progress: number;
         }
 
-        // Group achievements by category
-        const categories: { [key: string]: { name: string; achievements: Achievement[] } } = {
-            milestone: { name: '🏆 Milestones', achievements: [] },
-            game_type: { name: '🎮 Game Types', achievements: [] },
-            performance: { name: '📊 Performance', achievements: [] },
-            variety: { name: '🎮 Variety', achievements: [] },
-            activity: { name: '🏃‍♂️ Activity', achievements: [] },
-            special: { name: '✨ Special', achievements: [] }
+        // Group achievements by category with better organization
+        const categories: { [key: string]: { name: string; icon: string; achievements: Achievement[] } } = {
+            milestone: { name: 'Milestones', icon: '🏆', achievements: [] },
+            game_type: { name: 'Game Types', icon: '🎮', achievements: [] },
+            performance: { name: 'Performance', icon: '📊', achievements: [] },
+            variety: { name: 'Variety', icon: '🎯', achievements: [] },
+            activity: { name: 'Activity', icon: '🏃‍♂️', achievements: [] },
+            special: { name: 'Special', icon: '✨', achievements: [] }
         };
 
         achievements.forEach((achievement: Achievement) => {
@@ -1718,32 +1721,69 @@ class SimpleAuth {
         container.innerHTML = Object.values(categories).map(category => {
             if (category.achievements.length === 0) return '';
             
+            const unlockedCount = category.achievements.filter(a => a.unlocked).length;
+            const totalCount = category.achievements.length;
+            
             return `
-                <div class="mb-8">
-                    <h4 class="text-xl font-bold text-white mb-4 border-b border-gray-600 pb-2">${category.name}</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="mb-10">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl">${category.icon}</span>
+                            <h3 class="text-xl font-bold text-white">${category.name}</h3>
+                        </div>
+                        <div class="text-sm text-gray-400">
+                            ${unlockedCount}/${totalCount} unlocked
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         ${category.achievements.map(achievement => `
-                            <div class="flex items-center space-x-4 p-4 bg-gray-700/50 rounded-lg border ${achievement.unlocked ? 'border-yellow-500/50 bg-yellow-500/10' : 'border-gray-600'} transition-all duration-300 hover:bg-gray-600/50">
-                                <div class="w-12 h-12 rounded-full flex items-center justify-center ${achievement.unlocked ? 'bg-yellow-500 shadow-lg shadow-yellow-500/25' : 'bg-gray-600'} transition-all duration-300">
-                                    <span class="text-white text-xl">${achievement.icon}</span>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <div class="text-white font-semibold flex items-center gap-2">
-                                        ${achievement.name}
-                                        ${achievement.unlocked ? '<span class="text-yellow-400 text-sm">✓</span>' : ''}
-                                    </div>
-                                    <div class="text-gray-400 text-sm mb-2">${achievement.description}</div>
-                                    <div class="text-xs text-gray-500 mb-2">Requirement: ${achievement.requirement}</div>
-                                    ${!achievement.unlocked ? `
-                                        <div class="w-full bg-gray-600 rounded-full h-2">
-                                            <div class="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500" 
-                                                 style="width: ${Math.round(achievement.progress)}%"></div>
+                            <div class="group relative overflow-hidden rounded-xl border transition-all duration-300 hover:scale-[1.02] ${
+                                achievement.unlocked 
+                                    ? 'border-yellow-500/30 bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 shadow-lg shadow-yellow-500/10' 
+                                    : 'border-gray-600/50 bg-gray-800/30 hover:border-gray-500/50'
+                            }">
+                                <div class="p-5">
+                                    <div class="text-center">
+                                        <div class="mb-4">
+                                            <div class="w-16 h-16 mx-auto rounded-xl flex items-center justify-center text-3xl transition-all duration-300 ${
+                                                achievement.unlocked 
+                                                    ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg shadow-yellow-500/25' 
+                                                    : 'bg-gray-700 group-hover:bg-gray-600'
+                                            }">
+                                                ${achievement.icon}
+                                            </div>
                                         </div>
-                                        <div class="text-xs text-gray-400 mt-1">${Math.round(achievement.progress)}% complete</div>
-                                    ` : `
-                                        <div class="text-xs text-yellow-400 font-semibold">UNLOCKED!</div>
-                                    `}
+                                        <div class="space-y-3">
+                                            <div class="flex items-center justify-center gap-2">
+                                                <h4 class="text-white font-semibold text-lg">${achievement.name}</h4>
+                                                ${achievement.unlocked ? '<span class="text-yellow-400 text-lg">✓</span>' : ''}
+                                            </div>
+                                            <p class="text-gray-300 text-sm leading-relaxed">${achievement.description}</p>
+                                            <div class="text-xs text-gray-400 font-medium">Requirement: ${achievement.requirement}</div>
+                                            
+                                            ${!achievement.unlocked ? `
+                                                <div class="space-y-2">
+                                                    <div class="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+                                                        <div class="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 h-2 rounded-full transition-all duration-700 ease-out" 
+                                                             style="width: ${Math.round(achievement.progress)}%"></div>
+                                                    </div>
+                                                    <div class="flex justify-between items-center">
+                                                        <span class="text-xs text-gray-400">Progress</span>
+                                                        <span class="text-xs font-semibold text-gray-300">${Math.round(achievement.progress)}%</span>
+                                                    </div>
+                                                </div>
+                                            ` : `
+                                                <div class="flex items-center justify-center gap-2">
+                                                    <span class="text-xs font-bold text-yellow-400 bg-yellow-400/20 px-2 py-1 rounded-full">UNLOCKED!</span>
+                                                    <span class="text-xs text-gray-400">Completed</span>
+                                                </div>
+                                            `}
+                                        </div>
+                                    </div>
                                 </div>
+                                ${achievement.unlocked ? `
+                                    <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-400/20 to-transparent rounded-bl-full"></div>
+                                ` : ''}
                             </div>
                         `).join('')}
                     </div>
@@ -2089,6 +2129,9 @@ class SimpleAuth {
         
         // Reset game state completely
         this.resetGameState();
+        
+        // Record game start time
+        this.localGameStartTime = new Date();
 
         // Initialize game state
         this.gameState = {
@@ -2385,7 +2428,8 @@ class SimpleAuth {
         // Update stats immediately when game ends
         if (this.currentUser) {
             console.log('Updating stats immediately for game end');
-            await this.updateUserStats(winner === 1, 'LOCAL', this.gameState.scorePlayer1, this.gameState.scorePlayer2);
+            const gameDuration = this.localGameStartTime ? new Date().getTime() - this.localGameStartTime.getTime() : 60000; // Default to 1 minute if no start time
+            await this.updateUserStats(winner === 1, 'LOCAL', this.gameState.scorePlayer1, this.gameState.scorePlayer2, gameDuration);
         }
 
         // Show the game over modal
@@ -2631,7 +2675,7 @@ class SimpleAuth {
         }
     }
 
-    private async updateUserStats(userWon: boolean, gameType: string = 'LOCAL', player1Score?: number, player2Score?: number): Promise<void> {
+    private async updateUserStats(userWon: boolean, gameType: string = 'LOCAL', player1Score?: number, player2Score?: number, gameDuration?: number): Promise<void> {
         // Update stats for all games including tournament games
         if (!this.currentUser) {
             console.log('No current user found, cannot update stats');
@@ -2652,7 +2696,8 @@ class SimpleAuth {
                     won: userWon,
                     gameType: gameType,
                     player1Score: player1Score,
-                    player2Score: player2Score
+                    player2Score: player2Score,
+                    gameDuration: gameDuration
                 })
             });
 
@@ -5128,6 +5173,7 @@ class SimpleAuth {
             case 'game-started':
                 this.logAIGame(data.message);
                 this.aiGameState.gameStarted = true;
+                this.aiGameStartTime = new Date(); // Record actual game start time
                 this.startAIGameLoop();
                 break;
                 
@@ -5154,9 +5200,10 @@ class SimpleAuth {
                 this.stopAIGameLoop();
                 this.aiGameState.gameStarted = false;
                 
-                // Update user stats based on game result
+                // Update user stats based on game result with actual duration
                 const userWon = data.winner === 'player';
-                this.updateUserStats(userWon, 'AI', data.playerScore, data.aiScore);
+                const gameDuration = this.aiGameStartTime ? new Date().getTime() - this.aiGameStartTime.getTime() : 60000; // Default to 1 minute if no start time
+                this.updateUserStats(userWon, 'AI', data.playerScore, data.aiScore, gameDuration);
                 
                 this.showAIGameOverModal(data.winner, data.playerScore, data.aiScore);
                 break;

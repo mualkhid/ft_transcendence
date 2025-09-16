@@ -292,48 +292,27 @@ export class DashboardService {
                 };
             }
 
-            // Count multiplayer games (exclude AI games, local games, and tournament games)
-            // User can be either player1Alias or player2Alias in remote games
-            const totalGames = await prisma.match.count({
+            // Count multiplayer games for this user using matchPlayer for accuracy
+            // Filters: non-AI, non-local, non-tournament, finished matches
+            const baseMatchFilter = {
+                player1Alias: { notIn: ['AI', 'Local Player'] },
+                player2Alias: { notIn: ['AI', 'Local Player'] },
+                tournamentId: null,
+                status: 'FINISHED',
+            };
+
+            const totalGames = await prisma.matchPlayer.count({
                 where: {
-                    OR: [
-                        {
-                            player1Alias: user.username,
-                            player2Alias: { 
-                                not: { in: ['AI', 'Local Player'] }
-                            }
-                        },
-                        {
-                            player2Alias: user.username,
-                            player1Alias: { 
-                                not: { in: ['AI', 'Local Player'] }
-                            }
-                        }
-                    ],
-                    tournamentId: null, // Exclude tournament games
-                    status: 'FINISHED'
+                    alias: user.username,
+                    match: baseMatchFilter,
                 }
             });
 
-            const wins = await prisma.match.count({
+            const wins = await prisma.matchPlayer.count({
                 where: {
-                    OR: [
-                        {
-                            player1Alias: user.username,
-                            player2Alias: { 
-                                not: { in: ['AI', 'Local Player'] }
-                            }
-                        },
-                        {
-                            player2Alias: user.username,
-                            player1Alias: { 
-                                not: { in: ['AI', 'Local Player'] }
-                            }
-                        }
-                    ],
-                    tournamentId: null, // Exclude tournament games
-                    status: 'FINISHED',
-                    winnerAlias: user.username
+                    alias: user.username,
+                    result: 'WIN',
+                    match: baseMatchFilter,
                 }
             });
 
@@ -515,7 +494,7 @@ export class DashboardService {
             return recentGames.map(game => {
                 const playerScore = game.players.find(p => p.alias === user.username)?.score || 0;
                 const opponentScore = game.players.find(p => p.alias !== user.username)?.score || 0;
-                
+
                 let gameType = 'Remote Game';
                 if (game.player2Alias === 'AI') {
                     gameType = 'AI Game';
@@ -525,13 +504,27 @@ export class DashboardService {
                     gameType = 'Tournament';
                 }
 
+                // Compute duration using available timestamps
+                const startCandidate = game.startedAt || game.createdAt;
+                const endCandidate = game.finishedAt || game.startedAt || game.createdAt;
+                let duration = '0:00';
+                if (startCandidate && endCandidate) {
+                    const startMs = new Date(startCandidate).getTime();
+                    const endMs = new Date(endCandidate).getTime();
+                    const durationMs = Math.max(0, endMs - startMs);
+                    const minutes = Math.floor(durationMs / 60000);
+                    const seconds = Math.floor((durationMs % 60000) / 1000);
+                    duration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                }
+
                 return {
                     id: game.id,
                     type: gameType,
-                    opponent: game.player2Alias,
+                    opponent: `Winner: ${game.winnerAlias}`, // show winner name as requested
                     result: game.winnerAlias === user.username ? 'WIN' : 'LOSS',
                     score: `${playerScore} - ${opponentScore}`,
-                    date: game.finishedAt,
+                    date: game.finishedAt || game.startedAt || game.createdAt,
+                    duration,
                     tournament: game.tournament?.name || null
                 };
             });

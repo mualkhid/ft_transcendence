@@ -131,7 +131,7 @@ export async function updateAvatar(req, reply)
 
 export async function updateStats(req, reply) {
     const userId = req.user.id; // Get user ID from JWT token
-    const { won, gameType = 'LOCAL', player1Score, player2Score, opponentName } = req.body;
+    const { won, gameType = 'LOCAL', player1Score, player2Score, opponentName, gameDuration } = req.body;
 
     if (typeof won !== 'boolean') {
         return reply.status(400).send({ error: 'won field must be a boolean' });
@@ -171,6 +171,10 @@ export async function updateStats(req, reply) {
                     player2Alias = opponentName || 'Opponent';
                 }
 
+                const now = new Date();
+                const durationMs = gameDuration || 60000; // Use provided duration or default to 1 minute
+                const startTime = new Date(now.getTime() - durationMs);
+
                 const match = await prisma.match.create({
                     data: {
                         tournamentId: gameType === 'TOURNAMENT' ? 1 : null, // Set tournament ID for tournament games
@@ -180,8 +184,8 @@ export async function updateStats(req, reply) {
                         player1Alias: user.username,
                         player2Alias: player2Alias,
                         winnerAlias: won ? user.username : player2Alias,
-                        startedAt: new Date(),
-                        finishedAt: new Date()
+                        startedAt: startTime,
+                        finishedAt: now
                     }
                 });
 
