@@ -43,22 +43,34 @@ export async function getFriends(req, reply) {
 }
 
 
-export async function sendRequest(req, reply) {
-	const id = req.user.id
-	const userId = req.body.userId
-
-	if (id === userId)
-		throw new ValidationError("Cannot be friends with self")
-	
-	await prisma.friendship.create({data: {
-
-		requesterId: id,
-		addresseeId: userId
-	}})
-
-	// if request is pending then it should not allow it to send from the frontend
-	reply.status(201).send({message: "request sent successfully"})
-
+export async function sendRequest(req, reply)
+{
+    const id = req.user.id
+    const userId = req.body.userId
+    
+    if (id === userId)
+        throw new ValidationError("Cannot be friends with self")
+    
+    const friendship = await prisma.friendship.findFirst({
+        where: {
+        OR: [
+            { requesterId: id, addresseeId: userId },
+            { requesterId: userId, addresseeId: id }
+        ]
+        }
+    });
+    
+    if (friendship)
+        throw new ValidationError("You cannot send another Request")
+    
+    await prisma.friendship.create({data: {
+    
+        requesterId: id,
+        addresseeId: userId
+    }})
+    
+    // if request is pending then it should not allow it to send from the frontend
+    reply.status(201).send({message: "request sent successfully"})
 }
 
 // 200 accepted, 404 if not pending

@@ -3,7 +3,8 @@ import {
     removePlayerFromMatch, 
     getMatch, 
     handlePlayerInput, 
-    updateBall 
+    updateBall,
+    updateDashboardStats
 } from '../services/matchStateService.js';
 
 export async function handleRemoteGame(socket, matchId, username = null)
@@ -24,6 +25,7 @@ export async function handleRemoteGame(socket, matchId, username = null)
         socket.close(1000, 'Match is full');
         return;
     }
+    
     const match = getMatch(parseInt(matchId));
     if (!match) {
         socket.send(JSON.stringify({
@@ -56,10 +58,14 @@ export async function handleRemoteGame(socket, matchId, username = null)
             match.player1.send(readyMessage);
         if (match.player2 && match.player2.readyState === 1)
             match.player2.send(readyMessage);
-            
         if (match.state.gameLoopInterval)
+        {
             clearInterval(match.state.gameLoopInterval);
+            match.state.gameLoopInterval = null;
+        }
+            
         startGameCountdown(match, parseInt(matchId));
+            
     }
     else
     {
@@ -71,51 +77,44 @@ export async function handleRemoteGame(socket, matchId, username = null)
         socket.send(waitingMessage);
     }
 
-        socket.on('message', (message) => {
-            try
-            {
-                const data = JSON.parse(message);
-                if (data.type === 'input')
-                    handlePlayerInputMessage(socket, data, parseInt(matchId), playerNumber);
-            } catch (error) {
-                console.error('Error parsing message from client:', error);
-                socket.send(JSON.stringify({
-                    type: 'error',
-                    message: 'Invalid message format'
-                }));
-            }
-        });
-
-        socket.removeAllListeners('close');
-        socket.on('close', async (code, reason) => {
-        console.log(`Player ${playerNumber} disconnected from match ${matchId}`);
-        const currentMatch = getMatch(parseInt(matchId));
-        if (currentMatch && currentMatch.state.gameFinished)
-        {
-            console.log(`Game ${matchId} already finished, skipping disconnect message`);
-            removePlayerFromMatch(parseInt(matchId), socket);
-            return;
+    socket.on('message', (message) => {
+        try {
+            const data = JSON.parse(message);
+            
+            if (data.type === 'input')
+                handlePlayerInputMessage(socket, data, parseInt(matchId), playerNumber);
+        } catch (error) {
+            console.error('Error parsing message from client:', error);
+            socket.send(JSON.stringify({
+                type: 'error',
+                message: 'Invalid message format'
+            }));
         }
-        if(currentMatch && !currentMatch.state.gameFinished) {
-                const disconnectMessage = JSON.stringify({
-                    type: 'opponent-disconnected',
-                    message: `Player ${playerNumber} has disconnected`,
-                    disconnectedPlayer: playerNumber
-                });
-                
-                if (currentMatch.player1 && currentMatch.player1.readyState === 1)
-                    currentMatch.player1.send(disconnectMessage);
-                if (currentMatch.player2 && currentMatch.player2.readyState === 1)
-                    currentMatch.player2.send(disconnectMessage);
-            }
-            setTimeout(() => {
-                removePlayerFromMatch(parseInt(matchId), socket);
-            }, 1000);
-        });
+    });
+
+    socket.removeAllListeners('close');
+    socket.on('close', async (code, reason) => { 
+        const currentMatch = getMatch(parseInt(matchId));
+        if (!currentMatch)
+            return;
+        if (!currentMatch.state.gameFinished && currentMatch.state.gameLoopInterval)
+        {
+            clearInterval(currentMatch.state.gameLoopInterval);
+            currentMatch.state.gameLoopInterval = null;
+        }
+        await removePlayerFromMatch(parseInt(matchId), socket);
+    });
 }
 
 function handlePlayerInputMessage(socket, data, matchId, playerNumber)
 {
+    const currentMatch = getMatch(matchId);
+    if (!currentMatch)
+        return;
+    
+    if (currentMatch.state.gameFinished)
+         return;
+    
     // Validate input type
     if (!['keydown', 'keyup'].includes(data.inputType))
     {
@@ -137,7 +136,8 @@ function handlePlayerInputMessage(socket, data, matchId, playerNumber)
     
     const inputResult = handlePlayerInput(matchId, playerNumber, data.inputType, data.key);
     
-    if (inputResult) {
+    if (inputResult)
+    {
         // Broadcast input update to both players
         const inputMessage = JSON.stringify({
             type: 'input-update',
@@ -148,12 +148,12 @@ function handlePlayerInputMessage(socket, data, matchId, playerNumber)
         });
         
         // Send to both players so they can update their display
-        const currentMatch = getMatch(matchId);
-        if (currentMatch) {
-            if (currentMatch.player1 && currentMatch.player1.readyState === 1)
-                currentMatch.player1.send(inputMessage);
-            if (currentMatch.player2 && currentMatch.player2.readyState === 1)
-                currentMatch.player2.send(inputMessage);
+        const currentMatchForBroadcast = getMatch(matchId);
+        if (currentMatchForBroadcast && !currentMatchForBroadcast.state.gameFinished) {
+            if (currentMatchForBroadcast.player1 && currentMatchForBroadcast.player1.readyState === 1)
+                currentMatchForBroadcast.player1.send(inputMessage);
+            if (currentMatchForBroadcast.player2 && currentMatchForBroadcast.player2.readyState === 1)
+                currentMatchForBroadcast.player2.send(inputMessage);
         }
     }
 }
@@ -163,12 +163,19 @@ function startGameCountdown(match, matchId)
     let countdown = 3;
     
     const countdownInterval = setInterval(() => {
+        const currentMatch = getMatch(matchId);
+        if (!currentMatch || currentMatch.state.gameFinished)
+        {
+            clearInterval(countdownInterval);
+            return;
+        }
+        
         const countdownMessage = JSON.stringify({
             type: 'countdown',
             count: countdown,
             message: `Game starting in ${countdown}...`,
-            player1Username: match.state.player1Alias,
-            player2Username: match.state.player2Alias
+            player1Username: match.state.player1Username,
+            player2Username: match.state.player2Username
         });
         
         // Send countdown to both players
@@ -179,16 +186,19 @@ function startGameCountdown(match, matchId)
         
         countdown--;
         
-        // Countdown finished, start the game
-        if (countdown < 0) {
+        if (countdown < 0)
+        {
             clearInterval(countdownInterval);
+            const finalMatch = getMatch(matchId);
+            if (!finalMatch || finalMatch.state.gameFinished || finalMatch.state.connectedPlayers < 2)
+                return;
             
             // Send game start message
             const gameStartMessage = JSON.stringify({
                 type: 'game-start',
                 message: 'Game started! Use arrow keys to move your paddle.',
-                player1Username: match.state.player1username,
-                player2Username: match.state.player2username
+                player1Username: match.state.player1Username,
+                player2Username: match.state.player2Username
             });
             
             if (match.player1 && match.player1.readyState === 1)
@@ -196,8 +206,20 @@ function startGameCountdown(match, matchId)
             if (match.player2 && match.player2.readyState === 1)
                 match.player2.send(gameStartMessage);
             
-            // Start the main game loop (runs at ~60 FPS)
             match.state.gameLoopInterval = setInterval(() => {
+                const activeMatch = getMatch(matchId);
+                if (!activeMatch || activeMatch.state.gameFinished || activeMatch.state.connectedPlayers < 2)
+                {
+                    if (activeMatch && activeMatch.state.gameLoopInterval)
+                    {
+                        clearInterval(activeMatch.state.gameLoopInterval);
+                        activeMatch.state.gameLoopInterval = null;
+                        if (activeMatch)
+                            activeMatch.state.gameFinished = true;
+                    }
+                    return;
+                }
+                
                 updateBall(matchId);
             }, 16); // 16ms = roughly 60 FPS
         }
