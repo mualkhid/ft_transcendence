@@ -49,24 +49,24 @@ export async function sendRequest(req, reply)
     const userId = req.body.userId
     
     if (id === userId)
-    throw new ValidationError("Cannot be friends with self")
+        throw new ValidationError("Cannot be friends with self")
     
     const friendship = await prisma.friendship.findFirst({
-    where: {
-    OR: [
-    { requesterId: id, addresseeId: userId },
-    { requesterId: userId, addresseeId: id }
-    ]
-    }
+        where: {
+        OR: [
+            { requesterId: id, addresseeId: userId },
+            { requesterId: userId, addresseeId: id }
+        ]
+        }
     });
     
     if (friendship)
-    throw new ValidationError("You cannot send another Request")
+        throw new ValidationError("You cannot send another Request")
     
     await prisma.friendship.create({data: {
     
-    requesterId: id,
-    addresseeId: userId
+        requesterId: id,
+        addresseeId: userId
     }})
     
     // if request is pending then it should not allow it to send from the frontend

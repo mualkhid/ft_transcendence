@@ -137,6 +137,10 @@ export function removePlayerFromMatch(matchId, websocket) {
                 type: 'game-abandoned',
                 message: `Opponent disconnected. You win!`,
                 winner: disconnectedPlayer === 1 ? 2 : 1,
+                player1Score: match.state.scorePlayer1,
+                player2Score: match.state.scorePlayer2,
+                player1Username: match.state.player1Username,
+                player2Username: match.state.player2Username,
                 winnerAlias: remainingPlayerUsername
             };
             remainingPlayer.send(JSON.stringify(abandonMessage));
