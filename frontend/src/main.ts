@@ -100,7 +100,16 @@ class SimpleAuth {
                 this.handleRegistration();
             });
         }
+         // Google Sign-In button
+         const googleSignInBtn = document.getElementById('googleSignInBtn');
+         if (googleSignInBtn) {
+             googleSignInBtn.addEventListener('click', () => {
+                 window.location.href = '/api/auth/google';
+             });
+             console.log('Google Sign-In button listener attached');
+            }
 
+        // Login form
         const loginForm = document.getElementById('loginForm');
         if (loginForm) {
             loginForm.addEventListener('submit', (e) => {
@@ -132,6 +141,15 @@ class SimpleAuth {
         if (passwordInput) {
             passwordInput.addEventListener('input', (e) => {
                 this.updatePasswordRequirements((e.target as HTMLInputElement).value);
+            });
+        }
+        const twoFactorInput = document.getElementById('twoFactorCode') as HTMLInputElement;
+        if (twoFactorInput) {
+            twoFactorInput.addEventListener('keypress', async (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    await this.handleLogin();
+                }
             });
         }
 
@@ -176,11 +194,271 @@ class SimpleAuth {
         }
 
 
+        const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+        if (deleteAccountBtn) {
+            deleteAccountBtn.addEventListener('click', async () => {
+            if (confirm('Are you sure you want to delete your account?')) {
+                try {
+                const response = await fetch(`/api/user/delete`, { method: 'DELETE', credentials: 'include' });
+                if (response.ok) {
+                    alert('Account deleted.');
+                    localStorage.removeItem('user');
+                    this.currentUser = null;
+                    window.location.href = '/';   
+                    window.location.reload(); // Optionally reload the page
+                } else {
+                    alert('Failed to delete account.');
+                }
+                } catch (error) {
+                console.error('Error deleting account:', error);
+                alert('An error occurred while deleting your account.');
+                }
+            }
+            });
+        }
+        
+        const anonymizeAccountBtn = document.getElementById('anonymizeAccountBtn');
+        if (anonymizeAccountBtn) {
+            anonymizeAccountBtn.addEventListener('click', async () => {
+            if (confirm('Are you sure you want to anonymize your account?')) {
+                try {
+                const response = await fetch('/api/user/anonymize', { method: 'POST', credentials: 'include' });
+                if (response.ok) {
+                    alert('Account anonymized.');
+                    window.location.reload(); // Optionally reload the page
+                } else {
+                    alert('Failed to anonymize account.');
+                }
+                } catch (error) {
+                console.error('Error anonymizing account:', error);
+                alert('An error occurred while anonymizing your account.');
+                }
+            }
+            });
+        }
+    
+        const downloadDataBtn = document.getElementById('downloadDataBtn');
+        if (downloadDataBtn) {
+            downloadDataBtn.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('/api/user/data', { 
+                        method: 'GET', 
+                        credentials: 'include' 
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        const blob = new Blob([JSON.stringify(data, null, 2)], { 
+                            type: 'application/json' 
+                        });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        // More descriptive filename
+                        const timestamp = new Date().toISOString().split('T')[0];
+                        a.download = `transcendence_data_${timestamp}.json`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        
+                        alert('Your data has been downloaded successfully.');
+                    } else if (response.status === 401) {
+                        alert('Session expired. Please login again.');
+                        this.showPage('loginPage');
+                    } else {
+                        alert('Failed to download data.');
+                    }
+                } catch (error) {
+                    console.error('Error downloading data:', error);
+                    alert('An error occurred while downloading your data.');
+                }
+            });
+        }
+            // 2FA Event Listeners 
+            const twoFactorToggle = document.getElementById('twoFactorToggle') as HTMLInputElement;
+            if (twoFactorToggle) {
+                twoFactorToggle.addEventListener('change', async (e) => {
+                    const isEnabled = (e.target as HTMLInputElement).checked;
+                    const enable2faBtn = document.getElementById('enable2faBtn');
+                    
+                    if (isEnabled && !this.currentUser?.isTwoFactorEnabled) {
+                        // Show the enable button
+                        if (enable2faBtn) enable2faBtn.style.display = 'block';
+                    } else if (!isEnabled && this.currentUser?.isTwoFactorEnabled) {
+                        // Handle disable 2FA
+                        if (confirm('Are you sure you want to disable 2FA?')) {
+                            await this.disable2FA();
+                        } else {
+                            // Revert toggle
+                            (e.target as HTMLInputElement).checked = true;
+                        }
+                    } else {
+                        // Hide the enable button
+                        if (enable2faBtn) enable2faBtn.style.display = 'none';
+                    }
+                });
+            }
+
+            // Enable 2FA Button
+            const enable2faBtn = document.getElementById('enable2faBtn');
+            if (enable2faBtn) {
+                enable2faBtn.addEventListener('click', async () => {
+                    await this.setup2FA();
+                });
+            }
+
+            // Verify 2FA Button
+            const verify2faBtn = document.getElementById('verify2faBtn');
+            if (verify2faBtn) {
+                verify2faBtn.addEventListener('click', async () => {
+                    await this.verify2FA();
+                });
+            }
+
+            // Copy Backup Codes Button
+            const copyBackupCodes = document.getElementById('copyBackupCodes');
+            if (copyBackupCodes) {
+                copyBackupCodes.addEventListener('click', () => {
+                    const codes = Array.from(document.querySelectorAll('#backupCodes li'))
+                        .map((li) => li.textContent)
+                        .join('\n');
+                    navigator.clipboard.writeText(codes);
+                    this.showStatus('Backup codes copied to clipboard!', 'success');
+                });
+            }
+
+
         // Friends functionality
         this.setupFriendsEventListeners();
         
         // Tournament functionality
         this.setupTournamentEventListeners();
+    }
+    private async setup2FA(): Promise<void> {
+        try {
+            const response = await fetch(`https://${HOST_IP}/api/auth/setup-2fa`, { 
+                method: 'POST', 
+                credentials: 'include' 
+            });
+            const data = await response.json();
+    
+            if (response.ok) {
+                // Show instructions
+                const instructionsDiv = document.getElementById('twofa-instructions');
+                if (instructionsDiv) instructionsDiv.style.display = 'block';
+    
+                // Show QR code and backup codes
+                const qrImage = document.getElementById('qrImage') as HTMLImageElement;
+                if (qrImage) qrImage.src = data.qr;
+    
+                const backupCodesList = document.getElementById('backupCodes');
+                if (backupCodesList) {
+                    backupCodesList.innerHTML = '';
+                    data.backupCodes.forEach((code: string) => {
+                        const li = document.createElement('li');
+                        li.textContent = code;
+                        li.className = 'bg-gray-700 p-2 rounded font-mono text-sm mb-1';
+                        backupCodesList.appendChild(li);
+                    });
+                }
+    
+                // Show the 2FA setup section
+                const twofaSetupSection = document.getElementById('twofa-setup');
+                if (twofaSetupSection) twofaSetupSection.style.display = 'block';
+    
+                // Hide the enable button and disable toggle during setup
+                const enable2faBtn = document.getElementById('enable2faBtn');
+                if (enable2faBtn) enable2faBtn.style.display = 'none';
+                
+                const twoFactorToggle = document.getElementById('twoFactorToggle') as HTMLInputElement;
+                if (twoFactorToggle) twoFactorToggle.disabled = true;
+                
+                this.showStatus('Scan the QR code with your authenticator app and save your backup codes!', 'info');
+            } else {
+                this.showStatus(data.error || 'Failed to setup 2FA', 'error');
+            }
+        } catch (error) {
+            console.error('Error setting up 2FA:', error);
+            this.showStatus('An error occurred while setting up 2FA.', 'error');
+        }
+    }
+    private async verify2FA(): Promise<void> {
+        const verifyCodeInput = document.getElementById('verify2faCode') as HTMLInputElement;
+        const twoFactorCode = verifyCodeInput?.value;
+
+        if (!twoFactorCode) {
+            this.showStatus('Please enter the 6-digit code from your authenticator app', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`https://${HOST_IP}/api/auth/verify-2fa`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ twoFactorCode }),
+                credentials: 'include',
+            });
+
+            if (response.ok) {
+                this.showStatus('2FA setup complete!', 'success');
+                
+                // Hide setup sections
+                const twofaSetupSection = document.getElementById('twofa-setup');
+                if (twofaSetupSection) twofaSetupSection.style.display = 'none';
+                
+                const instructionsDiv = document.getElementById('twofa-instructions');
+                if (instructionsDiv) instructionsDiv.style.display = 'none';
+
+                // Re-enable toggle and update user state
+                const twoFactorToggle = document.getElementById('twoFactorToggle') as HTMLInputElement;
+                if (twoFactorToggle) {
+                    twoFactorToggle.disabled = false;
+                    twoFactorToggle.checked = true;
+                }
+
+                // Update current user data
+                if (this.currentUser) {
+                    this.currentUser.isTwoFactorEnabled = true;
+                    localStorage.setItem('user', JSON.stringify(this.currentUser));
+                }
+
+                // Clear the verification input
+                verifyCodeInput.value = '';
+            } else {
+                const errorData = await response.json();
+                this.showStatus(errorData.error || 'Invalid verification code', 'error');
+            }
+        } catch (error) {
+            console.error('Error verifying 2FA:', error);
+            this.showStatus('An error occurred while verifying 2FA.', 'error');
+        }
+    }
+    
+    private async disable2FA(): Promise<void> {
+        try {
+            const response = await fetch(`https://${HOST_IP}/api/auth/disable-2fa`, {
+                method: 'POST',
+                credentials: 'include',
+            });
+    
+            if (response.ok) {
+                this.showStatus('2FA disabled successfully', 'success');
+                
+                // Update toggle and user state
+                const twoFactorToggle = document.getElementById('twoFactorToggle') as HTMLInputElement;
+                if (twoFactorToggle) twoFactorToggle.checked = false;
+    
+                if (this.currentUser) {
+                    this.currentUser.isTwoFactorEnabled = false;
+                    localStorage.setItem('user', JSON.stringify(this.currentUser));
+                }
+            } else {
+                const errorData = await response.json();
+                this.showStatus(errorData.error || 'Failed to disable 2FA', 'error');
+            }
+        } catch (error) {
+            console.error('Error disabling 2FA:', error);
+            this.showStatus('An error occurred while disabling 2FA.', 'error');
+        }
     }
 
     private setupFriendsEventListeners(): void {
@@ -1024,71 +1302,72 @@ class SimpleAuth {
     }
 
     private async handleLogin(): Promise<void> {
-        console.log('=== LOGIN STARTED ===');
-        const email = (document.getElementById('loginEmail') as HTMLInputElement)?.value;
-        const password = (document.getElementById('loginPassword') as HTMLInputElement)?.value;
-
-        console.log('Login data:', { email, password: password ? '***' : 'empty' });
-
-        if (!email || !password) {
-            console.log('Missing required fields');
-            this.showStatus('Please fill in all fields', 'error');
-            return;
-        }
-
         try {
-            console.log('Sending login request to:', `https://${HOST_IP}/api/auth/login`);
+            // Get form values
+            const email = (document.getElementById('loginEmail') as HTMLInputElement)?.value;
+            const password = (document.getElementById('loginPassword') as HTMLInputElement)?.value;
+            
+            // Get 2FA code directly - don't rely on visibility detection
+            const twoFactorInput = document.getElementById('twoFactorCode') as HTMLInputElement;
+            const twoFactorCode = twoFactorInput?.value?.trim();
+            
+            // Create request body
+            const requestBody: any = { 
+                email, 
+                password 
+            };
+            
+            // Always include 2FA code if it has a value, regardless of visibility
+            if (twoFactorCode && twoFactorCode.length > 0) {
+                requestBody.twoFactorCode = twoFactorCode;
+                console.log(`Including 2FA code in request: ${twoFactorCode}`);
+            }
+            
+            console.log('Login request body:', requestBody);
+            
             const response = await fetch(`https://${HOST_IP}/api/auth/login`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ email, password }),
-                credentials: 'include' // Include cookies
+                credentials: 'include',
+                body: JSON.stringify(requestBody)
             });
-
-            console.log('Login response status:', response.status);
-            console.log('Login response headers:', response.headers);
-
+            
             const data = await response.json();
-            console.log('Login response data:', data);
-
+            
             if (response.ok) {
-                console.log('Login successful');
-                console.log('Login response data:', data);
-                console.log('Cookies after login:', document.cookie);
-                
-                // The backend sets the token as a cookie, so we don't need to store it manually
-                // But we can store user info from the response if available
-                if (data.user) {
-                    this.currentUser = data.user;
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    this.updateProfileDisplay(); // Update profile display with user data
+                // Success - handle login
+                this.currentUser = data.user;
+                this.showPage('mainApp');
+                this.loadUserProfile();
+            } else if (response.status === 401 && data.require2FA) {
+                // Show 2FA form
+                const twoFactorContainer = document.getElementById('twoFactorCodeContainer');
+                if (twoFactorContainer) {
+                    twoFactorContainer.style.display = 'block';
+                    // Focus on the input field
+                    const twoFactorInput = document.getElementById('twoFactorCode') as HTMLInputElement;
+                    if (twoFactorInput) {
+                        twoFactorInput.focus();
+                        twoFactorInput.value = ''; // Clear any previous value
+                    }
+                    this.showStatus('Please enter your two-factor authentication code', 'info');
                 }
-                
-                this.showStatus('Login successful! Redirecting to home...', 'success');
-                
-                // Clear search input when logging in
-                const searchInput = document.getElementById('searchUsersInput') as HTMLInputElement;
-                if (searchInput) {
-                    searchInput.value = '';
-                    this.clearUsersList();
-                }
-                
-                setTimeout(() => {
-                    this.showPage('mainApp');
-                    this.showSection('homeSection');
-                }, 2000);
             } else {
-                console.log('Login failed:', data.error);
+                // Handle other errors - also hide 2FA form on error
+                const twoFactorContainer = document.getElementById('twoFactorCodeContainer');
+                if (twoFactorContainer) {
+                    twoFactorContainer.style.display = 'none';
+                }
                 this.showStatus(data.error || 'Login failed', 'error');
             }
         } catch (error) {
             console.error('Login error:', error);
-            this.showStatus('Login failed. Please try again.', 'error');
+            this.showStatus('An error occurred during login', 'error');
         }
     }
-
+  
     private checkAuthStatus(): void {
         console.log('=== CHECKING AUTH STATUS ===');
         console.log('Method checkAuthStatus called at:', new Date().toISOString());
@@ -3121,7 +3400,21 @@ class SimpleAuth {
             profileLosses.textContent = losses.toString();
             console.log('Updated losses:', losses);
         }
-
+        // Update 2FA toggle
+        const twoFactorToggle = document.getElementById('twoFactorToggle') as HTMLInputElement;
+        if (twoFactorToggle && this.currentUser) {
+            twoFactorToggle.checked = this.currentUser.isTwoFactorEnabled || false;
+            
+            // Show/hide enable button based on current state
+            const enable2faBtn = document.getElementById('enable2faBtn');
+            if (enable2faBtn) {
+                if (!this.currentUser.isTwoFactorEnabled && twoFactorToggle.checked) {
+                    enable2faBtn.style.display = 'block';
+                } else {
+                    enable2faBtn.style.display = 'none';
+                }
+            }
+        }
         // Force a visual update
         setTimeout(() => {
             console.log('Current display values:');

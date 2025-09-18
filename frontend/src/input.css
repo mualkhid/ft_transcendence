@@ -147,3 +147,77 @@
     display: block !important;
     visibility: visible !important;
 }
+
+
+/* GDPR Section Styles */
+#gdprSection {
+    margin-top: 0; /* Remove extra margin */
+    padding-top: 0; /* Remove extra padding */
+    background-color: rgba(0, 0, 0, 0.4); /* Match the Powerpuff theme */
+}
+
+/* Remove white gap above GDPR section */
+#gdprSection + * {
+    margin-top: 0;
+}
+
+#twoFactorCodeContainer {
+    transition: all 0.3s ease;
+    border-left: 4px solid #7209b7;
+    padding-left: 1rem;
+    background: rgba(114, 9, 183, 0.1);
+    border-radius: 0.5rem;
+}
+
+#twoFactorCodeContainer.show {
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 2FA Setup section styling */
+#twofa-setup {
+    background: rgba(16, 185, 129, 0.1);
+    border: 2px solid rgba(16, 185, 129, 0.3);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-top: 1rem;
+}
+
+#qrImage {
+    max-width: 200px;
+    margin: 0 auto;
+    display: block;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    background: white;
+}
+
+#backupCodes {
+    max-height: 200px;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+#backupCodes li {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 0.25rem;
+    border-left: 3px solid #10b981;
+}

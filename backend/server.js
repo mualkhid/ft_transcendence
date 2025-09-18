@@ -12,6 +12,7 @@ import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import cookie from '@fastify/cookie';
 
+
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/users.js';
 import tournamentRoutes from './routes/tournament.js';

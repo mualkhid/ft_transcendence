@@ -463,11 +463,23 @@
                             <input type="password" id="loginPassword" placeholder="Enter your password" required 
                                    class="w-full px-4 py-3 rounded-lg border-2 border-powerpuff-blue bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:border-powerpuff-purple text-lg">
                         </div>
-                        
+                        <!-- 2FA Code Container (initially hidden) -->
+                        <div id="twoFactorCodeContainer" style="display: none;" class="mb-4">
+                            <label for="twoFactorCode" class="block text-white font-semibold mb-1">2FA Code</label>
+                            <input type="text" id="twoFactorCode" name="twoFactorCode" 
+                                placeholder="Enter 6-digit code or backup code" 
+                                class="w-full px-4 py-3 rounded-lg border-2 border-powerpuff-blue bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:border-powerpuff-purple text-lg">
+                            <p class="text-white text-sm mt-1 opacity-80">Enter the 6-digit code from your authenticator app or use a backup code</p>
+                        </div>
+
                         <button type="submit" class="w-full bg-powerpuff-blue hover:bg-powerpuff-purple text-white font-bold py-4 px-6 rounded-lg text-xl transition-colors">
                             Login
                         </button>
                     </form>
+                       <!-- Google Sign-In Button -->
+                    <button id="googleSignInBtn" type="button" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg text-xl transition-colors flex items-center justify-center">
+                      <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" class="w-6 h-6 mr-2"> Sign in with Google
+                    </button>
                     
                     <div class="text-center mt-6">
                         <p class="text-white">
@@ -944,18 +956,96 @@
                                 <div class="flex items-center justify-between">
                                     <div>
                                         <label class="block text-white font-semibold mb-1">Two-Factor Authentication</label>
-                                        <p class="text-white text-sm opacity-80">Add an extra layer of security</p>
+                                        <p class="text-white text-sm opacity-80">Add an extra layer of security to your account</p>
                                     </div>
                                     <label class="relative inline-flex items-center cursor-pointer">
                                         <input type="checkbox" id="twoFactorToggle" class="sr-only peer">
                                         <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-powerpuff-green"></div>
                                     </label>
                                 </div>
+                                
+                                <!-- Enable 2FA Button (shown when toggle is on but 2FA not set up) -->
+                                <div class="mt-4">
+                                    <button id="enable2faBtn" class="w-full bg-powerpuff-green hover:bg-powerpuff-purple text-white font-bold py-3 px-4 rounded-lg transition-colors" style="display: none;">
+                                        🔐 Setup Two-Factor Authentication
+                                    </button>
+                                </div>
                             </div>
+
+                            <!-- 2FA Instructions -->
+                            <div id="twofa-instructions" style="display: none;" class="mb-4 p-4 bg-blue-100 rounded-lg">
+                                <h4 class="font-bold text-blue-800 mb-2">📱 Setup Instructions:</h4>
+                                <ol class="list-decimal list-inside text-blue-700 space-y-1 text-sm">
+                                    <li>Download an authenticator app (Google Authenticator, Authy, Microsoft Authenticator)</li>
+                                    <li>Scan the QR code below with your authenticator app</li>
+                                    <li>Save the backup codes in a secure location</li>
+                                    <li>Enter the 6-digit code from your app to complete setup</li>
+                                </ol>
+                            </div>
+
+                            <!-- 2FA Setup Section -->
+                            <div id="twofa-setup" style="display: none;">
+                                <h3 class="text-white font-semibold mb-4 text-center">🔐 Two-Factor Authentication Setup</h3>
+                                
+                                <div class="text-center mb-4">
+                                    <h4 class="text-white font-semibold mb-2">📱 Scan QR Code</h4>
+                                    <img id="qrImage" alt="QR Code" class="mb-4">
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <h4 class="text-white font-semibold mb-2">🔑 Backup Codes</h4>
+                                    <p class="text-white text-sm mb-2 opacity-80">Save these codes in a safe place. You can use them to access your account if you lose your phone.</p>
+                                    <ul id="backupCodes" class="text-white text-sm"></ul>
+                                    <button id="copyBackupCodes" class="w-full bg-powerpuff-blue hover:bg-powerpuff-purple text-white font-bold py-2 px-4 rounded-lg transition-colors mb-4">
+                                        📋 Copy Backup Codes
+                                    </button>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <h4 class="text-white font-semibold mb-2">✅ Verify Setup</h4>
+                                    <div class="flex gap-2">
+                                        <input type="text" id="verify2faCode" placeholder="Enter 6-digit code to verify" 
+                                            class="flex-1 px-4 py-2 rounded-lg border-2 border-powerpuff-green bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:border-powerpuff-purple">
+                                        <button id="verify2faBtn" class="bg-powerpuff-green hover:bg-powerpuff-purple text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                                            Verify
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                          
+                         <!-- GDPR Actions -->
+                        <div id="gdpr-actions" class="mt-6 space-y-4">
+                            <h4 class="text-xl font-bold text-white mb-4">🔒 Privacy & Data Rights</h4>
                             
+                            <button id="deleteAccountBtn" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg transition-colors">
+                                🗑️ Delete Account
+                            </button>
+                            
+                            <button id="anonymizeAccountBtn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-4 rounded-lg transition-colors">
+                                👤 Anonymize Account
+                            </button>
+                            
+                            <button id="downloadDataBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition-colors">
+                                📥 Download My Data
+                            </button>
+                        </div>
+                        
+                        <div id="gdprSection" class="bg-gray-600/50 rounded-2xl p-6 shadow-xl mt-0 transition-all transform hover:scale-105 hover:shadow-2xl">
+                            <h2 class="text-2xl font-logo text-powerpuff-pink mb-4 text-center">GDPR Rights</h2>
+                            <p class="text-white text-lg mb-4">
+                                You have the right to access, modify, and delete your data. We respect your privacy and are committed to protecting your personal information.
+                            </p>
+                            <div class="text-center">
+                                <a href="https://commission.europa.eu/law/law-topic/data-protection_en" target="_blank" 
+                                   class="bg-powerpuff-blue hover:bg-powerpuff-purple text-white font-bold py-3 px-6 rounded-lg transition-colors">
+                                    Learn More
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
+            </div>
             </div>
 
             <!-- Dashboard Section -->
