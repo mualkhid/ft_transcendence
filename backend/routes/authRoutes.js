@@ -5,7 +5,8 @@ import {
   setup2FA,
   refreshToken,
   verify2FA,
-  disable2FA
+  disable2FA,
+  getCurrentUser // Add this import
 } from '../controller/authController.js';
 
 import {
@@ -25,6 +26,9 @@ export default function authRoutes(fastify, _opts, done) {
   fastify.post('/auth/login', loginOpts, login);
   fastify.post('/auth/logout', {preHandler: authenticate}, logout);
   fastify.post('/auth/refresh', {preHandler: authenticate}, refreshToken);
+  
+  // Add this new route
+  fastify.get('/auth/getCurrentUser', {preHandler: authenticate}, getCurrentUser);
   
   // 2FA Routes
   fastify.post('/auth/setup-2fa', { preHandler: authenticate }, setup2FA);

@@ -1369,161 +1369,260 @@ class SimpleAuth {
     }
   
     private checkAuthStatus(): void {
-        console.log('=== CHECKING AUTH STATUS ===');
-        console.log('Method checkAuthStatus called at:', new Date().toISOString());
+        console.log("=== CHECKING AUTH STATUS ===");
+        console.log("Method checkAuthStatus called at:", new Date().toISOString());
+      
+        // Check for Google OAuth callback
+        const urlParams = new URLSearchParams(window.location.search);
+        const authParam = urlParams.get('auth');
         
-        const user = localStorage.getItem('user');
-        console.log('localStorage user:', user);
-        console.log('Current cookies:', document.cookie);
-
-        if (user) {
-            try {
-                this.currentUser = JSON.parse(user);
-                console.log('Parsed current user:', this.currentUser);
-                
-                // Check if we have a valid authentication cookie
-                const hasCookie = document.cookie.includes('token=');
-                console.log('Has authentication cookie:', hasCookie);
-                
-                if (!hasCookie) {
-                    console.log('⚠️ No authentication cookie found, but user data exists');
-                    console.log('⚠️ Proceeding with cached user data...');
-                    
-                    // Show the main app with cached data even without cookie
-                    this.showPage('mainApp');
-                    this.updateHomeDashboard();
-                    this.updateProfileDisplay();
-                    
-                    // Clear search input when restoring from localStorage
-                    const searchInput = document.getElementById('searchUsersInput') as HTMLInputElement;
-                    if (searchInput) {
-                        searchInput.value = '';
-                        this.clearUsersList();
-                    }
-                    
-                                    // Always prioritize saved section on page load/refresh
-                const savedSection = localStorage.getItem('lastActiveSection');
-                const urlSection = this.getUrlSection();
-                
-                if (savedSection) {
-                    console.log('🔄 Restoring saved section:', savedSection);
-                    this.showSection(savedSection);
-                } else if (urlSection) {
-                    console.log('🌐 URL section parameter found:', urlSection);
-                    this.showSection(urlSection);
-                } else {
-                    console.log('🏠 No saved section, showing home');
-                    this.showSection('homeSection');
-                }
-                    
-                    return;
-                }
-                
-                console.log('✅ Authentication cookie found, showing main app');
-                // Show the main app with cached data
-                this.showPage('mainApp');
-                this.updateHomeDashboard();
-                this.updateProfileDisplay();
-                
-                // Clear search input when restoring from localStorage
-                const searchInput = document.getElementById('searchUsersInput') as HTMLInputElement;
-                if (searchInput) {
-                    searchInput.value = '';
-                    this.clearUsersList();
-                }
-                
-                // Always prioritize saved section on page load/refresh
-                const savedSection2 = localStorage.getItem('lastActiveSection');
-                const urlSection2 = this.getUrlSection();
-                
-                if (savedSection2) {
-                    console.log('🔄 Restoring saved section:', savedSection2);
-                    this.showSection(savedSection2);
-                } else if (urlSection2) {
-                    console.log('🌐 URL section parameter found:', urlSection2);
-                    this.showSection(urlSection2);
-                } else {
-                    console.log('🏠 No saved section, showing home');
-                    this.showSection('homeSection');
-                }
-                
-                // Don't load fresh data immediately to avoid authentication issues
-                // The user can manually refresh if needed
-            } catch (error) {
-                console.error('❌ Error parsing user from localStorage:', error);
-                localStorage.removeItem('user');
-                this.currentUser = null;
-                this.showPage('registrationPage');
-            }
-        } else {
-            console.log('❌ No user in localStorage, showing registration page');
-            this.showPage('registrationPage');
+        if (authParam === 'success') {
+          console.log("🔍 Google OAuth success detected");
+          // Clear the URL parameter
+          window.history.replaceState({}, document.title, window.location.pathname);
+          
+          // Force a check for the authentication cookie with a longer delay
+          setTimeout(() => {
+            this.verifyTokenAndShowApp();
+          }, 500); // Increased delay to ensure cookie is set
+          return;
+        } else if (authParam === 'error') {
+          console.log("❌ Google OAuth error detected");
+          window.history.replaceState({}, document.title, window.location.pathname);
+          this.showStatus("Google authentication failed. Please try again.", "error");
+          this.showPage("loginPage");
+          return;
         }
-        console.log('=== AUTH STATUS CHECK COMPLETE ===');
-    }
-
-    private async tryRefreshToken(): Promise<void> {
-        console.log('Attempting to refresh token...');
-        try {
-            const response = await fetch(`https://${HOST_IP}/api/auth/refresh`, {
-                method: 'POST',
-                credentials: 'include'
-            });
-            
-            if (response.ok) {
-                console.log('✅ Token refresh successful');
-                // Show the main app with cached data
-                this.showPage('mainApp');
-                this.updateHomeDashboard();
-                this.updateProfileDisplay();
-                
-                // Always prioritize saved section on page load/refresh
-                const savedSection = localStorage.getItem('lastActiveSection');
-                const urlSection = this.getUrlSection();
-                
-                if (savedSection) {
-                    console.log('🔄 Restoring saved section after token refresh:', savedSection);
-                    this.showSection(savedSection);
-                } else if (urlSection) {
-                    console.log('🌐 URL section parameter found after token refresh:', urlSection);
-                    this.showSection(urlSection);
-                } else {
-                    console.log('🏠 No saved section, showing home');
-                    this.showSection('homeSection');
-                }
-            } else {
-                console.log('❌ Token refresh failed, clearing localStorage');
-                localStorage.removeItem('user');
-                this.currentUser = null;
-                this.showStatus('Session expired. Please login again.', 'error');
-                setTimeout(() => {
-                    this.showPage('registrationPage');
-                }, 2000);
+      
+        const user = localStorage.getItem("user");
+        console.log("localStorage user:", user);
+        console.log("Current cookies:", document.cookie);
+      
+        if (user) {
+          try {
+            this.currentUser = JSON.parse(user);
+            console.log("Parsed current user:", this.currentUser);
+      
+            // Check if we have a valid authentication cookie
+            const hasCookie = document.cookie.includes("token=");
+            console.log("Has authentication cookie:", hasCookie);
+      
+            if (!hasCookie) {
+              console.log(
+                "⚠️ No authentication cookie found, but user data exists",
+              );
+              console.log("⚠️ Proceeding with cached user data...");
+      
+              // Show the main app with cached data even without cookie
+              this.showPage("mainApp");
+              this.updateHomeDashboard();
+              this.updateProfileDisplay();
+      
+              // Clear search input when restoring from localStorage
+              const searchInput = document.getElementById(
+                "searchUsersInput",
+              ) as HTMLInputElement;
+              if (searchInput) {
+                searchInput.value = "";
+                this.clearUsersList();
+              }
+      
+              // Always prioritize saved section on page load/refresh
+              const savedSection = localStorage.getItem("lastActiveSection");
+              const urlSection = this.getUrlSection();
+      
+              if (savedSection) {
+                console.log("🔄 Restoring saved section:", savedSection);
+                this.showSection(savedSection);
+              } else if (urlSection) {
+                console.log("🌐 URL section parameter found:", urlSection);
+                this.showSection(urlSection);
+              } else {
+                console.log("🏠 No saved section, showing home");
+                this.showSection("homeSection");
+              }
+      
+              return;
             }
-        } catch (error) {
-            console.error('❌ Token refresh error:', error);
-            console.log('⚠️ Showing main app anyway with cached data (graceful degradation)');
-            // Show the main app with cached data as a fallback
-            this.showPage('mainApp');
+      
+            console.log("✅ Authentication cookie found, showing main app");
+            // Show the main app with cached data
+            this.showPage("mainApp");
             this.updateHomeDashboard();
             this.updateProfileDisplay();
-            
-            // Always prioritize saved section on page load/refresh
-            const savedSection = localStorage.getItem('lastActiveSection');
-            const urlSection = this.getUrlSection();
-            
-            if (savedSection) {
-                console.log('🔄 Restoring saved section after error:', savedSection);
-                this.showSection(savedSection);
-            } else if (urlSection) {
-                console.log('🌐 URL section parameter found after error:', urlSection);
-                this.showSection(urlSection);
-            } else {
-                console.log('🏠 No saved section, showing home');
-                this.showSection('homeSection');
+      
+            // Clear search input when restoring from localStorage
+            const searchInput = document.getElementById(
+              "searchUsersInput",
+            ) as HTMLInputElement;
+            if (searchInput) {
+              searchInput.value = "";
+              this.clearUsersList();
             }
+      
+            // Always prioritize saved section on page load/refresh
+            const savedSection = localStorage.getItem("lastActiveSection");
+            const urlSection = this.getUrlSection();
+      
+            if (savedSection) {
+              console.log("🔄 Restoring saved section:", savedSection);
+              this.showSection(savedSection);
+            } else if (urlSection) {
+              console.log("🌐 URL section parameter found:", urlSection);
+              this.showSection(urlSection);
+            } else {
+              console.log("🏠 No saved section, showing home");
+              this.showSection("homeSection");
+            }
+      
+            return;
+          } catch (error) {
+            console.error("Error parsing stored user data:", error);
+            localStorage.removeItem("user");
+          }
         }
-    }
+      
+        // No user data, check if we have a valid authentication cookie
+        const hasCookie = document.cookie.includes("token=");
+        if (hasCookie) {
+          console.log("🍪 Found authentication cookie, verifying...");
+          this.verifyTokenAndShowApp();
+        } else {
+          console.log("❌ No authentication found, showing login page");
+          this.showPage("loginPage");
+        }
+      }
+      
+      private async verifyTokenAndShowApp(): Promise<void> {
+        try {
+          console.log("🔍 Verifying token with server...");
+          const response = await fetch(`https://${HOST_IP}/api/auth/getCurrentUser`, {
+            method: "GET",
+            credentials: "include",
+          });
+      
+          if (response.ok) {
+            const data = await response.json();
+            console.log("✅ Token verified, user data:", data.user);
+            
+            this.currentUser = data.user;
+            localStorage.setItem("user", JSON.stringify(data.user));
+            
+            this.showPage("mainApp");
+            this.loadUserProfile();
+            this.updateHomeDashboard();
+            
+            // Show home section by default after Google login
+            this.showSection("homeSection");
+          } else {
+            console.log("❌ Token verification failed, status:", response.status);
+            
+            // For Google OAuth, we should try to handle this more gracefully
+            const urlParams = new URLSearchParams(window.location.search);
+            const authParam = urlParams.get('auth');
+            
+            if (authParam === 'success') {
+              // If this was a Google OAuth callback but token verification failed,
+              // wait a bit more and try again
+              console.log("🔄 Google OAuth detected, retrying token verification...");
+              setTimeout(() => {
+                this.verifyTokenAndShowApp();
+              }, 1000);
+              return;
+            }
+            
+            localStorage.removeItem("user");
+            this.showPage("loginPage");
+          }
+        } catch (error) {
+          console.error("Token verification error:", error);
+          
+          // For Google OAuth, be more forgiving of network errors
+          const urlParams = new URLSearchParams(window.location.search);
+          const authParam = urlParams.get('auth');
+          
+          if (authParam === 'success') {
+            console.log("🔄 Network error during Google OAuth, retrying...");
+            setTimeout(() => {
+              this.verifyTokenAndShowApp();
+            }, 2000);
+            return;
+          }
+          
+          localStorage.removeItem("user");
+          this.showPage("loginPage");
+        }
+      }
+        private async tryRefreshToken(): Promise<void> {
+          console.log("Attempting to refresh token...");
+          try {
+            const response = await fetch(`https://${HOST_IP}/api/auth/refresh`, {
+              method: "POST",
+              credentials: "include",
+            });
+      
+            if (response.ok) {
+              console.log("✅ Token refresh successful");
+              // Show the main app with cached data
+              this.showPage("mainApp");
+              this.updateHomeDashboard();
+              this.updateProfileDisplay();
+      
+              // Always prioritize saved section on page load/refresh
+              const savedSection = localStorage.getItem("lastActiveSection");
+              const urlSection = this.getUrlSection();
+      
+              if (savedSection) {
+                console.log(
+                  "🔄 Restoring saved section after token refresh:",
+                  savedSection,
+                );
+                this.showSection(savedSection);
+              } else if (urlSection) {
+                console.log(
+                  "🌐 URL section parameter found after token refresh:",
+                  urlSection,
+                );
+                this.showSection(urlSection);
+              } else {
+                console.log("🏠 No saved section, showing home");
+                this.showSection("homeSection");
+              }
+            } else {
+              console.log("❌ Token refresh failed, clearing localStorage");
+              localStorage.removeItem("user");
+              this.currentUser = null;
+              this.showStatus("Session expired. Please login again.", "error");
+              setTimeout(() => {
+                this.showPage("registrationPage");
+              }, 2000);
+            }
+          } catch (error) {
+            console.error("❌ Token refresh error:", error);
+            console.log(
+              "⚠️ Showing main app anyway with cached data (graceful degradation)",
+            );
+            // Show the main app with cached data as a fallback
+            this.showPage("mainApp");
+            this.updateHomeDashboard();
+            this.updateProfileDisplay();
+      
+            // Always prioritize saved section on page load/refresh
+            const savedSection = localStorage.getItem("lastActiveSection");
+            const urlSection = this.getUrlSection();
+      
+            if (savedSection) {
+              console.log("🔄 Restoring saved section after error:", savedSection);
+              this.showSection(savedSection);
+            } else if (urlSection) {
+              console.log("🌐 URL section parameter found after error:", urlSection);
+              this.showSection(urlSection);
+            } else {
+              console.log("🏠 No saved section, showing home");
+              this.showSection("homeSection");
+            }
+          }
+        }
 
     private async handleLogout(): Promise<void> {
         try {
