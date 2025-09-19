@@ -5662,7 +5662,7 @@ class SimpleAuth {
 
     private connectAIGame(): void {
         try {
-            this.aiGameWs = new WebSocket(`wss://${HOST_IP}/ai-game`);
+            this.aiGameWs = new WebSocket(`wss://${HOST_IP}/api/ai-game`);
             
             this.aiGameWs.onopen = () => {
                 this.logAIGame('Connected to AI Pong Game!');

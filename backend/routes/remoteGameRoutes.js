@@ -3,17 +3,12 @@ import { findorCreateMatch } from '../services/matchStateService.js';
 import { authenticate } from '../services/jwtService.js';
 import { trackUserActivity } from '../services/lastSeenService.js';
 
-async function remoteGameRoutes(fastify, options) {
-    console.log('Registering remote game routes with prefix:', options.prefix || 'none');
-    
-    // Helper function to extract username from WebSocket connection
+async function remoteGameRoutes(fastify, options)
+{
     const extractUsername = (request) => {
-        // Try to get username from query params first
         if (request.query?.username) {
             return request.query.username;
         }
-        
-        // Try to get from headers (if passed via token)
         const authHeader = request.headers.authorization;
         if (authHeader && authHeader.startsWith('Bearer ')) {
             try {
@@ -24,8 +19,6 @@ async function remoteGameRoutes(fastify, options) {
                 console.log('Failed to authenticate token:', error.message);
             }
         }
-        
-        // Try to get from cookies (if using cookie-based auth)
         if (request.cookies?.token) {
             try {
                 const decoded = authenticate(request.cookies.token);
@@ -38,44 +31,31 @@ async function remoteGameRoutes(fastify, options) {
         return 'Anonymous';
     };
 
-    // Main matchmaking endpoint
-    fastify.get('/find-match', { 
-        websocket: true 
-    }, async (connection, request) => {
+    fastify.get('/find-match', { websocket: true }, async (connection, request) => {
         let socket;
-        try {
-            console.log('=== FIND MATCH WEBSOCKET CONNECTION ===');
-            console.log('Connection object:', !!connection);
-            console.log('Query params:', request.query);
-            
-            // Get the socket from connection
+        try
+        {
             socket = connection.socket || connection;
             
-            if (!socket) {
+            if (!socket)
                 throw new Error('No WebSocket connection available');
-            }
-            
-            console.log('Socket ready state:', socket.readyState);
-            
-            // Extract username with better authentication handling
             const username = extractUsername(request);
-            console.log('Finding/creating match for user:', username);
-            
-            // Track user activity if we have proper authentication
-            if (username !== 'Anonymous') {
-                try {
+
+            if (username !== 'Anonymous')
+            {
+                try
+                {
                     await trackUserActivity(username);
-                } catch (error) {
+                }
+                catch (error) {
                     console.log('Failed to track user activity:', error.message);
-                    // Don't fail the connection for this
                 }
             }
             
-            // Find or create match with better error handling
             let matchResult;
-            try {
+            try
+            {
                 matchResult = await findorCreateMatch(socket, username);
-                console.log('Match result:', matchResult);
             } catch (error) {
                 if (error.message === 'You are already in this match!') {
                     // Handle duplicate connection attempt

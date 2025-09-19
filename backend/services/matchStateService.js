@@ -156,6 +156,7 @@ export function removePlayerFromMatch(matchId, websocket) {
         ).catch(error => {
             console.error(`Failed to update dashboard stats after disconnect: ${error.message}`);
         });
+        broadcastGameOver(match, disconnectedPlayer === 1 ? 2 : 1, matchId);
     }
     if (!match.player1 && !match.player2) {
         activeMatches.delete(matchId);
@@ -466,7 +467,6 @@ async function broadcastGameOver(match, winner, matchId)
     console.log(`Game over broadcast complete for match ${matchId}`);
 }
 
-// Fixed findOrCreateMatch to prevent reconnection to finished games
 export async function findorCreateMatch(websocket, username)
 {
     for (const [matchId, match] of activeMatches)
@@ -486,8 +486,6 @@ export async function findorCreateMatch(websocket, username)
                 return { matchId, created: false, reconnected: true };
         }
     }
-
-    // Look for an available match that has exactly 1 player and isn't created by the same user
     for(const [waitingMatchId, waitingData] of waitingPlayers)
     {
         const match = getMatch(waitingMatchId);
