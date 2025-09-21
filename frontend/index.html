@@ -383,11 +383,153 @@
         .text-black {
             color: white !important;
         }
+        
+        /* Professional Colorblind Accessibility Mode */
+        .colorblind-mode {
+            /* High contrast color scheme following WCAG 2.1 AA standards */
+            --primary-bg: #000000;
+            --secondary-bg: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #e0e0e0;
+            --accent-color: #00ff00; /* High contrast green for visibility */
+            --border-color: #ffffff;
+            --button-bg: #333333;
+            --button-hover: #555555;
+            --success-color: #00ff00;
+            --warning-color: #ffff00;
+            --error-color: #ff0000;
+        }
+        
+        .colorblind-mode body {
+            background: var(--primary-bg) !important;
+            color: var(--text-primary) !important;
+        }
+        
+        .colorblind-mode .page,
+        .colorblind-mode #mainApp {
+            background: var(--primary-bg) !important;
+            background-image: none !important;
+        }
+        
+        /* High contrast text */
+        .colorblind-mode h1,
+        .colorblind-mode h2,
+        .colorblind-mode h3,
+        .colorblind-mode h4,
+        .colorblind-mode h5,
+        .colorblind-mode h6 {
+            color: var(--text-primary) !important;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+        
+        .colorblind-mode p,
+        .colorblind-mode span,
+        .colorblind-mode div {
+            color: var(--text-primary) !important;
+        }
+        
+        /* High contrast buttons */
+        .colorblind-mode button {
+            background: var(--button-bg) !important;
+            color: var(--text-primary) !important;
+            border: 2px solid var(--border-color) !important;
+            box-shadow: 0 0 5px rgba(255,255,255,0.3);
+        }
+        
+        .colorblind-mode button:hover {
+            background: var(--button-hover) !important;
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+        
+        /* High contrast form elements */
+        .colorblind-mode input,
+        .colorblind-mode textarea,
+        .colorblind-mode select {
+            background: var(--secondary-bg) !important;
+            color: var(--text-primary) !important;
+            border: 2px solid var(--border-color) !important;
+        }
+        
+        .colorblind-mode input:focus,
+        .colorblind-mode textarea:focus,
+        .colorblind-mode select:focus {
+            border-color: var(--accent-color) !important;
+            box-shadow: 0 0 5px var(--accent-color);
+        }
+        
+        /* High contrast cards and containers */
+        .colorblind-mode .bg-gray-600,
+        .colorblind-mode .bg-gray-700,
+        .colorblind-mode .bg-gray-800 {
+            background: var(--secondary-bg) !important;
+            border: 1px solid var(--border-color) !important;
+        }
+        
+        /* High contrast game elements */
+        .colorblind-mode .game-option {
+            background: var(--secondary-bg) !important;
+            border: 2px solid var(--border-color) !important;
+            color: var(--text-primary) !important;
+        }
+        
+        .colorblind-mode .game-option:hover {
+            background: var(--button-hover) !important;
+            border-color: var(--accent-color) !important;
+            box-shadow: 0 0 10px var(--accent-color);
+        }
+        
+        /* High contrast navigation */
+        .colorblind-mode .main-nav {
+            background: var(--secondary-bg) !important;
+            border-bottom: 2px solid var(--border-color) !important;
+        }
+        
+        .colorblind-mode .main-nav-link {
+            color: var(--text-primary) !important;
+            border: 1px solid transparent !important;
+        }
+        
+        .colorblind-mode .main-nav-link:hover,
+        .colorblind-mode .main-nav-link.active {
+            background: var(--button-bg) !important;
+            border-color: var(--accent-color) !important;
+        }
+        
+        /* High contrast status indicators */
+        .colorblind-mode .text-green-500 { color: var(--success-color) !important; }
+        .colorblind-mode .text-yellow-500 { color: var(--warning-color) !important; }
+        .colorblind-mode .text-red-500 { color: var(--error-color) !important; }
+        
+        /* High contrast powerpuff colors - make them distinguishable */
+        .colorblind-mode .text-powerpuff-pink { color: #ff69b4 !important; }
+        .colorblind-mode .text-powerpuff-blue { color: #87ceeb !important; }
+        .colorblind-mode .text-powerpuff-green { color: #98fb98 !important; }
+        .colorblind-mode .text-powerpuff-purple { color: #dda0dd !important; }
+        
+        /* Ensure sufficient contrast ratios (4.5:1 minimum for AA compliance) */
+        .colorblind-mode * {
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+        
+        /* Remove problematic color combinations */
+        .colorblind-mode .text-red-500,
+        .colorblind-mode .text-green-500 {
+            /* Use patterns or shapes instead of just color */
+            position: relative;
+        }
+        
+        .colorblind-mode .text-red-500::before {
+            content: "⚠ ";
+            color: var(--error-color);
+        }
+        
+        .colorblind-mode .text-green-500::before {
+            content: "✓ ";
+            color: var(--success-color);
+        }
     </style>
 </head>
 <body class="min-h-screen">
-    <!-- Contrast Mode Overlay -->
-    <div id="contrastOverlay" class="contrast-overlay"></div>
     <div id="app">
         <!-- Modern Pop-up Notification System -->
         <div id="notificationOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-[9999] hidden flex items-center justify-center" style="position: fixed !important; z-index: 9999 !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; filter: none !important;">
@@ -1313,6 +1455,32 @@
                         <div class="mt-4 bg-gray-600/50 rounded-lg p-4 border border-white/20 max-w-2xl mx-auto">
                             <h3 class="text-lg font-bold text-white mb-2">Objective</h3>
                             <p class="text-white">Beat the AI! First to reach 5 points wins the game!</p>
+                        </div>
+                    </div>
+
+                    <!-- Power-ups Toggle -->
+                    <div class="mb-8 text-center">
+                        <div class="max-w-md mx-auto">
+                            <div class="bg-gray-600/50 rounded-lg p-6 border border-white/20">
+                                <div class="flex items-center justify-between">
+                                    <div class="text-left">
+                                        <h3 class="text-xl font-bold text-white mb-2">Power-ups</h3>
+                                        <p class="text-white text-sm opacity-80">Special abilities that appear during gameplay</p>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" id="aiPowerupsToggle" class="sr-only peer" checked>
+                                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <p class="text-white text-sm">
+                                        <span id="aiPowerupsStatus" class="text-powerpuff-pink font-semibold">Enabled</span>
+                                        <span class="text-white"> - Power-ups will appear during the game</span>
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

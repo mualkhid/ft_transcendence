@@ -662,11 +662,134 @@
                 font-size: 1.5rem;
             }
         }
+        
+        /* Professional Colorblind Accessibility Mode */
+        .colorblind-mode {
+            /* High contrast color scheme following WCAG 2.1 AA standards */
+            --primary-bg: #000000;
+            --secondary-bg: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #e0e0e0;
+            --accent-color: #00ff00; /* High contrast green for visibility */
+            --border-color: #ffffff;
+            --button-bg: #333333;
+            --button-hover: #555555;
+            --success-color: #00ff00;
+            --warning-color: #ffff00;
+            --error-color: #ff0000;
+        }
+        
+        .colorblind-mode body {
+            background: var(--primary-bg) !important;
+            background-image: none !important;
+            color: var(--text-primary) !important;
+        }
+        
+        .colorblind-mode body::before {
+            display: none !important;
+        }
+        
+        /* High contrast text */
+        .colorblind-mode h1,
+        .colorblind-mode h2,
+        .colorblind-mode h3,
+        .colorblind-mode h4,
+        .colorblind-mode h5,
+        .colorblind-mode h6 {
+            color: var(--text-primary) !important;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+        
+        .colorblind-mode p,
+        .colorblind-mode span,
+        .colorblind-mode div {
+            color: var(--text-primary) !important;
+        }
+        
+        /* High contrast buttons */
+        .colorblind-mode button {
+            background: var(--button-bg) !important;
+            color: var(--text-primary) !important;
+            border: 2px solid var(--border-color) !important;
+            box-shadow: 0 0 5px rgba(255,255,255,0.3);
+        }
+        
+        .colorblind-mode button:hover {
+            background: var(--button-hover) !important;
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+        
+        /* High contrast form elements */
+        .colorblind-mode input,
+        .colorblind-mode textarea,
+        .colorblind-mode select {
+            background: var(--secondary-bg) !important;
+            color: var(--text-primary) !important;
+            border: 2px solid var(--border-color) !important;
+        }
+        
+        .colorblind-mode input:focus,
+        .colorblind-mode textarea:focus,
+        .colorblind-mode select:focus {
+            border-color: var(--accent-color) !important;
+            box-shadow: 0 0 5px var(--accent-color);
+        }
+        
+        /* High contrast cards and containers */
+        .colorblind-mode .card,
+        .colorblind-mode .stat-card,
+        .colorblind-mode .game-card {
+            background: var(--secondary-bg) !important;
+            border: 2px solid var(--border-color) !important;
+            color: var(--text-primary) !important;
+        }
+        
+        /* High contrast navigation */
+        .colorblind-mode .main-nav {
+            background: var(--secondary-bg) !important;
+            border-bottom: 2px solid var(--border-color) !important;
+        }
+        
+        .colorblind-mode .main-nav-link {
+            color: var(--text-primary) !important;
+            border: 1px solid transparent !important;
+        }
+        
+        .colorblind-mode .main-nav-link:hover,
+        .colorblind-mode .main-nav-link.active {
+            background: var(--button-bg) !important;
+            border-color: var(--accent-color) !important;
+        }
+        
+        /* High contrast status indicators */
+        .colorblind-mode .text-green-500 { color: var(--success-color) !important; }
+        .colorblind-mode .text-yellow-500 { color: var(--warning-color) !important; }
+        .colorblind-mode .text-red-500 { color: var(--error-color) !important; }
+        
+        /* Ensure sufficient contrast ratios (4.5:1 minimum for AA compliance) */
+        .colorblind-mode * {
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+        
+        /* Remove problematic color combinations */
+        .colorblind-mode .text-red-500,
+        .colorblind-mode .text-green-500 {
+            /* Use patterns or shapes instead of just color */
+            position: relative;
+        }
+        
+        .colorblind-mode .text-red-500::before {
+            content: "⚠ ";
+            color: var(--error-color);
+        }
+        
+        .colorblind-mode .text-green-500::before {
+            content: "✓ ";
+            color: var(--success-color);
+        }
     </style>
 </head>
 <body>
-    <!-- Contrast Mode Overlay -->
-    <div id="contrastOverlay" class="contrast-overlay"></div>
     <!-- Main Website Navigation -->
     <nav class="main-nav">
         <div class="main-nav-content">

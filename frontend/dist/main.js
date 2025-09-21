@@ -120,6 +120,68 @@ class SimpleAuth {
     isLoggedIn() {
         return this.currentUser !== null;
     }
+    initializeColorblindMode() {
+        // Only restore contrast mode if user is logged in
+        if (this.isLoggedIn()) {
+            const savedMode = localStorage.getItem('colorblindMode');
+            if (savedMode === 'true') {
+                this.colorblindMode = true;
+                this.applyColorblindMode();
+            }
+        }
+        else {
+            // Reset contrast mode when not logged in
+            this.colorblindMode = false;
+            localStorage.removeItem('colorblindMode');
+            this.applyColorblindMode();
+        }
+    }
+    applyColorblindMode() {
+        const body = document.body;
+        if (this.colorblindMode) {
+            body.classList.add('colorblind-mode');
+        }
+        else {
+            body.classList.remove('colorblind-mode');
+        }
+    }
+    toggleColorblindMode() {
+        console.log('toggleColorblindMode called, current mode:', this.colorblindMode);
+        this.colorblindMode = !this.colorblindMode;
+        console.log('New contrast mode:', this.colorblindMode);
+        this.applyColorblindMode();
+        // Save preference only if logged in
+        if (this.isLoggedIn()) {
+            localStorage.setItem('colorblindMode', this.colorblindMode.toString());
+        }
+        // Update button text
+        const colorblindToggle = document.getElementById('colorblindToggle');
+        if (colorblindToggle) {
+            colorblindToggle.textContent = this.colorblindMode ? '☀️ Normal' : '☀️ Contrast';
+            colorblindToggle.title = this.colorblindMode ? 'Switch to Normal Mode' : 'Switch to Contrast Mode';
+            console.log('Button text updated to:', colorblindToggle.textContent);
+        }
+    }
+    setupColorblindToggle() {
+        const trySetup = () => {
+            const colorblindToggle = document.getElementById('colorblindToggle');
+            if (colorblindToggle) {
+                console.log('Colorblind toggle button found:', colorblindToggle);
+                colorblindToggle.addEventListener('click', (e) => {
+                    console.log('Colorblind toggle clicked!');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.toggleColorblindMode();
+                });
+                console.log('Colorblind toggle event listener attached');
+            }
+            else {
+                console.log('Colorblind toggle button not found, retrying in 100ms...');
+                setTimeout(trySetup, 100);
+            }
+        };
+        trySetup();
+    }
     init() {
         this.checkAuthStatus();
         this.setupEventListeners();
@@ -1307,6 +1369,7 @@ class SimpleAuth {
                 localStorage.removeItem('colorblindMode');
                 this.applyColorblindMode();
                 this.showPage('mainApp');
+                this.showSection('homeSection');
                 this.loadUserProfile();
             }
             else if (response.status === 401 && data.require2FA) {
@@ -1375,6 +1438,7 @@ class SimpleAuth {
                     console.log("⚠️ Proceeding with cached user data...");
                     // Show the main app with cached data even without cookie
                     this.showPage("mainApp");
+                    this.showSection('homeSection');
                     this.updateHomeDashboard();
                     this.updateProfileDisplay();
                     // Initialize history state after main app is shown
@@ -1405,6 +1469,7 @@ class SimpleAuth {
                 console.log("✅ Authentication cookie found, showing main app");
                 // Show the main app with cached data
                 this.showPage("mainApp");
+                this.showSection('homeSection');
                 this.updateHomeDashboard();
                 this.updateProfileDisplay();
                 // Initialize history state after main app is shown
@@ -1461,6 +1526,7 @@ class SimpleAuth {
                 this.currentUser = data.user;
                 localStorage.setItem("user", JSON.stringify(data.user));
                 this.showPage("mainApp");
+                this.showSection('homeSection');
                 this.loadUserProfile();
                 this.updateHomeDashboard();
                 // Initialize history state after main app is shown
@@ -1513,6 +1579,7 @@ class SimpleAuth {
                 console.log("✅ Token refresh successful");
                 // Show the main app with cached data
                 this.showPage("mainApp");
+                this.showSection('homeSection');
                 this.updateHomeDashboard();
                 this.updateProfileDisplay();
                 // Initialize history state after main app is shown
@@ -1548,6 +1615,7 @@ class SimpleAuth {
             console.log("⚠️ Showing main app anyway with cached data (graceful degradation)");
             // Show the main app with cached data as a fallback
             this.showPage("mainApp");
+            this.showSection('homeSection');
             this.updateHomeDashboard();
             this.updateProfileDisplay();
             // Initialize history state after main app is shown
@@ -1580,12 +1648,12 @@ class SimpleAuth {
         catch (error) {
             console.error('Logout error:', error);
         }
-        this.currentUser = null;
-        localStorage.removeItem('user');
         // Reset contrast mode on logout
         this.colorblindMode = false;
         localStorage.removeItem('colorblindMode');
         this.applyColorblindMode();
+        this.currentUser = null;
+        localStorage.removeItem('user');
         this.showStatus('Logged out successfully', 'success');
         setTimeout(() => {
             this.showPage('registrationPage');
@@ -1663,23 +1731,59 @@ class SimpleAuth {
                 switch (sectionId) {
                     case 'homeSection':
                         mainApp.classList.add('bg-home');
+                        // Ensure Powerpuff background is always applied for home section
+                        mainApp.style.backgroundImage = "url('/imgs/PPG_20th_Still_Xiya_01-1200x675.webp')";
+                        mainApp.style.backgroundSize = "cover";
+                        mainApp.style.backgroundPosition = "center";
+                        mainApp.style.backgroundRepeat = "no-repeat";
+                        mainApp.style.backgroundAttachment = "fixed";
                         break;
                     case 'friendsSection':
                         mainApp.classList.add('bg-friends');
+                        // Reset to default background for other sections
+                        mainApp.style.backgroundImage = "";
+                        mainApp.style.backgroundSize = "";
+                        mainApp.style.backgroundPosition = "";
+                        mainApp.style.backgroundRepeat = "";
+                        mainApp.style.backgroundAttachment = "";
                         break;
                     case 'profileSection':
                         mainApp.classList.add('bg-profile');
+                        // Reset to default background for other sections
+                        mainApp.style.backgroundImage = "";
+                        mainApp.style.backgroundSize = "";
+                        mainApp.style.backgroundPosition = "";
+                        mainApp.style.backgroundRepeat = "";
+                        mainApp.style.backgroundAttachment = "";
                         break;
                     case 'dashboardSection':
                         mainApp.classList.add('bg-dashboard');
+                        // Reset to default background for other sections
+                        mainApp.style.backgroundImage = "";
+                        mainApp.style.backgroundSize = "";
+                        mainApp.style.backgroundPosition = "";
+                        mainApp.style.backgroundRepeat = "";
+                        mainApp.style.backgroundAttachment = "";
                         break;
                     case 'gameSection':
                     case 'onlineGameSection':
                     case 'aiPongSection':
                         mainApp.classList.add('bg-game-options');
+                        // Reset to default background for other sections
+                        mainApp.style.backgroundImage = "";
+                        mainApp.style.backgroundSize = "";
+                        mainApp.style.backgroundPosition = "";
+                        mainApp.style.backgroundRepeat = "";
+                        mainApp.style.backgroundAttachment = "";
                         break;
                     case 'localTournamentSection':
                         mainApp.classList.add('bg-game-options');
+                        // Reset to default background for other sections
+                        mainApp.style.backgroundImage = "";
+                        mainApp.style.backgroundSize = "";
+                        mainApp.style.backgroundPosition = "";
+                        mainApp.style.backgroundRepeat = "";
+                        mainApp.style.backgroundAttachment = "";
                         // Ensure tournament is properly reset when showing tournament section
                         if (this.currentTournamentMatch === null) {
                             console.log('Resetting tournament UI when showing tournament section...');
@@ -1688,6 +1792,12 @@ class SimpleAuth {
                         break;
                     default:
                         mainApp.classList.add('bg-home'); // Default to home background
+                        // Ensure Powerpuff background is always applied for home section
+                        mainApp.style.backgroundImage = "url('/imgs/PPG_20th_Still_Xiya_01-1200x675.webp')";
+                        mainApp.style.backgroundSize = "cover";
+                        mainApp.style.backgroundPosition = "center";
+                        mainApp.style.backgroundRepeat = "no-repeat";
+                        mainApp.style.backgroundAttachment = "fixed";
                 }
             }
             // Save the current section to localStorage for persistence
@@ -6132,6 +6242,17 @@ class SimpleAuth {
                 this.showSection('homeSection');
             });
         }
+        // AI Power-ups toggle
+        const aiPowerupsToggle = document.getElementById('aiPowerupsToggle');
+        const aiPowerupsStatus = document.getElementById('aiPowerupsStatus');
+        if (aiPowerupsToggle && aiPowerupsStatus) {
+            // Set up the toggle using the existing method
+            this.setupPowerupsToggleForElement(aiPowerupsToggle, aiPowerupsStatus, 'ai');
+            console.log('AI power-ups toggle event listener added');
+        }
+        else {
+            console.error('AI power-ups toggle elements not found');
+        }
         // Set up keyboard controls
         this.setupAIKeyboardControls();
         console.log('AI game event listeners set up successfully');
@@ -6379,80 +6500,6 @@ class SimpleAuth {
                 this.goHome();
             };
         }
-    }
-    /**
-     * Initialize colorblind mode from localStorage
-     */
-    initializeColorblindMode() {
-        // Only restore contrast mode if user is logged in
-        if (this.isLoggedIn()) {
-            const savedMode = localStorage.getItem('colorblindMode');
-            if (savedMode === 'true') {
-                this.colorblindMode = true;
-                this.applyColorblindMode();
-            }
-        }
-        else {
-            // Reset contrast mode when not logged in
-            this.colorblindMode = false;
-            localStorage.removeItem('colorblindMode');
-            this.applyColorblindMode();
-        }
-    }
-    /**
-     * Toggle contrast mode
-     */
-    toggleColorblindMode() {
-        console.log('toggleContrastMode called, current mode:', this.colorblindMode);
-        this.colorblindMode = !this.colorblindMode;
-        console.log('New contrast mode:', this.colorblindMode);
-        this.applyColorblindMode();
-        // Save preference only if logged in
-        if (this.isLoggedIn()) {
-            localStorage.setItem('colorblindMode', this.colorblindMode.toString());
-        }
-        // Update button text
-        const colorblindToggle = document.getElementById('colorblindToggle');
-        if (colorblindToggle) {
-            colorblindToggle.textContent = this.colorblindMode ? '☀️ Normal' : '☀️ Contrast';
-            colorblindToggle.title = this.colorblindMode ? 'Switch to Normal Mode' : 'Switch to Contrast Mode';
-            console.log('Button text updated to:', colorblindToggle.textContent);
-        }
-    }
-    /**
-     * Apply or remove colorblind mode styles
-     */
-    applyColorblindMode() {
-        const body = document.body;
-        if (this.colorblindMode) {
-            body.classList.add('colorblind-mode');
-        }
-        else {
-            body.classList.remove('colorblind-mode');
-        }
-    }
-    /**
-     * Setup colorblind toggle with retry logic
-     */
-    setupColorblindToggle() {
-        const trySetup = () => {
-            const colorblindToggle = document.getElementById('colorblindToggle');
-            if (colorblindToggle) {
-                console.log('Colorblind toggle button found:', colorblindToggle);
-                colorblindToggle.addEventListener('click', (e) => {
-                    console.log('Colorblind toggle clicked!');
-                    e.preventDefault();
-                    e.stopPropagation();
-                    this.toggleColorblindMode();
-                });
-                console.log('Colorblind toggle event listener attached');
-            }
-            else {
-                console.log('Colorblind toggle button not found, retrying in 100ms...');
-                setTimeout(trySetup, 100);
-            }
-        };
-        trySetup();
     }
 }
 // Initialize when DOM is loaded
