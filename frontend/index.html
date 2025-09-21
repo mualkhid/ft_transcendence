@@ -471,7 +471,6 @@
                                 class="w-full px-4 py-3 rounded-lg border-2 border-powerpuff-blue bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:border-powerpuff-purple text-lg">
                             <p class="text-white text-sm mt-1 opacity-80">Enter the 6-digit code from your authenticator app or use a backup code</p>
                         </div>
-                        <div id="twofa-message" class="text-red-500 text-sm mt-2" style="display:none"></div>
 
                         <button type="submit" class="w-full bg-powerpuff-blue hover:bg-powerpuff-purple text-white font-bold py-4 px-6 rounded-lg text-xl transition-colors">
                             Login
@@ -722,6 +721,32 @@
                                     <button type="button" id="startTournament" class="bg-powerpuff-green hover:bg-powerpuff-purple text-white font-bold py-3 px-8 rounded-lg transition-colors text-lg">
                                         🏆 Start Tournament
                                     </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Power-ups Toggle -->
+                        <div class="mb-8 text-center">
+                            <div class="max-w-md mx-auto">
+                                <div class="bg-gray-600/50 rounded-lg p-6 border border-white/20">
+                                    <div class="flex items-center justify-between">
+                                        <div class="text-left">
+                                            <h3 class="text-xl font-bold text-white mb-2">Power-ups</h3>
+                                            <p class="text-white text-sm opacity-80">Special abilities that appear during gameplay</p>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <label class="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" id="powerupsToggleTournament" class="sr-only peer" checked>
+                                                <div class="w-14 h-7 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-powerpuff-pink/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-powerpuff-pink"></div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 text-center">
+                                        <p class="text-white text-sm">
+                                            <span id="powerupsStatusTournament" class="text-powerpuff-pink font-semibold">Enabled</span>
+                                            <span class="text-white"> - Power-ups will appear during the game</span>
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1051,7 +1076,7 @@
                             
                             <button id="downloadDataBtn" class="w-full bg-powerpuff-blue hover:bg-powerpuff-purple text-white font-bold py-3 px-4 rounded-lg transition-colors">
                                 📥 Download My Data
-                            </button>
+                            </button>>
                         </div>
                     </div>
                 </div>
@@ -1259,6 +1284,33 @@
                         </div>
                     </div>
 
+                    <!-- Power-ups Toggle -->
+                    <div class="mb-8 text-center">
+                        <h2 class="text-3xl font-logo text-white mb-6">Game Settings</h2>
+                        <div class="max-w-md mx-auto">
+                            <div class="bg-gray-600/50 rounded-lg p-6 border border-white/20">
+                                <div class="flex items-center justify-between">
+                                    <div class="text-left">
+                                        <h3 class="text-xl font-bold text-white mb-2">Power-ups</h3>
+                                        <p class="text-white text-sm opacity-80">Special abilities that appear during gameplay</p>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" id="powerupsToggle" class="sr-only peer" checked>
+                                            <div class="w-14 h-7 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-powerpuff-pink/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-powerpuff-pink"></div>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mt-4 text-center">
+                                    <p class="text-white text-sm">
+                                        <span id="powerupsStatus" class="text-powerpuff-pink font-semibold">Enabled</span>
+                                        <span class="text-white"> - Power-ups will appear during the game</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Game Instructions -->
                     <div class="mb-8 text-center">
                         <h2 class="text-3xl font-logo text-white mb-6">How to Play</h2>
@@ -1343,6 +1395,32 @@
                         </div>
                     </div>
 
+                    <!-- Power-ups Toggle -->
+                    <div class="mb-8 text-center">
+                        <div class="max-w-md mx-auto">
+                            <div class="bg-gray-600/50 rounded-lg p-6 border border-white/20">
+                                <div class="flex items-center justify-between">
+                                    <div class="text-left">
+                                        <h3 class="text-xl font-bold text-white mb-2">Power-ups</h3>
+                                        <p class="text-white text-sm opacity-80">Special abilities that appear during gameplay</p>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" id="powerupsToggle1v1" class="sr-only peer" checked>
+                                            <div class="w-14 h-7 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-powerpuff-pink/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-powerpuff-pink"></div>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mt-4 text-center">
+                                    <p class="text-white text-sm">
+                                        <span id="powerupsStatus1v1" class="text-powerpuff-pink font-semibold">Enabled</span>
+                                        <span class="text-white"> - Power-ups will appear during the game</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Score Display - Right Above Canvas -->
                     <div class="text-center text-white mb-4">
                         <div class="flex justify-center">
@@ -1410,6 +1488,32 @@
                         <div class="mt-4 bg-gray-600/50 rounded-lg p-4 border border-white/20 max-w-2xl mx-auto">
                             <h3 class="text-lg font-bold text-white mb-2">Objective</h3>
                             <p class="text-white">Beat your remote opponent! First to reach 5 points wins the game!</p>
+                        </div>
+                    </div>
+
+                    <!-- Power-ups Toggle -->
+                    <div class="mb-8 text-center">
+                        <div class="max-w-md mx-auto">
+                            <div class="bg-gray-600/50 rounded-lg p-6 border border-white/20">
+                                <div class="flex items-center justify-between">
+                                    <div class="text-left">
+                                        <h3 class="text-xl font-bold text-white mb-2">Power-ups</h3>
+                                        <p class="text-white text-sm opacity-80">Special abilities that appear during gameplay</p>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" id="powerupsToggleOnline" class="sr-only peer" checked>
+                                            <div class="w-14 h-7 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-powerpuff-pink/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-powerpuff-pink"></div>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mt-4 text-center">
+                                    <p class="text-white text-sm">
+                                        <span id="powerupsStatusOnline" class="text-powerpuff-pink font-semibold">Enabled</span>
+                                        <span class="text-white"> - Power-ups will appear during the game</span>
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -2136,4 +2240,4 @@
     </script>
     <script src="./dist/main.js?v=1757538000"></script>
 </body>
-</html>
+</html> 

@@ -6,7 +6,7 @@ import {
   refreshToken,
   verify2FA,
   disable2FA,
-  getCurrentUser 
+  getCurrentUser // Add this import
 } from '../controller/authController.js';
 
 import {
