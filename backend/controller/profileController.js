@@ -78,7 +78,18 @@ export async function updatePassword (req, reply)
 	if (!user)
 		throw new notFoundError('user not found')
 
-	// Compare current password with stored hash
+	// If user has no password set (Google account), allow setting new password without current password
+	if (!user.passwordHash) {
+		// Hash the new password
+		const newPasswordHash = await bcrypt.hash(newPassword, 12);
+		await prisma.user.update({
+			where: { id: id },
+			data: { passwordHash: newPasswordHash }
+		});
+		return reply.status(200).send({ message: 'password set successfully' });
+	}
+
+	// Otherwise, require current password check as before
 	const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
 	if (!isCurrentPasswordValid)
 		throw new AuthenticationError('password Incorrect');

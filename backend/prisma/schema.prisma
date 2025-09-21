@@ -52,6 +52,8 @@ model User {
   lastSeen     DateTime @default(now())
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  isEmailVerified Boolean @default(false)
+
 
   // Game statistics
   gamesPlayed  Int      @default(0)
