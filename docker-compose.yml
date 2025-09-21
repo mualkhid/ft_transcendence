@@ -1,6 +1,9 @@
 networks:
   webapp: {}
 
+volumes:
+  sql_data: {}
+  avatar_data: {}
 
 services:
   # Nginx with SSL
@@ -44,11 +47,6 @@ services:
       - "3000"
     networks: [webapp]
     volumes:
-      - ./persist/sqlite:/app/data
-      - ./persist/avatars:/app/public/avatars
+      - sql_data:/app/data
+      - avatar_data:/app/public/avatars
     restart: unless-stopped
-
-
-
-volumes:
-  database: {}
