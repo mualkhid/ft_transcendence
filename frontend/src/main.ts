@@ -80,6 +80,25 @@ class SimpleAuth {
 
     constructor() {
         this.init();
+        this.initializeAudio();
+        
+        // Add global test function for debugging
+        (window as any).testPowerUps = () => {
+            console.log('Testing power-ups...');
+            console.log('Current gameState:', this.gameState);
+            if (this.gameState) {
+                console.log('powerupsEnabled:', this.gameState.powerupsEnabled);
+                console.log('powerUpsSpawned:', this.gameState.powerUpsSpawned);
+                console.log('activePowerUps:', this.gameState.powerUps.length);
+                console.log('maxPowerUpsPerGame:', this.gameState.maxPowerUpsPerGame);
+                
+                // Force spawn a power-up
+                this.spawnPowerUp();
+                console.log('Force spawned a power-up');
+            } else {
+                console.log('No gameState available');
+            }
+        };
     }
 
     private init(): void {
@@ -90,6 +109,7 @@ class SimpleAuth {
         this.setupDashboardNavigation();
         this.initializeColorblindMode();
         this.setupBrowserHistory();
+        this.setupAllPowerupsToggles();
     }
 
     private setupEventListeners(): void {
@@ -237,6 +257,25 @@ class SimpleAuth {
             }
             });
         }
+
+        // const unanonymizeAccountBtn = document.getElementById('unanonymizeAccountBtn');
+        // if (unanonymizeAccountBtn) {
+        // unanonymizeAccountBtn.addEventListener('click', async () => {
+        //     if (confirm('Restore your original account data?')) {
+        //     try {
+        //         const response = await fetch('/api/user/unanonymize', { method: 'POST', credentials: 'include' });
+        //         if (response.ok) {
+        //         alert('Account restored.');
+        //         window.location.reload();
+        //         } else {
+        //         alert('Failed to restore account.');
+        //         }
+        //     } catch (error) {
+        //         alert('An error occurred while restoring your account.');
+        //     }
+        //     }
+        // });
+        // }
     
         const downloadDataBtn = document.getElementById('downloadDataBtn');
         if (downloadDataBtn) {
@@ -336,7 +375,7 @@ class SimpleAuth {
     }
     private async setup2FA(): Promise<void> {
         try {
-            const response = await fetch(`https://${HOST_IP}/api/auth/setup-2fa`, { 
+            const response = await fetch(`api/auth/setup-2fa`, { 
                 method: 'POST', 
                 credentials: 'include' 
             });
@@ -392,7 +431,7 @@ class SimpleAuth {
         }
 
         try {
-            const response = await fetch(`https://${HOST_IP}/api/auth/verify-2fa`, {
+            const response = await fetch(`api/auth/verify-2fa`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ twoFactorCode }),
@@ -400,6 +439,7 @@ class SimpleAuth {
             });
 
             if (response.ok) {
+                const data = await response.json();
                 this.showStatus('2FA setup complete!', 'success');
                 
                 // Hide setup sections
@@ -417,10 +457,15 @@ class SimpleAuth {
                 }
 
                 // Update current user data
-                if (this.currentUser) {
-                    this.currentUser.isTwoFactorEnabled = true;
-                    localStorage.setItem('user', JSON.stringify(this.currentUser));
-                }
+                // if (this.currentUser) {
+                //     this.currentUser.isTwoFactorEnabled = true;
+                //     localStorage.setItem('user', JSON.stringify(this.currentUser));
+                // }
+                
+                this.currentUser = data.user;
+                localStorage.setItem('user', JSON.stringify(data.user));
+                // await this.loadUserProfile(); // (optional, but should also update currentUser)
+                // this.updateProfileDisplay();
 
                 // Clear the verification input
                 verifyCodeInput.value = '';
@@ -436,7 +481,7 @@ class SimpleAuth {
     
     private async disable2FA(): Promise<void> {
         try {
-            const response = await fetch(`https://${HOST_IP}/api/auth/disable-2fa`, {
+            const response = await fetch(`api/auth/disable-2fa`, {
                 method: 'POST',
                 credentials: 'include',
             });
@@ -448,10 +493,12 @@ class SimpleAuth {
                 const twoFactorToggle = document.getElementById('twoFactorToggle') as HTMLInputElement;
                 if (twoFactorToggle) twoFactorToggle.checked = false;
     
-                if (this.currentUser) {
-                    this.currentUser.isTwoFactorEnabled = false;
-                    localStorage.setItem('user', JSON.stringify(this.currentUser));
-                }
+                // if (this.currentUser) {
+                //     // this.currentUser.isTwoFactorEnabled = false;
+                //     localStorage.setItem('user', JSON.stringify(this.currentUser));
+                // }
+                await this.loadUserProfile();
+                this.updateProfileDisplay();
             } else {
                 const errorData = await response.json();
                 this.showStatus(errorData.error || 'Failed to disable 2FA', 'error');
@@ -548,7 +595,7 @@ class SimpleAuth {
         // Check if backend is running first
         try {
             console.log('Testing backend connection...');
-            const healthCheck = await fetch(`https://${HOST_IP}/api/profile/me`, {
+            const healthCheck = await fetch(`api/profile/me`, {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -580,7 +627,7 @@ class SimpleAuth {
                 return; // stop here, don’t send the request
             }
             console.log('Sending username update request:', { newUsername });
-            console.log('Request URL:', `https://${HOST_IP}/api/profile/username`);
+            console.log('Request URL:', `api/profile/username`);
             console.log('Request method:', 'PATCH');
             console.log('Request headers:', {
                 'Content-Type': 'application/json',
@@ -588,7 +635,7 @@ class SimpleAuth {
             console.log('Request body:', JSON.stringify({ newUsername }));
             console.log('Credentials:', 'include');
         
-            const response = await fetch(`https://${HOST_IP}/api/profile/username`, {
+            const response = await fetch(`api/profile/username`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -634,6 +681,102 @@ class SimpleAuth {
         } 
     }
 
+    // private async handlePasswordChange(): Promise<void> {
+    //     const currentPasswordInput = document.getElementById('currentPassword') as HTMLInputElement;
+    //     const newPasswordInput = document.getElementById('newPassword') as HTMLInputElement;
+        
+    //     const currentPassword = currentPasswordInput?.value.trim();
+    //     const newPassword = newPasswordInput?.value.trim();
+
+    //     if (!this.currentUser) {
+    //         this.showStatus('Please log in to change password', 'error');
+    //         return;
+    //     }
+    //     const requiresCurrent = !!this.currentUser.hasPassword;
+    //     if ((requiresCurrent && (!currentPassword || !newPassword)) || (!requiresCurrent && !newPassword)) {
+    //         this.showStatus('Please enter ' + (requiresCurrent ? 'both curreent and new passwords' : 'a new password'), 'error');
+    //         return;
+    //     }
+    //     console.log('Password change - Current user:', this.currentUser);
+    //     console.log('Password change - Current cookies:', document.cookie);
+
+    //     // Validate new password meets requirements
+    //     const requirements = {
+    //         length: newPassword.length >= 8,
+    //         lowercase: /[a-z]/.test(newPassword),
+    //         uppercase: /[A-Z]/.test(newPassword),
+    //         number: /\d/.test(newPassword),
+    //         special: /[!@#$%^&*(),.?":{}|<>]/.test(newPassword)
+    //     };
+
+    //     const allRequirementsMet = Object.values(requirements).every(met => met);
+    //     if (!allRequirementsMet) {
+    //         this.showStatus('New password does not meet all requirements', 'error');
+    //         return;
+    //     }
+
+    //     try {
+    //         console.log('Sending password update request');
+    //         console.log('Request URL:', `api/profile/password`);
+    //         console.log('Request method:', 'PATCH');
+    //         console.log('Request headers:', {
+    //             'Content-Type': 'application/json',
+    //         });
+    //         console.log('Request body:', JSON.stringify({ currentPassword, newPassword: '***' }));
+    //         console.log('Credentials:', 'include');
+            
+    //         const response = await fetch(`api/profile/password`, {
+    //             method: 'PATCH',
+    //             headers: {
+    //                 'Content-Type': 'application/json',
+    //             },
+    //             body: JSON.stringify({ currentPassword, newPassword }),
+    //             credentials: 'include'
+    //         });
+
+    //         console.log('Password update response status:', response.status);
+
+    //         if (response.ok) {
+    //             const data = await response.json();
+    //             console.log('Password update response:', data);
+                
+    //             // Clear inputs
+    //             currentPasswordInput.value = '';
+    //             newPasswordInput.value = '';
+                
+    //             // Reset password requirements display
+    //             this.updatePasswordRequirements('');
+                
+    //             this.showStatus('Password updated successfully!', 'success');
+    //         } else if (response.status === 401) {
+    //             const errorData = await response.json();
+    //             console.error('Password update 401 error:', errorData);
+                
+    //             // Check if it's a password error or session error
+    //             if (errorData.error && errorData.error.includes('password Incorrect')) {
+    //                 this.showStatus('Current password is incorrect', 'error');
+    //             } else {
+    //                 this.showStatus('Session expired. Please login again.', 'error');
+    //                 localStorage.removeItem('user');
+    //                 this.currentUser = null;
+    //                 setTimeout(() => {
+    //                     this.showPage('loginPage');
+    //                 }, 2000);
+    //             }
+    //         } else if (response.status === 400) {
+    //             const errorData = await response.json();
+    //             console.error('Password update 400 error:', errorData);
+    //             this.showStatus(errorData.message || 'Invalid request', 'error');
+    //         } else {
+    //             const errorData = await response.json();
+    //             console.error('Password update error:', errorData);
+    //             this.showStatus(errorData.message || errorData.error || 'Failed to update password', 'error');
+    //         }
+    //     } catch (error) {
+    //         console.error('Password update error:', error);
+    //         this.showStatus('Network error updating password. Please check if the backend server is running.', 'error');
+    //     }
+    // }
     private async handlePasswordChange(): Promise<void> {
         const currentPasswordInput = document.getElementById('currentPassword') as HTMLInputElement;
         const newPasswordInput = document.getElementById('newPassword') as HTMLInputElement;
@@ -641,16 +784,15 @@ class SimpleAuth {
         const currentPassword = currentPasswordInput?.value.trim();
         const newPassword = newPasswordInput?.value.trim();
 
-        if (!currentPassword || !newPassword) {
-            this.showStatus('Please enter both current and new passwords', 'error');
-            return;
-        }
-
         if (!this.currentUser) {
             this.showStatus('Please log in to change password', 'error');
             return;
         }
-
+        const requiresCurrent = !!this.currentUser.hasPassword;
+        if ((requiresCurrent && (!currentPassword || !newPassword)) || (!requiresCurrent && !newPassword)) {
+            this.showStatus('Please enter ' + (requiresCurrent ? 'both curreent and new passwords' : 'a new password'), 'error');
+            return;
+        }
         console.log('Password change - Current user:', this.currentUser);
         console.log('Password change - Current cookies:', document.cookie);
 
@@ -671,22 +813,30 @@ class SimpleAuth {
 
         try {
             console.log('Sending password update request');
-            console.log('Request URL:', `https://${HOST_IP}/api/profile/password`);
+            console.log('Request URL:', `/api/profile/password`);
             console.log('Request method:', 'PATCH');
             console.log('Request headers:', {
                 'Content-Type': 'application/json',
             });
             console.log('Request body:', JSON.stringify({ currentPassword, newPassword: '***' }));
             console.log('Credentials:', 'include');
-            
-            const response = await fetch(`https://${HOST_IP}/api/profile/password`, {
+            const body: any = { newPassword };
+            if (requiresCurrent) body.currentPassword = currentPassword;
+
+            const response = await fetch(`/api/profile/password`, {
                 method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ currentPassword, newPassword }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
                 credentials: 'include'
             });
+            // const response = await fetch(`/api/profile/password`, {
+            //     method: 'PATCH',
+            //     headers: {
+            //         'Content-Type': 'application/json',
+            //     },
+            //     body: JSON.stringify({ currentPassword, newPassword }),
+            //     credentials: 'include'
+            // });
 
             console.log('Password update response status:', response.status);
 
@@ -731,7 +881,6 @@ class SimpleAuth {
             this.showStatus('Network error updating password. Please check if the backend server is running.', 'error');
         }
     }
-
     private async handleAvatarUpload(event: Event): Promise<void> {
         const fileInput = event.target as HTMLInputElement;
         const file = fileInput.files?.[0];
@@ -769,7 +918,7 @@ class SimpleAuth {
             const formData = new FormData();
             formData.append('avatar', file);
 
-            const response = await fetch(`https://${HOST_IP}/api/profile/avatar`, {
+            const response = await fetch(`api/profile/avatar`, {
                 method: 'PATCH',
                 body: formData,
                 credentials: 'include'
@@ -838,7 +987,7 @@ class SimpleAuth {
 
         try {
             console.log('Searching users with term:', searchTerm);
-            const response = await fetch(`https://${HOST_IP}/api/friends/searchUser?q=${encodeURIComponent(searchTerm)}`, {
+            const response = await fetch(`api/friends/searchUser?q=${encodeURIComponent(searchTerm)}`, {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -875,7 +1024,7 @@ class SimpleAuth {
 
         try {
             console.log('Loading friends data...');
-            const response = await fetch(`https://${HOST_IP}/api/friends`, {
+            const response = await fetch(`api/friends`, {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -1051,7 +1200,7 @@ class SimpleAuth {
 
         try {
             console.log('Sending friend request to user:', userId);
-            const response = await fetch(`https://${HOST_IP}/api/friends/sendRequest`, {
+            const response = await fetch(`api/friends/sendRequest`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1100,7 +1249,7 @@ class SimpleAuth {
 
         try {
             console.log('Accepting friend request from user:', userId);
-            const response = await fetch(`https://${HOST_IP}/api/friends/acceptRequest`, {
+            const response = await fetch(`api/friends/acceptRequest`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1142,7 +1291,7 @@ class SimpleAuth {
 
         try {
             console.log('Declining friend request from user:', userId);
-            const response = await fetch(`https://${HOST_IP}/api/friends/declineRequest`, {
+            const response = await fetch(`api/friends/declineRequest`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1183,7 +1332,7 @@ class SimpleAuth {
 
         try {
             console.log('Removing friend:', userId);
-            const response = await fetch(`https://${HOST_IP}/api/friends/removeFriend`, {
+            const response = await fetch(`api/friends/removeFriend`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1225,7 +1374,7 @@ class SimpleAuth {
 
         try {
             console.log('Blocking friend:', userId);
-            const response = await fetch(`https://${HOST_IP}/api/friends/blockFriend`, {
+            const response = await fetch(`api/friends/blockFriend`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1274,8 +1423,8 @@ class SimpleAuth {
         }
 
         try {
-            console.log('Sending registration request to:', `https://${HOST_IP}/api/auth/registerUser`);
-            const response = await fetch(`https://${HOST_IP}/api/auth/registerUser`, {
+            console.log('Sending registration request to:', `api/auth/registerUser`);
+            const response = await fetch(`api/auth/registerUser`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1329,7 +1478,7 @@ class SimpleAuth {
             
             console.log('Login request body:', requestBody);
             
-            const response = await fetch(`https://${HOST_IP}/api/auth/login`, {
+            const response = await fetch(`api/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1506,7 +1655,7 @@ class SimpleAuth {
       private async verifyTokenAndShowApp(): Promise<void> {
         try {
           console.log("🔍 Verifying token with server...");
-          const response = await fetch(`https://${HOST_IP}/api/auth/getCurrentUser`, {
+          const response = await fetch(`api/auth/getCurrentUser`, {
             method: "GET",
             credentials: "include",
           });
@@ -1569,7 +1718,7 @@ class SimpleAuth {
         private async tryRefreshToken(): Promise<void> {
           console.log("Attempting to refresh token...");
           try {
-            const response = await fetch(`https://${HOST_IP}/api/auth/refresh`, {
+            const response = await fetch(`api/auth/refresh`, {
               method: "POST",
               credentials: "include",
             });
@@ -1646,7 +1795,7 @@ class SimpleAuth {
     private async handleLogout(): Promise<void> {
         try {
             // Call the logout endpoint to clear the server-side cookie
-            await fetch(`https://${HOST_IP}/api/auth/logout`, {
+            await fetch(`api/auth/logout`, {
                 method: 'POST',
                 credentials: 'include'
             });
@@ -1717,8 +1866,16 @@ class SimpleAuth {
         return null;
     }
 
-    private showSection(sectionId: string, updateHistory: boolean = true): void {
+    public showSection(sectionId: string, updateHistory: boolean = true): void {
         console.log(`🎯 showSection called with: ${sectionId}, updateHistory: ${updateHistory}`);
+        
+        // Check if we're leaving the game section and clean up
+        const currentSection = this.getCurrentSectionFromUrl();
+        if (currentSection === 'game' && sectionId !== 'gameSection') {
+            console.log('🎯 Leaving game section, cleaning up...');
+            this.cleanupGameState();
+        }
+        
         const sections = document.querySelectorAll('.section');
         sections.forEach(section => {
             section.classList.remove('active');
@@ -1754,6 +1911,14 @@ class SimpleAuth {
                     case 'aiPongSection':
                         mainApp.classList.add('bg-game-options');
                         break;
+                    case 'localTournamentSection':
+                        mainApp.classList.add('bg-game-options');
+                        // Ensure tournament is properly reset when showing tournament section
+                        if (this.currentTournamentMatch === null) {
+                            console.log('Resetting tournament UI when showing tournament section...');
+                            this.resetTournamentState();
+                        }
+                        break;
                     default:
                         mainApp.classList.add('bg-home'); // Default to home background
                 }
@@ -1780,8 +1945,7 @@ class SimpleAuth {
             if (sectionId === 'homeSection' && this.currentUser) {
                 console.log('Home section shown, updating dashboard...');
                 this.updateHomeDashboard();
-                // Also load detailed dashboard data for individual game type stats
-                this.loadDashboardData();
+                // Dashboard data will be loaded by loadSectionData() method
             } else if (sectionId === 'dashboardSection') {
                 console.log('Dashboard section shown, loading dashboard data...');
                 // Load dashboard data even if user is not logged in (for demo purposes)
@@ -1808,14 +1972,18 @@ class SimpleAuth {
         // Listen for browser back/forward button clicks
         window.addEventListener('popstate', (event) => {
             console.log('🔙 Browser navigation detected:', event.state);
+            console.log('🔙 Current URL:', window.location.href);
+            console.log('🔙 Current search params:', window.location.search);
             this.handleBrowserNavigation(event.state);
         });
         
-        // Initialize history state if none exists
-        if (!history.state) {
+        // Initialize history state if none exists or if it doesn't have a section
+        if (!history.state || !history.state.section) {
             const currentSection = this.getCurrentSectionFromUrl() || 'homeSection';
-            console.log('🔗 No history state, initializing with section:', currentSection);
+            console.log('🔗 No history state or missing section, initializing with section:', currentSection);
             this.replaceBrowserHistory(currentSection);
+        } else {
+            console.log('🔗 History state already exists:', history.state);
         }
         
         console.log('🔗 Browser history setup complete');
@@ -1827,6 +1995,12 @@ class SimpleAuth {
     private updateBrowserHistory(sectionId: string): void {
         const url = this.getUrlForSection(sectionId);
         const state = { section: sectionId, timestamp: Date.now() };
+        
+        // Don't create duplicate history entries for the same section
+        if (history.state && history.state.section === sectionId) {
+            console.log(`📝 Skipping duplicate history entry for section: ${sectionId}`);
+            return;
+        }
         
         console.log(`📝 Updating browser history: ${url}`, state);
         history.pushState(state, '', url);
@@ -1893,6 +2067,54 @@ class SimpleAuth {
      */
     private handleBrowserNavigation(state: any): void {
         console.log('🔙 Handling browser navigation with state:', state);
+        console.log('🔙 handleBrowserNavigation called at:', new Date().toISOString());
+        
+        // Check if we're leaving a game section and need to stop the game
+        const currentSection = this.getCurrentSectionFromUrl();
+        console.log('🔙 Current section from URL:', currentSection);
+        
+        // Check if game is currently running
+        const gameIsRunning = this.gameLoopInterval !== null;
+        const tournamentIsRunning = this.currentTournamentMatch !== null;
+        console.log('🔙 Game is running:', gameIsRunning);
+        console.log('🔙 Tournament is running:', tournamentIsRunning);
+        
+        // Always stop any running game when navigating away from game section
+        if (gameIsRunning) {
+            console.log('🔙 Game is running, stopping it...');
+            // Stop the game loop
+            if (this.gameLoopInterval) {
+                clearInterval(this.gameLoopInterval);
+                this.gameLoopInterval = null;
+            }
+            // Reset game state
+            this.resetGameState();
+            // Show power-ups toggle again
+            this.showPowerupsToggle('1v1');
+        }
+        
+        // Always stop tournament when navigating away from game section
+        if (tournamentIsRunning) {
+            console.log('🔙 Tournament is running, stopping it...');
+            // Stop the tournament game
+            if (this.gameLoopInterval) {
+                clearInterval(this.gameLoopInterval);
+                this.gameLoopInterval = null;
+            }
+            // Reset game state
+            this.resetGameState();
+            // Clear tournament match reference
+            this.currentTournamentMatch = null;
+            // Restore original endGame method if it was overridden
+            if (this.originalEndGame) {
+                this.endGame = this.originalEndGame;
+                this.originalEndGame = null;
+            }
+            // Reset tournament state and UI
+            this.resetTournamentState();
+            // Show power-ups toggle again
+            this.showPowerupsToggle('tournament');
+        }
         
         if (state && state.section) {
             // Navigate to the section from browser history
@@ -1949,10 +2171,17 @@ class SimpleAuth {
         // Get the current section from URL or default to home
         const currentSection = this.getCurrentSectionFromUrl() || 'homeSection';
         
-        // Only update history if we're not already on the correct URL
-        const expectedUrl = this.getUrlForSection(currentSection);
-        if (window.location.href !== expectedUrl) {
+        // Always ensure we have a proper history state, especially for home page
+        if (!history.state || !history.state.section) {
+            console.log('🔗 No history state found, creating one for section:', currentSection);
             this.replaceBrowserHistory(currentSection);
+        } else {
+            console.log('🔗 History state exists:', history.state);
+            // Only update history if we're not already on the correct URL
+            const expectedUrl = this.getUrlForSection(currentSection);
+            if (window.location.href !== expectedUrl) {
+                this.replaceBrowserHistory(currentSection);
+            }
         }
     }
 
@@ -2091,7 +2320,7 @@ class SimpleAuth {
     private async loadDashboardData(): Promise<void> {
         try {
             console.log('Loading dashboard data...');
-            const response = await fetch(`https://${HOST_IP}/api/dashboard/user`, {
+            const response = await fetch(`api/dashboard/user`, {
                 method: 'GET',
                 credentials: 'include',
                 headers: {
@@ -2398,7 +2627,7 @@ class SimpleAuth {
 
         // Check authentication before proceeding
         try {
-            const response = await fetch(`https://${HOST_IP}/api/profile/me`, {
+            const response = await fetch(`api/profile/me`, {
                 credentials: 'include'
             });
             
@@ -2436,6 +2665,12 @@ class SimpleAuth {
             // Redirect to tournament section
             this.showSection('localTournamentSection');
             console.log('Tournament section shown');
+            
+            // Ensure tournament is properly reset when returning to section
+            if (this.currentTournamentMatch === null) {
+                console.log('Ensuring tournament UI is reset...');
+                this.resetTournamentState();
+            }
         } else if (gameType === 'online') {
             // Redirect to online game section for direct remote connection
             this.showSection('onlineGameSection');
@@ -2620,7 +2855,8 @@ class SimpleAuth {
             powerUpsSpawned: 0,
             maxPowerUpsPerGame: 2,
             leftPaddleBuffUntil: 0,
-            rightPaddleBuffUntil: 0
+            rightPaddleBuffUntil: 0,
+            powerupsEnabled: true // Default to enabled, toggle will update this
         };
 
         // Clear any existing game loop
@@ -2628,6 +2864,9 @@ class SimpleAuth {
             clearInterval(this.gameLoopInterval);
             this.gameLoopInterval = null;
         }
+
+        // Show power-ups toggle when game is reset
+        this.showPowerupsToggle('1v1');
     }
 
     private setupGameControls(): void {
@@ -2823,6 +3062,25 @@ class SimpleAuth {
             console.log('Start button not found!');
         }
 
+        // Hide power-ups toggle when game starts
+        this.hidePowerupsToggle('1v1');
+
+        // Set powerupsEnabled based on toggle state
+        console.log('=== GAME START DEBUG ===');
+        console.log('gameState exists:', !!this.gameState);
+        console.log('powerupsEnabled BEFORE setting:', this.gameState?.powerupsEnabled);
+        
+        if (this.gameState) {
+            const toggle1v1 = document.getElementById('powerupsToggle1v1') as HTMLInputElement;
+            const enabled = toggle1v1 ? toggle1v1.checked : true; // Default to true if toggle not found
+            this.gameState.powerupsEnabled = enabled;
+            console.log('Set powerupsEnabled based on 1v1 toggle:', enabled);
+        }
+        
+        console.log('powerupsEnabled AFTER setting:', this.gameState?.powerupsEnabled);
+        console.log('powerUpsSpawned:', this.gameState?.powerUpsSpawned);
+        console.log('maxPowerUpsPerGame:', this.gameState?.maxPowerUpsPerGame);
+
         // Keep customize button visible during gameplay
         const customizeBtn = document.getElementById('customizeBtn');
         if (customizeBtn) {
@@ -2984,10 +3242,24 @@ class SimpleAuth {
     }
 
     private updatePowerUps(): void {
+        // Debug: Log power-ups state occasionally
+        if (Math.random() < 0.01) { // Log occasionally to avoid spam
+            console.log('updatePowerUps called - powerupsEnabled:', this.gameState.powerupsEnabled, 'powerUpsSpawned:', this.gameState.powerUpsSpawned, 'activePowerUps:', this.gameState.powerUps.length);
+        }
+        
+        // Check if power-ups are enabled
+        if (!this.gameState.powerupsEnabled) {
+            // Debug: Log when power-ups are disabled
+            if (Math.random() < 0.01) { // Log occasionally to avoid spam
+                console.log('Power-ups are disabled, skipping update');
+            }
+            return;
+        }
+        
         // Spawn power-ups (max 2 per game total)
         if (this.gameState.powerUpsSpawned < this.gameState.maxPowerUpsPerGame && 
             this.gameState.powerUps.length === 0 && 
-            Math.random() < 0.05) {
+            Math.random() < 0.1) { // Increased spawn rate from 5% to 10%
             console.log(`Attempting to spawn power-up ${this.gameState.powerUpsSpawned + 1}/${this.gameState.maxPowerUpsPerGame}`);
             this.spawnPowerUp();
         }
@@ -3243,6 +3515,9 @@ class SimpleAuth {
         ctx.fill();
 
         // Draw power-ups (improved system)
+        if (this.gameState.powerUps.length > 0 && Math.random() < 0.01) {
+            console.log('Drawing power-ups:', this.gameState.powerUps.length, 'power-ups');
+        }
         this.gameState.powerUps.forEach((powerUp: any) => {
             // Draw square power-up with Powerpuff colors
             const colors = ['#FF69B4', '#87CEEB', '#98FB98']; // Pink, Blue, Green
@@ -3329,6 +3604,9 @@ class SimpleAuth {
             // Show the modal
             gameOverModal.classList.remove('hidden');
             
+            // Show power-ups toggle when game ends
+            this.showPowerupsToggle('1v1');
+            
             // Set up button event listeners
             const playAgainBtn = document.getElementById('playAgainBtn');
             const goHomeBtn = document.getElementById('goHomeBtn');
@@ -3414,7 +3692,7 @@ class SimpleAuth {
         console.log('New game started');
     }
 
-        private async loadUserProfile(): Promise<void> {
+    private async loadUserProfile(): Promise<void> {
         if (!this.currentUser) {
             console.log('No current user found, cannot load profile');
             return;
@@ -3425,7 +3703,7 @@ class SimpleAuth {
         
         try {
             console.log('Loading user profile, current cookies:', document.cookie);
-            const response = await fetch(`https://${HOST_IP}/api/profile/me`, {
+            const response = await fetch(`api/profile/me`, {
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
@@ -3533,7 +3811,7 @@ class SimpleAuth {
         console.log('Updating user stats, user won:', userWon, 'game type:', gameType, 'scores:', player1Score, player2Score);
         
         try {
-            const response = await fetch(`https://${HOST_IP}/api/profile/update-stats`, {
+            const response = await fetch(`api/profile/update-stats`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: {
@@ -3582,7 +3860,7 @@ class SimpleAuth {
         console.log('Updating tournament stats, user won:', userWon);
         
         try {
-            const response = await fetch(`https://${HOST_IP}/api/profile/update-stats`, {
+            const response = await fetch(`api/profile/update-stats`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: {
@@ -3687,10 +3965,31 @@ class SimpleAuth {
             profileLosses.textContent = losses.toString();
             console.log('Updated losses:', losses);
         }
-        // Update 2FA toggle
+        // --- BEGIN: Restrict 2FA for Google-only users ---
         const twoFactorToggle = document.getElementById('twoFactorToggle') as HTMLInputElement;
+        const enable2faBtn = document.getElementById('enable2faBtn');
+        const twofaSection = document.getElementById('twofa-setup');
+        const twofaMessage = document.getElementById('twofa-message');
+
+        if (this.currentUser && !this.currentUser.hasPassword) {
+            // Google-only user: disable 2FA controls and show message
+            if (twoFactorToggle) twoFactorToggle.disabled = true;
+            if (enable2faBtn) enable2faBtn.style.display = 'none';
+            if (twofaSection) twofaSection.style.display = 'none';
+            if (twofaMessage) {
+                twofaMessage.style.display = 'block';
+                twofaMessage.textContent = 'Set a password to enable Two-Factor Authentication.';
+            }
+        } else {
+            // Normal user: enable 2FA controls and hide message
+            if (twoFactorToggle) twoFactorToggle.disabled = false;
+            if (twofaMessage) twofaMessage.style.display = 'none';
+        }
+        // --- END: Restrict 2FA for Google-only users ---
+        // Update 2FA toggle
+        // const twoFactorToggle = document.getElementById('twoFactorToggle') as HTMLInputElement;
         if (twoFactorToggle && this.currentUser) {
-            twoFactorToggle.checked = this.currentUser.isTwoFactorEnabled || false;
+            twoFactorToggle.checked = !!this.currentUser.isTwoFactorEnabled;
             
             // Show/hide enable button based on current state
             const enable2faBtn = document.getElementById('enable2faBtn');
@@ -3717,7 +4016,7 @@ class SimpleAuth {
     private async refreshUserData(): Promise<void> {
         try {
             console.log('🔄 Refreshing user data from server...');
-            const response = await fetch(`https://${HOST_IP}/api/auth/profile`, {
+            const response = await fetch(`api/auth/profile`, {
                 method: 'GET',
                 credentials: 'include',
                 headers: {
@@ -3793,7 +4092,7 @@ class SimpleAuth {
 
     private async refreshToken(): Promise<void> {
         try {
-            const response = await fetch(`https://${HOST_IP}/api/auth/refresh`, {
+            const response = await fetch(`api/auth/refresh`, {
                 method: 'POST',
                 credentials: 'include'
             });
@@ -3850,7 +4149,7 @@ class SimpleAuth {
         }
     
         try {
-            const url = `https://${HOST_IP}/api/tournament/local-result`;
+            const url = `api/tournament/local-result`;
             const requestBody = {
                 winner,
                 loser,
@@ -3995,7 +4294,7 @@ class SimpleAuth {
     
         try {
             // Use correct URL - adjust port/protocol as needed
-            const url = `https://${HOST_IP}/api/tournament/create`;
+            const url = `api/tournament/create`;
             console.log('Making request to:', url);
             
             const requestBody = {
@@ -4039,7 +4338,7 @@ class SimpleAuth {
         }
     
         try {
-            const response = await fetch(`https://${HOST_IP}/api/tournament/${this.tournamentState.tournamentId}/complete`, {
+            const response = await fetch(`api/tournament/${this.tournamentState.tournamentId}/complete`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -4190,6 +4489,14 @@ class SimpleAuth {
         // Show the game section and initialize the actual game
         this.showSection('gameSection');
         
+        // Hide power-ups toggle when tournament match starts
+        this.hidePowerupsToggle('tournament');
+
+        // Set powerupsEnabled based on tournament toggle state
+        const toggleTournament = document.getElementById('powerupsToggleTournament') as HTMLInputElement;
+        const enabled = toggleTournament ? toggleTournament.checked : true; // Default to true if toggle not found
+        console.log('Set powerupsEnabled based on tournament toggle:', enabled);
+        
         // Set up the game with tournament players
         setTimeout(() => {
             this.initializeTournamentGame(currentMatch);
@@ -4320,6 +4627,9 @@ class SimpleAuth {
 
         // Update bracket display
         this.displayBracket();
+
+        // Show power-ups toggle when tournament match ends
+        this.showPowerupsToggle('tournament');
 
         // Restore original endGame method
         if (this.originalEndGame) {
@@ -4898,6 +5208,15 @@ class SimpleAuth {
                             console.log('🚀 Game started!');
                             this.hideCountdown();
                             this.updateRemoteGameStatus('Playing', 'Game in progress', true);
+                            
+                            // Hide power-ups toggle when remote game starts
+                            this.hidePowerupsToggle('online');
+
+                            // Set powerupsEnabled based on online toggle state
+                            const toggleOnline = document.getElementById('powerupsToggleOnline') as HTMLInputElement;
+                            const enabled = toggleOnline ? toggleOnline.checked : true; // Default to true if toggle not found
+                            console.log('Set powerupsEnabled based on online toggle:', enabled);
+                            
                             this.startRemoteGame();
                             // Make sure score display is visible and updated
                             this.showScoreDisplay();
@@ -4949,6 +5268,10 @@ class SimpleAuth {
                                 const loserScore = data.player1Score >= 5 ? data.player2Score : data.player1Score;
                                 
                                 this.onlineGameState.gameFinished = true;
+                                
+                                // Play end game sound
+                                this.playEndGameSound();
+                                
                                 this.showGameOverScreen({
                                     winner: winner,
                                     winnerScore: winnerScore,
@@ -4968,6 +5291,9 @@ class SimpleAuth {
                             this.onlineGameState.gameState.player2Score = data.player2Score;
                             this.updateRemoteScore();
                             
+                            // Play end game sound
+                            this.playEndGameSound();
+                            
                             // Prepare game over screen data
                             const gameOverScreenDataD = {
                                 winner: data.winnerAlias || data.winner,
@@ -4981,6 +5307,9 @@ class SimpleAuth {
                             
                             // Show game over screen
                             this.showGameOverScreen(gameOverScreenDataD);
+                            
+                            // Show power-ups toggle when remote game ends
+                            this.showPowerupsToggle('online');
                             
                             // Update game status
                             this.updateRemoteGameStatus('Game Over', `${data.winnerAlias} wins!`);
@@ -5914,6 +6243,9 @@ class SimpleAuth {
     private initializeAIGame(): void {
         console.log('Initializing AI Pong game...');
         
+        // Setup power-ups toggle
+        this.setupPowerupsToggle();
+        
         // Connect to AI game WebSocket
         this.connectAIGame();
         
@@ -5945,6 +6277,305 @@ class SimpleAuth {
                 e.preventDefault();
             }
         });
+    }
+
+    private setupPowerupsToggle(): void {
+        console.log('Setting up power-ups toggle...');
+        
+        const powerupsToggle = document.getElementById('powerupsToggle') as HTMLInputElement;
+        const powerupsStatus = document.getElementById('powerupsStatus');
+        
+        if (!powerupsToggle || !powerupsStatus) {
+            console.error('Power-ups toggle elements not found');
+            return;
+        }
+        
+        this.setupPowerupsToggleForElement(powerupsToggle, powerupsStatus, 'ai');
+        
+        console.log('Power-ups toggle setup complete');
+    }
+
+    private setupAllPowerupsToggles(): void {
+        console.log('Setting up all power-ups toggles...');
+        
+        // AI Game toggle
+        const aiToggle = document.getElementById('powerupsToggle') as HTMLInputElement;
+        const aiStatus = document.getElementById('powerupsStatus');
+        if (aiToggle && aiStatus) {
+            this.setupPowerupsToggleForElement(aiToggle, aiStatus, 'ai');
+        }
+        
+        // 1v1 Game toggle
+        const toggle1v1 = document.getElementById('powerupsToggle1v1') as HTMLInputElement;
+        const status1v1 = document.getElementById('powerupsStatus1v1');
+        console.log('1v1 toggle elements found:', !!toggle1v1, !!status1v1);
+        if (toggle1v1 && status1v1) {
+            this.setupPowerupsToggleForElement(toggle1v1, status1v1, '1v1');
+        } else {
+            console.error('1v1 toggle elements not found!');
+        }
+        
+        // Tournament toggle
+        const toggleTournament = document.getElementById('powerupsToggleTournament') as HTMLInputElement;
+        const statusTournament = document.getElementById('powerupsStatusTournament');
+        if (toggleTournament && statusTournament) {
+            this.setupPowerupsToggleForElement(toggleTournament, statusTournament, 'tournament');
+        }
+        
+        // Online Game toggle
+        const toggleOnline = document.getElementById('powerupsToggleOnline') as HTMLInputElement;
+        const statusOnline = document.getElementById('powerupsStatusOnline');
+        if (toggleOnline && statusOnline) {
+            this.setupPowerupsToggleForElement(toggleOnline, statusOnline, 'online');
+        }
+        
+        console.log('All power-ups toggles setup complete');
+    }
+
+    private setupPowerupsToggleForElement(toggle: HTMLInputElement, status: HTMLElement, gameMode: string): void {
+        console.log(`Setting up power-ups toggle for ${gameMode}`);
+        
+        // Load saved preference from localStorage
+        const savedPowerupsEnabled = localStorage.getItem(`powerupsEnabled_${gameMode}`);
+        const powerupsEnabled = savedPowerupsEnabled !== null ? savedPowerupsEnabled === 'true' : true; // Default to true
+        
+        console.log(`Loaded preference for ${gameMode}:`, savedPowerupsEnabled, 'enabled:', powerupsEnabled);
+        
+        // Set initial state
+        toggle.checked = powerupsEnabled;
+        this.updatePowerupsStatusForElement(status, powerupsEnabled);
+        
+        // Update game state immediately if it exists
+        if (this.gameState) {
+            this.gameState.powerupsEnabled = powerupsEnabled;
+            console.log(`Game state powerupsEnabled set to: ${powerupsEnabled} for ${gameMode}`);
+        }
+        
+        // Add event listener for toggle changes
+        toggle.addEventListener('change', (e) => {
+            const target = e.target as HTMLInputElement;
+            const enabled = target.checked;
+            
+            // Save preference to localStorage
+            localStorage.setItem(`powerupsEnabled_${gameMode}`, enabled.toString());
+            console.log(`Power-ups preference saved for ${gameMode}:`, enabled);
+            
+            // Update status display
+            this.updatePowerupsStatusForElement(status, enabled);
+            
+            // Note: Power-ups are handled entirely on the frontend
+            // No need to communicate with backend for this preference
+            
+            // Update local game state for 1v1 games
+            if (gameMode === '1v1' && this.gameState) {
+                this.gameState.powerupsEnabled = enabled;
+                console.log('Power-ups preference updated for 1v1 game:', enabled);
+                console.log('Current gameState.powerupsEnabled:', this.gameState.powerupsEnabled);
+            }
+            
+            // Update tournament game state
+            if (gameMode === 'tournament' && this.gameState) {
+                this.gameState.powerupsEnabled = enabled;
+                console.log('Power-ups preference updated for tournament game:', enabled);
+                console.log('Current gameState.powerupsEnabled:', this.gameState.powerupsEnabled);
+            }
+            
+            // Update the game state immediately if it exists
+            if (this.gameState) {
+                this.gameState.powerupsEnabled = enabled;
+                console.log(`Game state powerupsEnabled updated to: ${enabled}`);
+            }
+        });
+    }
+    
+    private updatePowerupsStatus(enabled: boolean): void {
+        const powerupsStatus = document.getElementById('powerupsStatus');
+        if (powerupsStatus) {
+            this.updatePowerupsStatusForElement(powerupsStatus, enabled);
+        }
+    }
+
+    private updatePowerupsStatusForElement(statusElement: HTMLElement, enabled: boolean): void {
+        if (enabled) {
+            statusElement.textContent = 'Enabled';
+            statusElement.className = 'text-powerpuff-pink font-semibold';
+        } else {
+            statusElement.textContent = 'Disabled';
+            statusElement.className = 'text-gray-400 font-semibold';
+        }
+    }
+
+    private hidePowerupsToggle(gameMode: string): void {
+        let toggleContainer: HTMLElement | null = null;
+        
+        switch (gameMode) {
+            case '1v1':
+                toggleContainer = document.querySelector('#gameSection .mb-8:nth-of-type(2)') as HTMLElement;
+                break;
+            case 'tournament':
+                toggleContainer = document.querySelector('#localTournamentSection .mb-8:nth-of-type(2)') as HTMLElement;
+                break;
+            case 'ai':
+                toggleContainer = document.querySelector('#aiPongSection .mb-8:nth-of-type(2)') as HTMLElement;
+                break;
+            case 'online':
+                toggleContainer = document.querySelector('#onlineGameSection .mb-8:nth-of-type(2)') as HTMLElement;
+                break;
+        }
+        
+        if (toggleContainer) {
+            toggleContainer.style.display = 'none';
+            console.log(`Power-ups toggle hidden for ${gameMode}`);
+        }
+    }
+
+    private showPowerupsToggle(gameMode: string): void {
+        let toggleContainer: HTMLElement | null = null;
+        
+        switch (gameMode) {
+            case '1v1':
+                toggleContainer = document.querySelector('#gameSection .mb-8:nth-of-type(2)') as HTMLElement;
+                break;
+            case 'tournament':
+                toggleContainer = document.querySelector('#localTournamentSection .mb-8:nth-of-type(2)') as HTMLElement;
+                break;
+            case 'ai':
+                toggleContainer = document.querySelector('#aiPongSection .mb-8:nth-of-type(2)') as HTMLElement;
+                break;
+            case 'online':
+                toggleContainer = document.querySelector('#onlineGameSection .mb-8:nth-of-type(2)') as HTMLElement;
+                break;
+        }
+        
+        if (toggleContainer) {
+            toggleContainer.style.display = 'block';
+            console.log(`Power-ups toggle shown for ${gameMode}`);
+        }
+    }
+
+    private resetTournamentState(): void {
+        console.log('🔄 Resetting tournament state and UI...');
+        
+        // Reset tournament state
+        this.tournamentState = {
+            players: [],
+            currentRound: 0,
+            currentMatch: 0,
+            matches: [],
+            bracket: []
+        };
+        
+        // Clear tournament UI elements
+        const bracketContainer = document.getElementById('tournamentBracket');
+        if (bracketContainer) {
+            bracketContainer.innerHTML = '';
+        }
+        
+        const currentMatchDiv = document.getElementById('currentMatch');
+        if (currentMatchDiv) {
+            currentMatchDiv.classList.add('hidden');
+        }
+        
+        const matchInfo = document.getElementById('matchInfo');
+        if (matchInfo) {
+            matchInfo.innerHTML = '';
+        }
+        
+        const resultsDiv = document.getElementById('tournamentResults');
+        if (resultsDiv) {
+            resultsDiv.classList.add('hidden');
+        }
+        
+        const resultsInfo = document.getElementById('resultsInfo');
+        if (resultsInfo) {
+            resultsInfo.innerHTML = '';
+        }
+        
+        // Show the tournament setup section
+        const tournamentSetup = document.getElementById('tournamentSetup');
+        if (tournamentSetup) {
+            tournamentSetup.classList.remove('hidden');
+        }
+        
+        console.log('✅ Tournament state and UI reset complete');
+    }
+
+    private cleanupGameState(): void {
+        console.log('🧹 Cleaning up game state...');
+        
+        // Stop any running game loop
+        if (this.gameLoopInterval) {
+            clearInterval(this.gameLoopInterval);
+            this.gameLoopInterval = null;
+            console.log('🧹 Game loop stopped');
+        }
+        
+        // Reset game state
+        this.resetGameState();
+        
+        // Clean up tournament state if running
+        if (this.currentTournamentMatch) {
+            console.log('🧹 Cleaning up tournament state...');
+            this.currentTournamentMatch = null;
+            
+            // Restore original endGame method if it was overridden
+            if (this.originalEndGame) {
+                this.endGame = this.originalEndGame;
+                this.originalEndGame = null;
+            }
+            
+            // Reset tournament state and UI
+            this.resetTournamentState();
+        }
+        
+        // Show power-ups toggles
+        this.showPowerupsToggle('1v1');
+        this.showPowerupsToggle('tournament');
+        
+        console.log('✅ Game state cleanup complete');
+    }
+
+    private initializeAudio(): void {
+        // Preload paddle hit sound, score sound, and end game sound
+        try {
+            this.paddleHitAudio = new Audio('/imgs/Ping-pong-ball-bouncing.mp3');
+            this.paddleHitAudio.preload = 'auto';
+            
+            this.scoreAudio = new Audio('/imgs/point-smooth-beep-230573.mp3');
+            this.scoreAudio.preload = 'auto';
+            
+            this.endGameAudio = new Audio('/imgs/077512_end-game-90582.mp3');
+            this.endGameAudio.preload = 'auto';
+            
+            // Attempt to unlock on first user interaction
+            const unlock = () => {
+                if (!this.paddleHitAudio || !this.scoreAudio || !this.endGameAudio) return;
+                this.paddleHitAudio.muted = true;
+                this.scoreAudio.muted = true;
+                this.endGameAudio.muted = true;
+                this.paddleHitAudio.play().catch(() => {});
+                this.scoreAudio.play().catch(() => {});
+                this.endGameAudio.play().catch(() => {});
+                this.paddleHitAudio.pause();
+                this.scoreAudio.pause();
+                this.endGameAudio.pause();
+                this.paddleHitAudio.currentTime = 0;
+                this.scoreAudio.currentTime = 0;
+                this.endGameAudio.currentTime = 0;
+                this.paddleHitAudio.muted = false;
+                this.scoreAudio.muted = false;
+                this.endGameAudio.muted = false;
+                window.removeEventListener('click', unlock);
+                window.removeEventListener('touchstart', unlock);
+            };
+            
+            window.addEventListener('click', unlock, { once: true });
+            window.addEventListener('touchstart', unlock, { once: true });
+            
+            console.log('Audio files initialized successfully');
+        } catch (error) {
+            console.error('Failed to initialize audio files:', error);
+        }
     }
 
     private connectAIGame(): void {
@@ -6088,6 +6719,9 @@ class SimpleAuth {
                 const gameDuration = this.aiGameStartTime ? new Date().getTime() - this.aiGameStartTime.getTime() : 60000; // Default to 1 minute if no start time
                 this.updateUserStats(userWon, 'AI', data.playerScore, data.aiScore, gameDuration);
                 
+                // Show power-ups toggle when AI game ends
+                this.showPowerupsToggle('ai');
+                
                 this.showAIGameOverModal(data.winner, data.playerScore, data.aiScore);
                 break;
                 
@@ -6209,6 +6843,9 @@ class SimpleAuth {
         // Update score display
         this.updateAIScore();
         
+        // Show power-ups toggle when AI game is reset
+        this.showPowerupsToggle('ai');
+        
         console.log('AI game state reset');
     }
 
@@ -6228,6 +6865,14 @@ class SimpleAuth {
             aiGameOverlay.style.display = 'none';
             console.log('AI game overlay hidden');
         }
+
+        // Hide power-ups toggle when AI game starts
+        this.hidePowerupsToggle('ai');
+
+        // Set powerupsEnabled based on AI toggle state
+        const toggleAI = document.getElementById('powerupsToggle') as HTMLInputElement;
+        const enabled = toggleAI ? toggleAI.checked : true; // Default to true if toggle not found
+        console.log('Set powerupsEnabled based on AI toggle:', enabled);
 
         // Connect to AI game WebSocket and start the game
         this.connectAIGame();
@@ -6309,13 +6954,7 @@ class SimpleAuth {
             });
         }
 
-        const backBtn = document.getElementById('backBtn');
-        if (backBtn) {
-            backBtn.addEventListener('click', () => {
-                this.hideAIGameOverlay();
-                this.showSection('homeSection');
-            });
-        }
+        // Back button removed - not needed for browser back button functionality
 
         // AI Game Over Modal buttons
         const aiReplayBtn = document.getElementById('aiReplayBtn');
@@ -6404,7 +7043,7 @@ class SimpleAuth {
     }
 
     private hideAIGameOverlay(): void {
-        const gameOverlay = document.getElementById('gameOverlay');
+        const gameOverlay = document.getElementById('aiGameOverlay');
         if (gameOverlay) {
             gameOverlay.classList.add('hidden');
         }

@@ -3,95 +3,129 @@ import { findorCreateMatch } from '../services/matchStateService.js';
 import { authenticate } from '../services/jwtService.js';
 import { trackUserActivity } from '../services/lastSeenService.js';
 
-async function remoteGameRoutes(fastify, options)
-{
+async function remoteGameRoutes(fastify, options) {
     const extractUsername = (request) => {
-        if (request.query?.username) {
-            return request.query.username;
-        }
-        const authHeader = request.headers.authorization;
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-            try {
+        try
+        {
+            if (request.query?.username)
+                return request.query.username;
+            
+            const authHeader = request.headers.authorization;
+            if (authHeader && authHeader.startsWith('Bearer '))
+            {
                 const token = authHeader.substring(7);
                 const decoded = authenticate(token);
                 return decoded.username;
-            } catch (error) {
-                console.log('Failed to authenticate token:', error.message);
             }
-        }
-        if (request.cookies?.token) {
-            try {
+            
+            if (request.cookies?.token)
+            {
                 const decoded = authenticate(request.cookies.token);
                 return decoded.username;
-            } catch (error) {
-                console.log('Failed to authenticate cookie token:', error.message);
             }
+            
+            return 'Anonymous';
         }
-        
-        return 'Anonymous';
+        catch (error)
+        {
+            console.error('Error extracting username:', error);
+            return 'Anonymous';
+        }
     };
 
     fastify.get('/find-match', { websocket: true }, async (connection, request) => {
-        let socket;
+        let socket = connection.socket || connection;
+        
+        if (!socket)
+        {
+            console.error('No WebSocket connection available');
+            return;
+        }
+
         try
         {
-            socket = connection.socket || connection;
-            
-            if (!socket)
-                throw new Error('No WebSocket connection available');
             const username = extractUsername(request);
-
-            if (username !== 'Anonymous')
-            {
+            if (username !== 'Anonymous') {
                 try
                 {
                     await trackUserActivity(username);
                 }
-                catch (error) {
-                    console.log('Failed to track user activity:', error.message);
+                catch (activityError)
+                {
+                    console.error('Failed to track user activity:', activityError.message);
                 }
             }
-            
+
             let matchResult;
             try
             {
                 matchResult = await findorCreateMatch(socket, username);
-            } catch (error) {
-                if (error.message === 'You are already in this match!') {
-                    // Handle duplicate connection attempt
-                    socket.send(JSON.stringify({
-                        type: 'error',
-                        message: 'You are already connected to a match. Please wait or refresh the page.'
-                    }));
-                    socket.close(1008, 'Duplicate connection');
+            }
+            catch (matchError)
+            {
+                console.error('Error in findorCreateMatch:', matchError);
+                
+                if (matchError.message === 'You are already in this match!')
+                {
+                    if (socket.readyState === 1) {
+                        socket.send(JSON.stringify({
+                            type: 'error',
+                            message: 'You are already connected to a match. Please wait or refresh the page.'
+                        }));
+                        socket.close(1008, 'Duplicate connection');
+                    }
                     return;
                 }
-                throw error;
+                
+                if (socket.readyState === 1)
+                {
+                    socket.send(JSON.stringify({
+                        type: 'error',
+                        message: matchError.message || 'Failed to find or create match'
+                    }));
+                    socket.close(1002, 'Match error');
+                }
+                return;
             }
-            
+
             const { matchId, created, reconnected } = matchResult;
-            
-            // Send match assignment to client
-            socket.send(JSON.stringify({
-                type: 'match-assigned',
-                matchId: matchId,
-                created: created,
-                reconnected: reconnected || false
-            }));
-            
-            // Handle the game
-            await handleRemoteGame(socket, matchId, username);
-            
-        } catch (error) {
-            console.error('Match finding error:', error);
-            console.error('Error stack:', error.stack);
-            
+
+            if (socket.readyState === 1)
+            {
+                socket.send(JSON.stringify({
+                    type: 'match-assigned',
+                    matchId: matchId,
+                    created: created,
+                    reconnected: reconnected || false
+                }));
+            }
+
+            try
+            {
+                await handleRemoteGame(socket, matchId, username);
+            }
+            catch (gameError)
+            {
+                console.error('Error in handleRemoteGame:', gameError);
+                if (socket.readyState === 1) {
+                    socket.send(JSON.stringify({
+                        type: 'error',
+                        message: gameError.message || 'Game handling error'
+                    }));
+                    socket.close(1011, 'Game error');
+                }
+            }
+
+        }
+        catch (generalError)
+        {
+            console.error('General error in find-match route:', generalError);
             if (socket && socket.readyState === 1) {
                 socket.send(JSON.stringify({
                     type: 'error',
-                    message: error.message
+                    message: 'Internal server error'
                 }));
-                socket.close(1002, error.message);
+                socket.close(1011, 'Internal error');
             }
         }
     });

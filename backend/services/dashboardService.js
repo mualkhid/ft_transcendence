@@ -295,8 +295,16 @@ export class DashboardService {
             // Count multiplayer games for this user using matchPlayer for accuracy
             // Filters: non-AI, non-local, non-tournament, finished matches
             const baseMatchFilter = {
-                player1Alias: { notIn: ['AI', 'Local Player'] },
-                player2Alias: { notIn: ['AI', 'Local Player'] },
+                OR: [
+                    { 
+                        player1Alias: user.username,
+                        player2Alias: { notIn: ['AI', 'Local Player'] }
+                    },
+                    { 
+                        player2Alias: user.username,
+                        player1Alias: { notIn: ['AI', 'Local Player'] }
+                    }
+                ],
                 tournamentId: null,
                 status: 'FINISHED',
             };
@@ -477,8 +485,10 @@ export class DashboardService {
 
             const recentGames = await prisma.match.findMany({
                 where: {
-                    player1Alias: user.username,
-                    status: 'FINISHED'
+                    OR: [
+                        { player1Alias: user.username },
+                        { player2Alias: user.username }
+                    ],
                 },
                 include: {
                     players: true,
