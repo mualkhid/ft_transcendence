@@ -80,10 +80,8 @@ export async function addPlayerToMatch(matchId, websocket, username = null)
     if(!match) 
         return null;
     
-    if (match.state.gameFinished) {
-        console.log(`Cannot join match ${matchId}: game already finished`);
+    if (match.state.gameFinished)
         return null;
-    }
 
     if(!match.player1)
     {
@@ -111,7 +109,6 @@ export async function removePlayerFromMatch(matchId, websocket)
     if (!match) return null;
 
     let disconnectedPlayer = null;
-    let disconnectedPlayerUsername = null;
     let remainingPlayerUsername = null;
 
     if (match.player1 === websocket)
@@ -119,7 +116,6 @@ export async function removePlayerFromMatch(matchId, websocket)
         match.player1 = null;
         match.state.connectedPlayers--;
         disconnectedPlayer = 1;
-        disconnectedPlayerUsername = match.state.player1Username;
         remainingPlayerUsername = match.state.player2Username;
     }
     else if (match.player2 === websocket)
@@ -127,7 +123,6 @@ export async function removePlayerFromMatch(matchId, websocket)
         match.player2 = null;
         match.state.connectedPlayers--;
         disconnectedPlayer = 2;
-        disconnectedPlayerUsername = match.state.player2Username;
         remainingPlayerUsername = match.state.player1Username;
     }
 
@@ -144,6 +139,7 @@ export async function removePlayerFromMatch(matchId, websocket)
 
         if (remainingPlayer && remainingPlayer.readyState === 1)
         {
+            console.log('🔍 Processing disconnection:');
             const abandonMessage = {
                 type: 'game-abandoned',
                 message: `Opponent disconnected. You win!`,
@@ -156,23 +152,19 @@ export async function removePlayerFromMatch(matchId, websocket)
             };
             remainingPlayer.send(JSON.stringify(abandonMessage));
         }
-        if (disconnectedPlayerUsername && 
-            remainingPlayerUsername && 
-            disconnectedPlayerUsername !== 'Player1' && 
-            disconnectedPlayerUsername !== 'Player2' &&
-            remainingPlayerUsername !== 'Player1' && 
-            remainingPlayerUsername !== 'Player2') {
-            
-            console.log(`Updating stats - Winner: ${remainingPlayerUsername}, Loser: ${disconnectedPlayerUsername}`);
-            
-            await updateDashboardStats(
-                match.state.player1Username, 
-                match.state.player2Username,
-                remainingPlayerUsername
+        await updateDashboardStats(
+            match.state.player1Username, 
+            match.state.player2Username,
+            remainingPlayerUsername
+        );
+        if (match.matchId)
+        {
+            await completeMatch(
+                match.matchId, 
+                remainingPlayerUsername,
+                disconnectedPlayer === 1 ? match.state.scorePlayer2 : match.state.scorePlayer1,
+                disconnectedPlayer === 1 ? match.state.scorePlayer1 : match.state.scorePlayer2
             );
-        } else {
-            console.log('Skipping stats update - invalid usernames detected');
-            console.log(`Disconnected: "${disconnectedPlayerUsername}", Remaining: "${remainingPlayerUsername}"`);
         }
         broadcastGameOver(match, disconnectedPlayer === 1 ? 2 : 1, matchId);
         activeMatches.delete(matchId);
@@ -195,10 +187,8 @@ export function handlePlayerInput(matchId, playerNumber, inputType, inputState)
     if(!match)
         return (null);
 
-    if (match.state.gameFinished) {
-        console.log(`Ignoring input for finished game ${matchId}`);
-        return null;
-    }
+    if (match.state.gameFinished) 
+        return null; 
 
     const playerKey = playerNumber === 1 ? 'player1Keys' : 'player2Keys';
     
@@ -333,8 +323,6 @@ export async function updateBall(matchId)
         }
         return null;
     }
-
-    // Check if both players are still connected
     if (match.state.connectedPlayers < 2)
     {
         if (match.state.gameLoopInterval)
@@ -416,10 +404,7 @@ export async function updateBall(matchId)
 function broadcastGameState(match)
 {
     if (match.state.gameFinished)
-    {
-        console.log(`Game finished, not broadcasting game state`);
         return;
-    }
 
     const gameUpdate = JSON.stringify({
         type: 'game-state',
