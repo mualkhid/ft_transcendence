@@ -40,6 +40,10 @@
     background-image: url('../imgs/bg.md') !important;
 }
 
+.bg-dashboard {
+    background-image: url('../imgs/dashboard.jpg') !important;
+}
+
 
 /* Medium-dark backgrounds for all containers */
 .bg-gray-600\/50 {
