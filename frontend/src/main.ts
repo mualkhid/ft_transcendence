@@ -296,7 +296,6 @@ class SimpleAuth {
         }
             // 2FA Event Listeners 
             const twoFactorToggle = document.getElementById('twoFactorToggle') as HTMLInputElement;
-            const twofaMessage = document.getElementById('twofa-message'); 
             if (twoFactorToggle) {
                 twoFactorToggle.addEventListener('change', async (e) => {
                     const isEnabled = (e.target as HTMLInputElement).checked;
@@ -357,7 +356,7 @@ class SimpleAuth {
     }
     private async setup2FA(): Promise<void> {
         try {
-            const response = await fetch(`/api/auth/setup-2fa`, { 
+            const response = await fetch(`https://${HOST_IP}/api/auth/setup-2fa`, { 
                 method: 'POST', 
                 credentials: 'include' 
             });
@@ -413,7 +412,7 @@ class SimpleAuth {
         }
 
         try {
-            const response = await fetch(`/api/auth/verify-2fa`, {
+            const response = await fetch(`https://${HOST_IP}/api/auth/verify-2fa`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ twoFactorCode }),
@@ -439,14 +438,12 @@ class SimpleAuth {
 
                 // Update current user data
                 if (this.currentUser) {
-                    // this.currentUser.isTwoFactorEnabled = true;
+                    this.currentUser.isTwoFactorEnabled = true;
                     localStorage.setItem('user', JSON.stringify(this.currentUser));
                 }
 
                 // Clear the verification input
                 verifyCodeInput.value = '';
-                await this.loadUserProfile(); 
-                this.updateProfileDisplay();
             } else {
                 const errorData = await response.json();
                 this.showStatus(errorData.error || 'Invalid verification code', 'error');
@@ -459,7 +456,7 @@ class SimpleAuth {
     
     private async disable2FA(): Promise<void> {
         try {
-            const response = await fetch(`/api/auth/disable-2fa`, {
+            const response = await fetch(`https://${HOST_IP}/api/auth/disable-2fa`, {
                 method: 'POST',
                 credentials: 'include',
             });
@@ -472,11 +469,9 @@ class SimpleAuth {
                 if (twoFactorToggle) twoFactorToggle.checked = false;
     
                 if (this.currentUser) {
-                    // this.currentUser.isTwoFactorEnabled = false;
+                    this.currentUser.isTwoFactorEnabled = false;
                     localStorage.setItem('user', JSON.stringify(this.currentUser));
                 }
-                await this.loadUserProfile();
-                this.updateProfileDisplay();
             } else {
                 const errorData = await response.json();
                 this.showStatus(errorData.error || 'Failed to disable 2FA', 'error');
@@ -573,7 +568,7 @@ class SimpleAuth {
         // Check if backend is running first
         try {
             console.log('Testing backend connection...');
-            const healthCheck = await fetch(`/api/profile/me`, {
+            const healthCheck = await fetch(`https://${HOST_IP}/api/profile/me`, {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -605,7 +600,7 @@ class SimpleAuth {
                 return; // stop here, don’t send the request
             }
             console.log('Sending username update request:', { newUsername });
-            console.log('Request URL:', `/api/profile/username`);
+            console.log('Request URL:', `https://${HOST_IP}/api/profile/username`);
             console.log('Request method:', 'PATCH');
             console.log('Request headers:', {
                 'Content-Type': 'application/json',
@@ -613,7 +608,7 @@ class SimpleAuth {
             console.log('Request body:', JSON.stringify({ newUsername }));
             console.log('Credentials:', 'include');
         
-            const response = await fetch(`/api/profile/username`, {
+            const response = await fetch(`https://${HOST_IP}/api/profile/username`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -675,11 +670,7 @@ class SimpleAuth {
             this.showStatus('Please log in to change password', 'error');
             return;
         }
-        const requiresCurrent = this.currentUser.passwordHash !== '';
-        if ((requiresCurrent && (!currentPassword || !newPassword)) || (!requiresCurrent && !newPassword)) {
-            this.showStatus('Please enter ' + (requiresCurrent ? 'both current and new passwords' : 'a new password'), 'error');
-            return;
-        }
+
         console.log('Password change - Current user:', this.currentUser);
         console.log('Password change - Current cookies:', document.cookie);
 
@@ -700,30 +691,22 @@ class SimpleAuth {
 
         try {
             console.log('Sending password update request');
-            console.log('Request URL:', `/api/profile/password`);
+            console.log('Request URL:', `https://${HOST_IP}/api/profile/password`);
             console.log('Request method:', 'PATCH');
             console.log('Request headers:', {
                 'Content-Type': 'application/json',
             });
             console.log('Request body:', JSON.stringify({ currentPassword, newPassword: '***' }));
             console.log('Credentials:', 'include');
-            const body: any = { newPassword };
-            if (requiresCurrent) body.currentPassword = currentPassword;
-
-            const response = await fetch(`/api/profile/password`, {
+            
+            const response = await fetch(`https://${HOST_IP}/api/profile/password`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body),
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ currentPassword, newPassword }),
                 credentials: 'include'
             });
-            // const response = await fetch(`/api/profile/password`, {
-            //     method: 'PATCH',
-            //     headers: {
-            //         'Content-Type': 'application/json',
-            //     },
-            //     body: JSON.stringify({ currentPassword, newPassword }),
-            //     credentials: 'include'
-            // });
 
             console.log('Password update response status:', response.status);
 
@@ -806,7 +789,7 @@ class SimpleAuth {
             const formData = new FormData();
             formData.append('avatar', file);
 
-            const response = await fetch(`/api/profile/avatar`, {
+            const response = await fetch(`https://${HOST_IP}/api/profile/avatar`, {
                 method: 'PATCH',
                 body: formData,
                 credentials: 'include'
@@ -822,7 +805,7 @@ class SimpleAuth {
                 const profileAvatar = document.getElementById('profileAvatar') as HTMLImageElement;
                 if (profileAvatar) {
                     // Add timestamp to prevent caching
-                    const avatarSrc = `${data.avatarUrl}?t=${Date.now()}`;
+                    const avatarSrc = `https://${HOST_IP}${data.avatarUrl}?t=${Date.now()}`;
                     profileAvatar.src = avatarSrc;
                     console.log('✅ Updated profile avatar src to:', avatarSrc);
                 }
@@ -875,7 +858,7 @@ class SimpleAuth {
 
         try {
             console.log('Searching users with term:', searchTerm);
-            const response = await fetch(`/api/friends/searchUser?q=${encodeURIComponent(searchTerm)}`, {
+            const response = await fetch(`https://${HOST_IP}/api/friends/searchUser?q=${encodeURIComponent(searchTerm)}`, {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -912,7 +895,7 @@ class SimpleAuth {
 
         try {
             console.log('Loading friends data...');
-            const response = await fetch(`/api/friends`, {
+            const response = await fetch(`https://${HOST_IP}/api/friends`, {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -962,7 +945,7 @@ class SimpleAuth {
                 <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
                     <div class="flex items-center space-x-3">
                         <div class="relative">
-                            <img src="${user.avatarUrl && user.avatarUrl !== '/avatars/default.jpg' ? `${user.avatarUrl}?t=${Date.now()}` : `./imgs/default.jpg`}" 
+                            <img src="${user.avatarUrl && user.avatarUrl !== '/avatars/default.jpg' ? `https://${HOST_IP}${user.avatarUrl}?t=${Date.now()}` : `./imgs/default.jpg`}" 
                                  alt="${user.username}" 
                                  class="w-12 h-12 rounded-full object-cover border-2 border-white border-opacity-30">
                         </div>
@@ -998,7 +981,7 @@ class SimpleAuth {
                 <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
                     <div class="flex items-center space-x-3">
                         <div class="relative">
-                            <img src="${friend.avatarUrl && friend.avatarUrl !== '/avatars/default.jpg' ? `${friend.avatarUrl}?t=${Date.now()}` : `./imgs/default.jpg`}" 
+                            <img src="${friend.avatarUrl && friend.avatarUrl !== '/avatars/default.jpg' ? `https://${HOST_IP}${friend.avatarUrl}?t=${Date.now()}` : `./imgs/default.jpg`}" 
                                  alt="${friend.username}" 
                                  class="w-12 h-12 rounded-full object-cover border-2 border-white border-opacity-30">
                             <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${isOnline ? 'bg-green-400' : 'bg-gray-400'}"></div>
@@ -1041,7 +1024,7 @@ class SimpleAuth {
             <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
                 <div class="flex items-center space-x-3">
                     <div class="relative">
-                        <img src="${request.avatarUrl && request.avatarUrl !== '/avatars/default.jpg' ? `${request.avatarUrl}?t=${Date.now()}` : `./imgs/default.jpg`}" 
+                        <img src="${request.avatarUrl && request.avatarUrl !== '/avatars/default.jpg' ? `https://${HOST_IP}${request.avatarUrl}?t=${Date.now()}` : `./imgs/default.jpg`}" 
                              alt="${request.username}" 
                              class="w-12 h-12 rounded-full object-cover border-2 border-white border-opacity-30">
                     </div>
@@ -1088,7 +1071,7 @@ class SimpleAuth {
 
         try {
             console.log('Sending friend request to user:', userId);
-            const response = await fetch(`/api/friends/sendRequest`, {
+            const response = await fetch(`https://${HOST_IP}/api/friends/sendRequest`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1137,7 +1120,7 @@ class SimpleAuth {
 
         try {
             console.log('Accepting friend request from user:', userId);
-            const response = await fetch(`/api/friends/acceptRequest`, {
+            const response = await fetch(`https://${HOST_IP}/api/friends/acceptRequest`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1179,7 +1162,7 @@ class SimpleAuth {
 
         try {
             console.log('Declining friend request from user:', userId);
-            const response = await fetch(`/api/friends/declineRequest`, {
+            const response = await fetch(`https://${HOST_IP}/api/friends/declineRequest`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1220,7 +1203,7 @@ class SimpleAuth {
 
         try {
             console.log('Removing friend:', userId);
-            const response = await fetch(`/api/friends/removeFriend`, {
+            const response = await fetch(`https://${HOST_IP}/api/friends/removeFriend`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1262,7 +1245,7 @@ class SimpleAuth {
 
         try {
             console.log('Blocking friend:', userId);
-            const response = await fetch(`/api/friends/blockFriend`, {
+            const response = await fetch(`https://${HOST_IP}/api/friends/blockFriend`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1311,8 +1294,8 @@ class SimpleAuth {
         }
 
         try {
-            console.log('Sending registration request to:', `/api/auth/registerUser`);
-            const response = await fetch(`/api/auth/registerUser`, {
+            console.log('Sending registration request to:', `https://${HOST_IP}/api/auth/registerUser`);
+            const response = await fetch(`https://${HOST_IP}/api/auth/registerUser`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1366,7 +1349,7 @@ class SimpleAuth {
             
             console.log('Login request body:', requestBody);
             
-            const response = await fetch(`/api/auth/login`, {
+            const response = await fetch(`https://${HOST_IP}/api/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1543,7 +1526,7 @@ class SimpleAuth {
       private async verifyTokenAndShowApp(): Promise<void> {
         try {
           console.log("🔍 Verifying token with server...");
-          const response = await fetch(`/api/auth/getCurrentUser`, {
+          const response = await fetch(`https://${HOST_IP}/api/auth/getCurrentUser`, {
             method: "GET",
             credentials: "include",
           });
@@ -1606,7 +1589,7 @@ class SimpleAuth {
         private async tryRefreshToken(): Promise<void> {
           console.log("Attempting to refresh token...");
           try {
-            const response = await fetch(`/api/auth/refresh`, {
+            const response = await fetch(`https://${HOST_IP}/api/auth/refresh`, {
               method: "POST",
               credentials: "include",
             });
@@ -1683,7 +1666,7 @@ class SimpleAuth {
     private async handleLogout(): Promise<void> {
         try {
             // Call the logout endpoint to clear the server-side cookie
-            await fetch(`/api/auth/logout`, {
+            await fetch(`https://${HOST_IP}/api/auth/logout`, {
                 method: 'POST',
                 credentials: 'include'
             });
@@ -2191,7 +2174,7 @@ class SimpleAuth {
     private async loadDashboardData(): Promise<void> {
         try {
             console.log('Loading dashboard data...');
-            const response = await fetch(`/api/dashboard/user`, {
+            const response = await fetch(`https://${HOST_IP}/api/dashboard/user`, {
                 method: 'GET',
                 credentials: 'include',
                 headers: {
@@ -2498,7 +2481,7 @@ class SimpleAuth {
 
         // Check authentication before proceeding
         try {
-            const response = await fetch(`/api/profile/me`, {
+            const response = await fetch(`https://${HOST_IP}/api/profile/me`, {
                 credentials: 'include'
             });
             
@@ -3574,7 +3557,7 @@ class SimpleAuth {
         
         try {
             console.log('Loading user profile, current cookies:', document.cookie);
-            const response = await fetch(`/api/profile/me`, {
+            const response = await fetch(`https://${HOST_IP}/api/profile/me`, {
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
@@ -3682,7 +3665,7 @@ class SimpleAuth {
         console.log('Updating user stats, user won:', userWon, 'game type:', gameType, 'scores:', player1Score, player2Score);
         
         try {
-            const response = await fetch(`/api/profile/update-stats`, {
+            const response = await fetch(`https://${HOST_IP}/api/profile/update-stats`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: {
@@ -3731,7 +3714,7 @@ class SimpleAuth {
         console.log('Updating tournament stats, user won:', userWon);
         
         try {
-            const response = await fetch(`/api/profile/update-stats`, {
+            const response = await fetch(`https://${HOST_IP}/api/profile/update-stats`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: {
@@ -3803,7 +3786,7 @@ class SimpleAuth {
             
             if (this.currentUser.avatarUrl && this.currentUser.avatarUrl !== '/avatars/default.jpg') {
                 // Use the user's custom avatar (not the default one from database)
-                const avatarSrc = `${this.currentUser.avatarUrl}?t=${Date.now()}`;
+                const avatarSrc = `https://${HOST_IP}${this.currentUser.avatarUrl}?t=${Date.now()}`;
                 profileAvatar.src = avatarSrc;
                 console.log('✅ Updated avatar with custom image:', avatarSrc);
             } else {
@@ -3836,29 +3819,8 @@ class SimpleAuth {
             profileLosses.textContent = losses.toString();
             console.log('Updated losses:', losses);
         }
-        // --- BEGIN: Restrict 2FA for Google-only users ---
-        const twoFactorToggle = document.getElementById('twoFactorToggle') as HTMLInputElement;
-        const enable2faBtn = document.getElementById('enable2faBtn');
-        const twofaSection = document.getElementById('twofa-setup');
-        const twofaMessage = document.getElementById('twofa-message');
-
-        if (this.currentUser && this.currentUser.passwordHash === '') {
-            // Google-only user: disable 2FA controls and show message
-            if (twoFactorToggle) twoFactorToggle.disabled = true;
-            if (enable2faBtn) enable2faBtn.style.display = 'none';
-            if (twofaSection) twofaSection.style.display = 'none';
-            if (twofaMessage) {
-                twofaMessage.style.display = 'block';
-                twofaMessage.textContent = 'Set a password to enable Two-Factor Authentication.';
-            }
-        } else {
-            // Normal user: enable 2FA controls and hide message
-            if (twoFactorToggle) twoFactorToggle.disabled = false;
-            if (twofaMessage) twofaMessage.style.display = 'none';
-        }
-        // --- END: Restrict 2FA for Google-only users ---
         // Update 2FA toggle
-
+        const twoFactorToggle = document.getElementById('twoFactorToggle') as HTMLInputElement;
         if (twoFactorToggle && this.currentUser) {
             twoFactorToggle.checked = this.currentUser.isTwoFactorEnabled || false;
             
@@ -3887,7 +3849,7 @@ class SimpleAuth {
     private async refreshUserData(): Promise<void> {
         try {
             console.log('🔄 Refreshing user data from server...');
-            const response = await fetch(`/api/auth/profile`, {
+            const response = await fetch(`https://${HOST_IP}/api/auth/profile`, {
                 method: 'GET',
                 credentials: 'include',
                 headers: {
@@ -3963,7 +3925,7 @@ class SimpleAuth {
 
     private async refreshToken(): Promise<void> {
         try {
-            const response = await fetch(`/api/auth/refresh`, {
+            const response = await fetch(`https://${HOST_IP}/api/auth/refresh`, {
                 method: 'POST',
                 credentials: 'include'
             });
@@ -4020,7 +3982,7 @@ class SimpleAuth {
         }
     
         try {
-            const url = `/api/tournament/local-result`;
+            const url = `https://${HOST_IP}/api/tournament/local-result`;
             const requestBody = {
                 winner,
                 loser,
@@ -4165,7 +4127,7 @@ class SimpleAuth {
     
         try {
             // Use correct URL - adjust port/protocol as needed
-            const url = `/api/tournament/create`;
+            const url = `https://${HOST_IP}/api/tournament/create`;
             console.log('Making request to:', url);
             
             const requestBody = {
@@ -4209,7 +4171,7 @@ class SimpleAuth {
         }
     
         try {
-            const response = await fetch(`/api/tournament/${this.tournamentState.tournamentId}/complete`, {
+            const response = await fetch(`https://${HOST_IP}/api/tournament/${this.tournamentState.tournamentId}/complete`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
