@@ -4,12 +4,36 @@ import { authenticate } from '../services/jwtService.js';
 import { trackUserActivity } from '../services/lastSeenService.js';
 
 async function remoteGameRoutes(fastify, options) {
-    
-    fastify.get('/find-match', { websocket: true }, async (connection, request) => {
-        const extractUsername = (request) => {
+    const extractUsername = (request) => {
+        try
+        {
             if (request.query?.username)
                 return request.query.username;
-        };
+            
+            const authHeader = request.headers.authorization;
+            if (authHeader && authHeader.startsWith('Bearer '))
+            {
+                const token = authHeader.substring(7);
+                const decoded = authenticate(token);
+                return decoded.username;
+            }
+            
+            if (request.cookies?.token)
+            {
+                const decoded = authenticate(request.cookies.token);
+                return decoded.username;
+            }
+            
+            return 'Anonymous';
+        }
+        catch (error)
+        {
+            console.error('Error extracting username:', error);
+            return 'Anonymous';
+        }
+    };
+
+    fastify.get('/find-match', { websocket: true }, async (connection, request) => {
         let socket = connection.socket || connection;
         
         if (!socket)
@@ -17,16 +41,19 @@ async function remoteGameRoutes(fastify, options) {
             console.error('No WebSocket connection available');
             return;
         }
+
         try
         {
             const username = extractUsername(request);
-            try
-            {
-                await trackUserActivity(username);
-            }
-            catch (activityError)
-            {
-                console.error('Failed to track user activity:', activityError.message);
+            if (username !== 'Anonymous') {
+                try
+                {
+                    await trackUserActivity(username);
+                }
+                catch (activityError)
+                {
+                    console.error('Failed to track user activity:', activityError.message);
+                }
             }
 
             let matchResult;

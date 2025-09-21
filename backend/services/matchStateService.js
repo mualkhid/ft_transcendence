@@ -398,8 +398,6 @@ export async function updateBall(matchId)
         broadcastGameState(match);
     }
     checkCollisions(match);
-    
-    
     broadcastGameState(match);
 }
 
@@ -426,7 +424,6 @@ function broadcastGameState(match)
     if(match.player2 && match.player2.readyState === 1)
         match.player2.send(gameUpdate);
 }
-
 
 async function broadcastGameOver(match, winner, matchId)
 {

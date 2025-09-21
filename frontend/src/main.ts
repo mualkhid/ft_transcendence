@@ -345,6 +345,25 @@ class SimpleAuth {
             }
             });
         }
+
+        const unanonymizeAccountBtn = document.getElementById('unanonymizeAccountBtn');
+        if (unanonymizeAccountBtn) {
+          unanonymizeAccountBtn.addEventListener('click', async () => {
+            if (confirm('Restore your original account data?')) {
+              try {
+                const response = await fetch('/api/user/unanonymize', { method: 'POST', credentials: 'include' });
+                if (response.ok) {
+                  alert('Account restored.');
+                  window.location.reload();
+                } else {
+                  alert('Failed to restore account.');
+                }
+              } catch (error) {
+                alert('An error occurred while restoring your account.');
+              }
+            }
+          });
+        }
     
         const downloadDataBtn = document.getElementById('downloadDataBtn');
         if (downloadDataBtn) {
@@ -444,7 +463,7 @@ class SimpleAuth {
     }
     private async setup2FA(): Promise<void> {
         try {
-            const response = await fetch(`https://${HOST_IP}/api/auth/setup-2fa`, { 
+            const response = await fetch(`api/auth/setup-2fa`, { 
                 method: 'POST', 
                 credentials: 'include' 
             });
@@ -500,7 +519,7 @@ class SimpleAuth {
         }
 
         try {
-            const response = await fetch(`https://${HOST_IP}/api/auth/verify-2fa`, {
+            const response = await fetch(`api/auth/verify-2fa`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ twoFactorCode }),
@@ -508,6 +527,7 @@ class SimpleAuth {
             });
 
             if (response.ok) {
+                const data = await response.json();
                 this.showStatus('2FA setup complete!', 'success');
                 
                 // Hide setup sections
@@ -523,12 +543,9 @@ class SimpleAuth {
                     twoFactorToggle.disabled = false;
                     twoFactorToggle.checked = true;
                 }
-
-                // Update current user data
-                if (this.currentUser) {
-                    this.currentUser.isTwoFactorEnabled = true;
-                    localStorage.setItem('user', JSON.stringify(this.currentUser));
-                }
+                
+                this.currentUser = data.user;
+                localStorage.setItem('user', JSON.stringify(data.user));
 
                 // Clear the verification input
                 verifyCodeInput.value = '';
@@ -544,7 +561,7 @@ class SimpleAuth {
     
     private async disable2FA(): Promise<void> {
         try {
-            const response = await fetch(`https://${HOST_IP}/api/auth/disable-2fa`, {
+            const response = await fetch(`api/auth/disable-2fa`, {
                 method: 'POST',
                 credentials: 'include',
             });
@@ -556,10 +573,8 @@ class SimpleAuth {
                 const twoFactorToggle = document.getElementById('twoFactorToggle') as HTMLInputElement;
                 if (twoFactorToggle) twoFactorToggle.checked = false;
     
-                if (this.currentUser) {
-                    this.currentUser.isTwoFactorEnabled = false;
-                    localStorage.setItem('user', JSON.stringify(this.currentUser));
-                }
+                await this.loadUserProfile();
+                this.updateProfileDisplay();
             } else {
                 const errorData = await response.json();
                 this.showStatus(errorData.error || 'Failed to disable 2FA', 'error');
@@ -656,7 +671,7 @@ class SimpleAuth {
         // Check if backend is running first
         try {
             console.log('Testing backend connection...');
-            const healthCheck = await fetch(`https://${HOST_IP}/api/profile/me`, {
+            const healthCheck = await fetch(`api/profile/me`, {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -688,7 +703,7 @@ class SimpleAuth {
                 return; // stop here, don’t send the request
             }
             console.log('Sending username update request:', { newUsername });
-            console.log('Request URL:', `https://${HOST_IP}/api/profile/username`);
+            console.log('Request URL:', `api/profile/username`);
             console.log('Request method:', 'PATCH');
             console.log('Request headers:', {
                 'Content-Type': 'application/json',
@@ -696,7 +711,7 @@ class SimpleAuth {
             console.log('Request body:', JSON.stringify({ newUsername }));
             console.log('Credentials:', 'include');
         
-            const response = await fetch(`https://${HOST_IP}/api/profile/username`, {
+            const response = await fetch(`api/profile/username`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -749,16 +764,15 @@ class SimpleAuth {
         const currentPassword = currentPasswordInput?.value.trim();
         const newPassword = newPasswordInput?.value.trim();
 
-        if (!currentPassword || !newPassword) {
-            this.showStatus('Please enter both current and new passwords', 'error');
-            return;
-        }
-
         if (!this.currentUser) {
             this.showStatus('Please log in to change password', 'error');
             return;
         }
-
+        const requiresCurrent = !!this.currentUser.hasPassword;
+        if ((requiresCurrent && (!currentPassword || !newPassword)) || (!requiresCurrent && !newPassword)) {
+            this.showStatus('Please enter ' + (requiresCurrent ? 'both curreent and new passwords' : 'a new password'), 'error');
+            return;
+        }
         console.log('Password change - Current user:', this.currentUser);
         console.log('Password change - Current cookies:', document.cookie);
 
@@ -779,20 +793,20 @@ class SimpleAuth {
 
         try {
             console.log('Sending password update request');
-            console.log('Request URL:', `https://${HOST_IP}/api/profile/password`);
+            console.log('Request URL:', `/api/profile/password`);
             console.log('Request method:', 'PATCH');
             console.log('Request headers:', {
                 'Content-Type': 'application/json',
             });
             console.log('Request body:', JSON.stringify({ currentPassword, newPassword: '***' }));
             console.log('Credentials:', 'include');
-            
-            const response = await fetch(`https://${HOST_IP}/api/profile/password`, {
+            const body: any = { newPassword };
+            if (requiresCurrent) body.currentPassword = currentPassword;
+
+            const response = await fetch(`/api/profile/password`, {
                 method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ currentPassword, newPassword }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
                 credentials: 'include'
             });
 
@@ -839,7 +853,6 @@ class SimpleAuth {
             this.showStatus('Network error updating password. Please check if the backend server is running.', 'error');
         }
     }
-
     private async handleAvatarUpload(event: Event): Promise<void> {
         const fileInput = event.target as HTMLInputElement;
         const file = fileInput.files?.[0];
@@ -877,7 +890,7 @@ class SimpleAuth {
             const formData = new FormData();
             formData.append('avatar', file);
 
-            const response = await fetch(`https://${HOST_IP}/api/profile/avatar`, {
+            const response = await fetch(`api/profile/avatar`, {
                 method: 'PATCH',
                 body: formData,
                 credentials: 'include'
@@ -946,7 +959,7 @@ class SimpleAuth {
 
         try {
             console.log('Searching users with term:', searchTerm);
-            const response = await fetch(`https://${HOST_IP}/api/friends/searchUser?q=${encodeURIComponent(searchTerm)}`, {
+            const response = await fetch(`api/friends/searchUser?q=${encodeURIComponent(searchTerm)}`, {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -983,7 +996,7 @@ class SimpleAuth {
 
         try {
             console.log('Loading friends data...');
-            const response = await fetch(`https://${HOST_IP}/api/friends`, {
+            const response = await fetch(`api/friends`, {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -1159,7 +1172,7 @@ class SimpleAuth {
 
         try {
             console.log('Sending friend request to user:', userId);
-            const response = await fetch(`https://${HOST_IP}/api/friends/sendRequest`, {
+            const response = await fetch(`api/friends/sendRequest`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1208,7 +1221,7 @@ class SimpleAuth {
 
         try {
             console.log('Accepting friend request from user:', userId);
-            const response = await fetch(`https://${HOST_IP}/api/friends/acceptRequest`, {
+            const response = await fetch(`api/friends/acceptRequest`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1250,7 +1263,7 @@ class SimpleAuth {
 
         try {
             console.log('Declining friend request from user:', userId);
-            const response = await fetch(`https://${HOST_IP}/api/friends/declineRequest`, {
+            const response = await fetch(`api/friends/declineRequest`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1291,7 +1304,7 @@ class SimpleAuth {
 
         try {
             console.log('Removing friend:', userId);
-            const response = await fetch(`https://${HOST_IP}/api/friends/removeFriend`, {
+            const response = await fetch(`api/friends/removeFriend`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1333,7 +1346,7 @@ class SimpleAuth {
 
         try {
             console.log('Blocking friend:', userId);
-            const response = await fetch(`https://${HOST_IP}/api/friends/blockFriend`, {
+            const response = await fetch(`api/friends/blockFriend`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1382,8 +1395,8 @@ class SimpleAuth {
         }
 
         try {
-            console.log('Sending registration request to:', `https://${HOST_IP}/api/auth/registerUser`);
-            const response = await fetch(`https://${HOST_IP}/api/auth/registerUser`, {
+            console.log('Sending registration request to:', `api/auth/registerUser`);
+            const response = await fetch(`api/auth/registerUser`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1443,7 +1456,7 @@ class SimpleAuth {
             
             console.log('Login request body:', requestBody);
             
-            const response = await fetch(`https://${HOST_IP}/api/auth/login`, {
+            const response = await fetch(`api/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1568,7 +1581,9 @@ class SimpleAuth {
                 this.showSection(urlSection, false); // Don't update history on initial load
               } else {
                 console.log("🏠 No saved section, showing home");
-                this.showSection("homeSection", false); // Don't update history on initial load
+                setTimeout(() => {
+                    this.showSection("homeSection", false); // Don't update history on initial load
+                }, 100);
               }
       
               return;
@@ -1605,7 +1620,9 @@ class SimpleAuth {
               this.showSection(urlSection, false); // Don't update history on initial load
             } else {
               console.log("🏠 No saved section, showing home");
-              this.showSection("homeSection", false); // Don't update history on initial load
+              setTimeout(() => {
+                  this.showSection("homeSection", false); // Don't update history on initial load
+              }, 100);
             }
       
             return;
@@ -1629,7 +1646,7 @@ class SimpleAuth {
       private async verifyTokenAndShowApp(): Promise<void> {
         try {
           console.log("🔍 Verifying token with server...");
-          const response = await fetch(`https://${HOST_IP}/api/auth/getCurrentUser`, {
+          const response = await fetch(`api/auth/getCurrentUser`, {
             method: "GET",
             credentials: "include",
           });
@@ -1650,7 +1667,10 @@ class SimpleAuth {
             this.initializeHistoryState();
             
             // Show home section by default after Google login
-            this.showSection("homeSection", false); // Don't update history on initial load
+            // Use setTimeout to ensure DOM is ready and background is applied properly
+            setTimeout(() => {
+                this.showSection("homeSection", false); // Don't update history on initial load
+            }, 100);
           } else {
             console.log("❌ Token verification failed, status:", response.status);
             
@@ -1693,7 +1713,7 @@ class SimpleAuth {
         private async tryRefreshToken(): Promise<void> {
           console.log("Attempting to refresh token...");
           try {
-            const response = await fetch(`https://${HOST_IP}/api/auth/refresh`, {
+            const response = await fetch(`api/auth/refresh`, {
               method: "POST",
               credentials: "include",
             });
@@ -1727,7 +1747,9 @@ class SimpleAuth {
                 this.showSection(urlSection, false); // Don't update history on initial load
               } else {
                 console.log("🏠 No saved section, showing home");
-                this.showSection("homeSection", false); // Don't update history on initial load
+                setTimeout(() => {
+                    this.showSection("homeSection", false); // Don't update history on initial load
+                }, 100);
               }
             } else {
               console.log("❌ Token refresh failed, clearing localStorage");
@@ -1764,7 +1786,9 @@ class SimpleAuth {
               this.showSection(urlSection, false); // Don't update history on initial load
             } else {
               console.log("🏠 No saved section, showing home");
-              this.showSection("homeSection", false); // Don't update history on initial load
+              setTimeout(() => {
+                  this.showSection("homeSection", false); // Don't update history on initial load
+              }, 100);
             }
           }
         }
@@ -1772,7 +1796,7 @@ class SimpleAuth {
     private async handleLogout(): Promise<void> {
         try {
             // Call the logout endpoint to clear the server-side cookie
-            await fetch(`https://${HOST_IP}/api/auth/logout`, {
+            await fetch(`api/auth/logout`, {
                 method: 'POST',
                 credentials: 'include'
             });
@@ -1848,7 +1872,7 @@ class SimpleAuth {
         return null;
     }
 
-    private showSection(sectionId: string, updateHistory: boolean = true): void {
+    public showSection(sectionId: string, updateHistory: boolean = true): void {
         console.log(`🎯 showSection called with: ${sectionId}, updateHistory: ${updateHistory}`);
         
         // Check if we're leaving the game section and clean up
@@ -1969,8 +1993,7 @@ class SimpleAuth {
             if (sectionId === 'homeSection' && this.currentUser) {
                 console.log('Home section shown, updating dashboard...');
                 this.updateHomeDashboard();
-                // Also load detailed dashboard data for individual game type stats
-                this.loadDashboardData();
+                // Dashboard data will be loaded by loadSectionData() method
             } else if (sectionId === 'dashboardSection') {
                 console.log('Dashboard section shown, loading dashboard data...');
                 // Load dashboard data even if user is not logged in (for demo purposes)
@@ -1997,14 +2020,18 @@ class SimpleAuth {
         // Listen for browser back/forward button clicks
         window.addEventListener('popstate', (event) => {
             console.log('🔙 Browser navigation detected:', event.state);
+            console.log('🔙 Current URL:', window.location.href);
+            console.log('🔙 Current search params:', window.location.search);
             this.handleBrowserNavigation(event.state);
         });
         
-        // Initialize history state if none exists
-        if (!history.state) {
+        // Initialize history state if none exists or if it doesn't have a section
+        if (!history.state || !history.state.section) {
             const currentSection = this.getCurrentSectionFromUrl() || 'homeSection';
-            console.log('🔗 No history state, initializing with section:', currentSection);
+            console.log('🔗 No history state or missing section, initializing with section:', currentSection);
             this.replaceBrowserHistory(currentSection);
+        } else {
+            console.log('🔗 History state already exists:', history.state);
         }
         
         console.log('🔗 Browser history setup complete');
@@ -2016,6 +2043,12 @@ class SimpleAuth {
     private updateBrowserHistory(sectionId: string): void {
         const url = this.getUrlForSection(sectionId);
         const state = { section: sectionId, timestamp: Date.now() };
+        
+        // Don't create duplicate history entries for the same section
+        if (history.state && history.state.section === sectionId) {
+            console.log(`📝 Skipping duplicate history entry for section: ${sectionId}`);
+            return;
+        }
         
         console.log(`📝 Updating browser history: ${url}`, state);
         history.pushState(state, '', url);
@@ -2082,6 +2115,7 @@ class SimpleAuth {
      */
     private handleBrowserNavigation(state: any): void {
         console.log('🔙 Handling browser navigation with state:', state);
+        console.log('🔙 handleBrowserNavigation called at:', new Date().toISOString());
         
         // Check if we're leaving a game section and need to stop the game
         const currentSection = this.getCurrentSectionFromUrl();
@@ -2126,6 +2160,8 @@ class SimpleAuth {
             }
             // Reset tournament state and UI
             this.resetTournamentState();
+            // Reset tournament on server to clean up incomplete data
+            this.resetTournamentOnServer();
             // Show power-ups toggle again
             this.showPowerupsToggle('tournament');
         }
@@ -2185,10 +2221,17 @@ class SimpleAuth {
         // Get the current section from URL or default to home
         const currentSection = this.getCurrentSectionFromUrl() || 'homeSection';
         
-        // Only update history if we're not already on the correct URL
-        const expectedUrl = this.getUrlForSection(currentSection);
-        if (window.location.href !== expectedUrl) {
+        // Always ensure we have a proper history state, especially for home page
+        if (!history.state || !history.state.section) {
+            console.log('🔗 No history state found, creating one for section:', currentSection);
             this.replaceBrowserHistory(currentSection);
+        } else {
+            console.log('🔗 History state exists:', history.state);
+            // Only update history if we're not already on the correct URL
+            const expectedUrl = this.getUrlForSection(currentSection);
+            if (window.location.href !== expectedUrl) {
+                this.replaceBrowserHistory(currentSection);
+            }
         }
     }
 
@@ -2276,14 +2319,6 @@ class SimpleAuth {
         // this.setupFriendsRefresh();
     }
 
-    // private setupFriendsRefresh(): void {
-    //     // Refresh friends list every 30 seconds to update online status
-    //     setInterval(() => {
-    //         if (this.currentUser && document.getElementById('friendsSection')?.classList.contains('hidden') === false) {
-    //             this.loadFriendsData();
-    //         }
-    //     }, 30000); // 30 seconds
-    // }
 
     private setupDashboardNavigation(): void {
         // Setup dashboard navigation buttons
@@ -2327,7 +2362,7 @@ class SimpleAuth {
     private async loadDashboardData(): Promise<void> {
         try {
             console.log('Loading dashboard data...');
-            const response = await fetch(`https://${HOST_IP}/api/dashboard/user`, {
+            const response = await fetch(`api/dashboard/user`, {
                 method: 'GET',
                 credentials: 'include',
                 headers: {
@@ -2634,7 +2669,7 @@ class SimpleAuth {
 
         // Check authentication before proceeding
         try {
-            const response = await fetch(`https://${HOST_IP}/api/profile/me`, {
+            const response = await fetch(`api/profile/me`, {
                 credentials: 'include'
             });
             
@@ -2737,7 +2772,7 @@ class SimpleAuth {
             this.scoreAudio = new Audio('/imgs/point-smooth-beep-230573.mp3');
             this.scoreAudio.preload = 'auto';
             
-            this.endGameAudio = new Audio('/imgs/077512_end-game-90582.mp3');
+            this.endGameAudio = new Audio('/imgs/sound.mp3');
             this.endGameAudio.preload = 'auto';
             
             // Attempt to unlock on first user interaction
@@ -2907,6 +2942,8 @@ class SimpleAuth {
                 if (this.currentUser) {
                     this.handleTournamentPlayerLeave(this.currentUser.username);
                 }
+                // Also reset tournament on server to clean up incomplete data
+                this.resetTournamentOnServer();
             }
         });
     }
@@ -3797,7 +3834,7 @@ class SimpleAuth {
         console.log('New game started');
     }
 
-        private async loadUserProfile(): Promise<void> {
+    private async loadUserProfile(): Promise<void> {
         if (!this.currentUser) {
             console.log('No current user found, cannot load profile');
             return;
@@ -3808,7 +3845,7 @@ class SimpleAuth {
         
         try {
             console.log('Loading user profile, current cookies:', document.cookie);
-            const response = await fetch(`https://${HOST_IP}/api/profile/me`, {
+            const response = await fetch(`api/profile/me`, {
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
@@ -3916,7 +3953,7 @@ class SimpleAuth {
         console.log('Updating user stats, user won:', userWon, 'game type:', gameType, 'scores:', player1Score, player2Score);
         
         try {
-            const response = await fetch(`https://${HOST_IP}/api/profile/update-stats`, {
+            const response = await fetch(`api/profile/update-stats`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: {
@@ -3965,7 +4002,7 @@ class SimpleAuth {
         console.log('Updating tournament stats, user won:', userWon);
         
         try {
-            const response = await fetch(`https://${HOST_IP}/api/profile/update-stats`, {
+            const response = await fetch(`api/profile/update-stats`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: {
@@ -4070,10 +4107,31 @@ class SimpleAuth {
             profileLosses.textContent = losses.toString();
             console.log('Updated losses:', losses);
         }
-        // Update 2FA toggle
+        // --- BEGIN: Restrict 2FA for Google-only users ---
         const twoFactorToggle = document.getElementById('twoFactorToggle') as HTMLInputElement;
+        const enable2faBtn = document.getElementById('enable2faBtn');
+        const twofaSection = document.getElementById('twofa-setup');
+        const twofaMessage = document.getElementById('twofa-message');
+
+        if (this.currentUser && !this.currentUser.hasPassword) {
+            // Google-only user: disable 2FA controls and show message
+            if (twoFactorToggle) twoFactorToggle.disabled = true;
+            if (enable2faBtn) enable2faBtn.style.display = 'none';
+            if (twofaSection) twofaSection.style.display = 'none';
+            if (twofaMessage) {
+                twofaMessage.style.display = 'block';
+                twofaMessage.textContent = 'Set a password to enable Two-Factor Authentication.';
+            }
+        } else {
+            // Normal user: enable 2FA controls and hide message
+            if (twoFactorToggle) twoFactorToggle.disabled = false;
+            if (twofaMessage) twofaMessage.style.display = 'none';
+        }
+        // --- END: Restrict 2FA for Google-only users ---
+        // Update 2FA toggle
+        // const twoFactorToggle = document.getElementById('twoFactorToggle') as HTMLInputElement;
         if (twoFactorToggle && this.currentUser) {
-            twoFactorToggle.checked = this.currentUser.isTwoFactorEnabled || false;
+            twoFactorToggle.checked = !!this.currentUser.isTwoFactorEnabled;
             
             // Show/hide enable button based on current state
             const enable2faBtn = document.getElementById('enable2faBtn');
@@ -4100,7 +4158,7 @@ class SimpleAuth {
     private async refreshUserData(): Promise<void> {
         try {
             console.log('🔄 Refreshing user data from server...');
-            const response = await fetch(`https://${HOST_IP}/api/auth/profile`, {
+            const response = await fetch(`api/auth/profile`, {
                 method: 'GET',
                 credentials: 'include',
                 headers: {
@@ -4176,7 +4234,7 @@ class SimpleAuth {
 
     private async refreshToken(): Promise<void> {
         try {
-            const response = await fetch(`https://${HOST_IP}/api/auth/refresh`, {
+            const response = await fetch(`api/auth/refresh`, {
                 method: 'POST',
                 credentials: 'include'
             });
@@ -4232,7 +4290,7 @@ class SimpleAuth {
         }
     
         try {
-            const url = `https://${HOST_IP}/api/tournament/local-result`;
+            const url = `api/tournament/local-result`;
             const requestBody = {
                 winner,
                 loser,
@@ -4377,7 +4435,7 @@ class SimpleAuth {
     
         try {
             // Use correct URL - adjust port/protocol as needed
-            const url = `https://${HOST_IP}/api/tournament/create`;
+            const url = `api/tournament/create`;
             console.log('Making request to:', url);
             
             const requestBody = {
@@ -4421,7 +4479,7 @@ class SimpleAuth {
         }
     
         try {
-            const response = await fetch(`https://${HOST_IP}/api/tournament/${this.tournamentState.tournamentId}/complete`, {
+            const response = await fetch(`api/tournament/${this.tournamentState.tournamentId}/complete`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -4991,6 +5049,9 @@ class SimpleAuth {
             const element = document.getElementById(id);
             if (element) element.classList.add('hidden');
         });
+
+        // Reset tournament on server to clean up incomplete data
+        this.resetTournamentOnServer();
 
         this.showStatus('Tournament reset. Select number of players to start a new tournament.', 'info');
     }
@@ -6588,7 +6649,38 @@ class SimpleAuth {
             tournamentSetup.classList.remove('hidden');
         }
         
+        // Show player count selection again
+        const tournament4Players = document.getElementById('tournament4Players');
+        if (tournament4Players) {
+            tournament4Players.style.display = 'block';
+        }
+        
+        // Hide all other sections
+        const sections = ['playerNamesForm', 'tournamentBracket', 'currentMatch', 'matchResults', 'tournamentResults'];
+        sections.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) element.classList.add('hidden');
+        });
+        
         console.log('✅ Tournament state and UI reset complete');
+    }
+
+    private async resetTournamentOnServer(): Promise<void> {
+        try {
+            console.log('🔄 Resetting tournament on server...');
+            const response = await fetch('/api/tournament/reset', {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                console.log('✅ Tournament reset on server successfully');
+            } else {
+                console.warn('⚠️ Failed to reset tournament on server:', response.status);
+            }
+        } catch (error) {
+            console.error('❌ Error resetting tournament on server:', error);
+        }
     }
 
     private cleanupGameState(): void {
@@ -6635,7 +6727,7 @@ class SimpleAuth {
             this.scoreAudio = new Audio('/imgs/point-smooth-beep-230573.mp3');
             this.scoreAudio.preload = 'auto';
             
-            this.endGameAudio = new Audio('/imgs/077512_end-game-90582.mp3');
+            this.endGameAudio = new Audio('/imgs/sound.mp3');
             this.endGameAudio.preload = 'auto';
             
             // Initialize AI Game Audio
@@ -7067,13 +7159,7 @@ class SimpleAuth {
             });
         }
 
-        const backBtn = document.getElementById('backBtn');
-        if (backBtn) {
-            backBtn.addEventListener('click', () => {
-                this.hideAIGameOverlay();
-                this.showSection('homeSection');
-            });
-        }
+        // Back button removed - not needed for browser back button functionality
 
         // AI Game Over Modal buttons
         const aiReplayBtn = document.getElementById('aiReplayBtn');
@@ -7173,7 +7259,7 @@ class SimpleAuth {
     }
 
     private hideAIGameOverlay(): void {
-        const gameOverlay = document.getElementById('gameOverlay');
+        const gameOverlay = document.getElementById('aiGameOverlay');
         if (gameOverlay) {
             gameOverlay.classList.add('hidden');
         }

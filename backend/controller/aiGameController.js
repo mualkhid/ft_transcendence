@@ -36,7 +36,7 @@ export async function handleAIGame(socket, request) {
         gameOver: false,
         winningScore: GAME_CONFIG.GAME.WINNING_SCORE,
         currentDifficulty: currentDifficulty,
-        aiConfig: aiConfig,
+        aiConfig: aiConfig
     };
 
     let gameStartTime = null;
@@ -183,7 +183,6 @@ export async function handleAIGame(socket, request) {
             return;
         }
 
-
         // Send updated game state
         socket.send(JSON.stringify({
             type: 'game-update',
@@ -194,7 +193,6 @@ export async function handleAIGame(socket, request) {
             }
         }));
     }
-
 
     // Reset ball to center
     function resetBall(direction = 1) {
@@ -338,7 +336,6 @@ export async function handleAIGame(socket, request) {
                     stopGame();
                     startGame();
                     break;
-                    
                     
                 default:
                     console.log('Unknown message type:', data.type);

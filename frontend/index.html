@@ -368,10 +368,15 @@
         }
         
         /* Powerpuff Girls Background */
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        body, html, #app {
+            background: transparent !important;
             background-attachment: fixed;
             min-height: 100vh;
+        }
+        
+        /* Override any Tailwind defaults */
+        .min-h-screen {
+            background: transparent !important;
         }
         
         /* Ensure proper contrast for all elements */
@@ -677,7 +682,7 @@
         <!-- Main App (After Authentication) -->
         <div id="mainApp" class="page" style="background-image: url('/imgs/PPG_20th_Still_Xiya_01-1200x675.webp'); background-size: cover; background-position: center; background-repeat: no-repeat; background-attachment: fixed; min-height: 100vh; position: relative;">
             <!-- Subtle overlay to improve text readability -->
-            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255, 255, 255, 0.2); z-index: 0; pointer-events: none;"></div>
+            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: transparent; z-index: 0; pointer-events: none;"></div>
             <!-- Navigation Bar -->
             <nav class="main-nav" style="position: relative; z-index: 10;">
                 <div class="main-nav-content">
@@ -686,12 +691,12 @@
                         <span class="main-nav-title">Powerpuff Pong</span>
                     </div>
                     <ul class="main-nav-links">
-                        <li><a href="#" id="navHome" class="main-nav-link home nav-link" data-section="home">🏠 Home</a></li>
-                        <li><a href="#" id="navFriends" class="main-nav-link friends nav-link" data-section="friends">👥 Friends</a></li>
-                        <li><a href="#" id="navAnalytics" class="main-nav-link analytics nav-link" data-section="dashboard">📊 Dashboard</a></li>
-                        <li><a href="#" id="navProfile" class="main-nav-link profile nav-link" data-section="profile">👤 Profile</a></li>
-                        <li><a href="#" id="colorblindToggle" class="main-nav-link theme nav-link" title="Toggle Contrast Mode" onclick="window.toggleColorblind(); return false;">☀️ Contrast</a></li>
-                        <li><a href="#" id="navLogout" class="main-nav-link logout nav-link" data-section="logout">🚪 Logout</a></li>
+                        <li><a href="#" id="navHome" class="main-nav-link home nav-link" data-section="home">Home</a></li>
+                        <li><a href="#" id="navFriends" class="main-nav-link friends nav-link" data-section="friends">Friends</a></li>
+                        <li><a href="#" id="navAnalytics" class="main-nav-link analytics nav-link" data-section="dashboard">Dashboard</a></li>
+                        <li><a href="#" id="navProfile" class="main-nav-link profile nav-link" data-section="profile">Profile</a></li>
+                        <li><a href="#" id="colorblindToggle" class="main-nav-link theme nav-link" title="Toggle Contrast Mode" onclick="window.toggleColorblind(); return false;">Contrast</a></li>
+                        <li><a href="#" id="navLogout" class="main-nav-link logout nav-link" data-section="logout">Logout</a></li>
                     </ul>
                 </div>
             </nav>
@@ -704,7 +709,7 @@
                         <h1 class="text-6xl font-logo text-white mb-4">
                             Welcome to <span class="text-powerpuff-pink">Powerpuff</span> <span class="text-powerpuff-blue">Pong</span>
                         </h1>
-                        <p class="text-xl text-powerpuff-pink opacity-90 mb-8">Ready to play the ultimate Pong experience?</p>
+                        <p class="text-xl text-powerpuff-pink opacity-90 mb-8 font-bold">Ready to play the ultimate Pong experience?</p>
                         
                         <!-- Game Statistics -->
                         <div class="bg-gray-700/60 rounded-2xl p-12 border border-white/20 shadow-xl max-w-6xl mx-auto mb-8">
@@ -1250,10 +1255,14 @@
                             <button id="anonymizeAccountBtn" class="w-full bg-powerpuff-blue hover:bg-powerpuff-purple text-white font-bold py-3 px-4 rounded-lg transition-colors">
                                 👤 Anonymize Account
                             </button>
+
+                            <button id="unanonymizeAccountBtn" class="w-full bg-powerpuff-blue hover:bg-powerpuff-purple text-white font-bold py-3 px-4 rounded-lg transition-colors">
+                                👤 Unanonymize Account
+                            </button>
                             
                             <button id="downloadDataBtn" class="w-full bg-powerpuff-blue hover:bg-powerpuff-purple text-white font-bold py-3 px-4 rounded-lg transition-colors">
                                 📥 Download My Data
-                            </button>>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1517,9 +1526,11 @@
                             <div id="aiGameOverlay" class="absolute inset-0 flex items-center justify-center rounded-lg z-10" style="display: flex !important; align-items: center; justify-content: center; flex-direction: column;">
                                 <div class="text-center w-full flex flex-col items-center justify-center">
                                     <h2 id="aiGameMessage" class="text-3xl font-bold mb-6 text-white drop-shadow-lg">Ready to play against AI?</h2>
-                                    <button id="aiStartButton" class="bg-powerpuff-pink hover:bg-powerpuff-purple text-white font-bold py-3 px-6 rounded-full text-xl transition-colors shadow-lg">
-                                        Start AI Game
-                                    </button>
+                                    <div class="flex space-x-4">
+                                        <button id="aiStartButton" class="bg-powerpuff-pink hover:bg-powerpuff-purple text-white font-bold py-3 px-6 rounded-full text-xl transition-colors shadow-lg">
+                                            Start AI Game
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2254,15 +2265,7 @@
                 });
             }
 
-            const backBtn = document.getElementById('backBtn');
-            if (backBtn) {
-                backBtn.addEventListener('click', () => {
-                    // Navigate back to home using the SPA navigation
-                    if (window.simpleAuth && window.simpleAuth.navigateToSection) {
-                        window.simpleAuth.navigateToSection('home');
-                    }
-                });
-            }
+            // Back button event listener is handled in setupAIGameEventListeners()
 
             // AI Game Over Modal buttons
             const aiPlayAgainBtn = document.getElementById('aiPlayAgainBtn');
@@ -2279,8 +2282,8 @@
                 aiGoHomeBtn.addEventListener('click', () => {
                     hideAIGameOverModal();
                     // Navigate back to home using the SPA navigation
-                    if (window.simpleAuth && window.simpleAuth.navigateToSection) {
-                        window.simpleAuth.navigateToSection('home');
+                    if (window.simpleAuth && window.simpleAuth.showSection) {
+                        window.simpleAuth.showSection('homeSection');
                     }
                 });
             }
