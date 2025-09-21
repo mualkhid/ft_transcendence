@@ -11,12 +11,6 @@ import validator from 'validator'
 
 const sanitizedUserSelect = { id: true, username: true, email: true, createdAt: true, lastSeen: true, updatedAt: true, isTwoFactorEnabled: true};
 
-// function generateBackupCodes(count = 5) {
-//     return Array.from({ length: count }, () =>
-//         crypto.randomBytes(4).toString('hex')
-//     );
-// }
-
 export async function registerUser(req, reply) {
     const { username, email, password } = req.body;
 
@@ -162,7 +156,7 @@ export async function login(req, reply) {
 
     reply.setCookie('token', token, {
         httpOnly: true,
-        secure: !isLocalhost, // <--- set to false for localhost
+        secure: !isLocalhost,
         sameSite: 'lax',
         path: '/',
         maxAge: 3600,
@@ -212,7 +206,6 @@ export function logout(req, reply) {
         path: '/',
         secure: true,
         sameSite: 'lax',
-        // domain: 'localhost'
     });
     return reply.status(200).send({ message: "logged-out" });
 }

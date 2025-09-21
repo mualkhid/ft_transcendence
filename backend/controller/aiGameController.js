@@ -63,9 +63,9 @@ export async function handleAIGame(socket, request) {
         const tolerance = aiConfig.tolerance;
         
         if (aiPaddleCenter < adjustedTargetY - tolerance) {
-            gameState.aiPaddleY += aiConfig.speed; // Move down
+            gameState.aiPaddleY += GAME_CONFIG.PADDLE.SPEED; // Move down - use unified speed
         } else if (aiPaddleCenter > adjustedTargetY + tolerance) {
-            gameState.aiPaddleY -= aiConfig.speed; // Move up
+            gameState.aiPaddleY -= GAME_CONFIG.PADDLE.SPEED; // Move up - use unified speed
         }
         
         // Keep AI paddle within canvas bounds
