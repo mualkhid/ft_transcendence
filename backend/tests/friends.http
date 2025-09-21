@@ -1,0 +1,63 @@
+### QUERY USER'S FRIENDS
+GET http://localhost:3000/api/friends HTTP/1.1
+Content-Type: application/json
+Cookie: token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiaWF0IjoxNzU2NjYxNTY4LCJleHAiOjE3NTY2NjUxNjh9.reMK02toD9KnrAvQ1q_Nnjx2g4zFqlVdCLH4RWr8W44
+
+{}
+
+### SEND REQUEST
+POST http://localhost:3000/api/friends/sendRequest HTTP/1.1
+Content-Type: application/json
+Cookie: token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiaWF0IjoxNzU2NjYxNTY4LCJleHAiOjE3NTY2NjUxNjh9.reMK02toD9KnrAvQ1q_Nnjx2g4zFqlVdCLH4RWr8W44
+
+
+{
+	"userId": 7
+}
+
+### ACCEPT REQUEST
+POST http://localhost:3000/api/friends/acceptRequest HTTP/1.1
+Content-Type: application/json
+Cookie: token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiaWF0IjoxNzU2NjYyMDU1LCJleHAiOjE3NTY2NjU2NTV9.erBgSADHZ-ZRBFooZyZL3nEG8kcxlyU6bQQvFkKKx5Q
+
+{
+	"userId": 7
+}
+
+### DECLINE REQUEST
+POST http://localhost:3000/api/friends/declineRequest HTTP/1.1
+Content-Type: application/json
+Cookie: token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiaWF0IjoxNzU2MzAxMDMzLCJleHAiOjE3NTYzMDQ2MzN9.4QCnZqA_rnhLuGUYXH76vg12TZ5Z8JU4s9qEOzmGXFk
+
+
+{
+	"userId": 2
+}
+
+### REMOVE FRIEND
+POST http://localhost:3000/api/friends/removeFriend HTTP/1.1
+Content-Type: application/json
+Cookie: token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiaWF0IjoxNzU2MzAxMDMzLCJleHAiOjE3NTYzMDQ2MzN9.4QCnZqA_rnhLuGUYXH76vg12TZ5Z8JU4s9qEOzmGXFk
+
+
+{
+	"userId": 3
+}
+
+### BLOCK FRIEND
+POST http://localhost:3000/api/friends/blockFriend HTTP/1.1
+Content-Type: application/json
+Cookie: token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiaWF0IjoxNzU2MzAxMDMzLCJleHAiOjE3NTYzMDQ2MzN9.4QCnZqA_rnhLuGUYXH76vg12TZ5Z8JU4s9qEOzmGXFk
+
+
+{
+	"userId": 2
+}
+
+### SEARCH USERS
+GET  http://localhost:3000/api/friends/searchUser?q=s&page=1 HTTP/1.1
+Content-Type: application/json
+Cookie: token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiaWF0IjoxNzU2MzAxMDMzLCJleHAiOjE3NTYzMDQ2MzN9.4QCnZqA_rnhLuGUYXH76vg12TZ5Z8JU4s9qEOzmGXFk
+
+
+{}
