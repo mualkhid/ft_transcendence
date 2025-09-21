@@ -4,7 +4,6 @@ import {
     getMatch, 
     handlePlayerInput, 
     updateBall,
-    updateDashboardStats
 } from '../services/matchStateService.js';
 
 export async function handleRemoteGame(socket, matchId, username = null)

@@ -2,6 +2,7 @@ import {
     createMatch, 
     startMatch, 
     completeMatch,
+    updatePlayer2
 } from './matchDatabaseService.js';
 
 import { PrismaClient } from '@prisma/client';
@@ -14,7 +15,7 @@ const waitingPlayers = new Map();
 let matchIdCounter = 1;
 const generateMatchId = () => matchIdCounter++;
 
-export async function createMatchState(matchId, player1Username = 'Player1', player2Username = 'Player2')
+export async function createMatchState(matchId, player1Username = 'Player1', player2Username = 'Waiting for Player 2')
 {
     const numericMatchId = parseInt(matchId);
     
@@ -104,19 +105,30 @@ export async function addPlayerToMatch(matchId, websocket, username = null)
     return (null);
 }
 
-export function removePlayerFromMatch(matchId, websocket) {
+export async function removePlayerFromMatch(matchId, websocket)
+{
     const match = activeMatches.get(matchId);
     if (!match) return null;
 
     let disconnectedPlayer = null;
-    if (match.player1 === websocket) {
+    let disconnectedPlayerUsername = null;
+    let remainingPlayerUsername = null;
+
+    if (match.player1 === websocket)
+    {
         match.player1 = null;
         match.state.connectedPlayers--;
         disconnectedPlayer = 1;
-    } else if (match.player2 === websocket) {
+        disconnectedPlayerUsername = match.state.player1Username;
+        remainingPlayerUsername = match.state.player2Username;
+    }
+    else if (match.player2 === websocket)
+    {
         match.player2 = null;
         match.state.connectedPlayers--;
         disconnectedPlayer = 2;
+        disconnectedPlayerUsername = match.state.player2Username;
+        remainingPlayerUsername = match.state.player1Username;
     }
 
     if (disconnectedPlayer && !match.state.gameFinished)
@@ -129,7 +141,6 @@ export function removePlayerFromMatch(matchId, websocket) {
         match.state.gameFinished = true;
 
         const remainingPlayer = disconnectedPlayer === 1 ? match.player2 : match.player1;
-        const remainingPlayerUsername = disconnectedPlayer === 1 ? match.state.player2Username : match.state.player1Username;
 
         if (remainingPlayer && remainingPlayer.readyState === 1)
         {
@@ -144,25 +155,30 @@ export function removePlayerFromMatch(matchId, websocket) {
                 winnerAlias: remainingPlayerUsername
             };
             remainingPlayer.send(JSON.stringify(abandonMessage));
-            console.log('Sent win-by-disconnect message to remaining player.');
         }
-        activeMatches.delete(matchId);
-        console.log(`Match ${matchId} deleted from memory after cleanup.`);
-        //check if necessary to update stats on disconnect
-        updateDashboardStats(
-            match.state.player1Username, 
-            match.state.player2Username,
-            remainingPlayerUsername
-        ).catch(error => {
-            console.error(`Failed to update dashboard stats after disconnect: ${error.message}`);
-        });
+        if (disconnectedPlayerUsername && 
+            remainingPlayerUsername && 
+            disconnectedPlayerUsername !== 'Player1' && 
+            disconnectedPlayerUsername !== 'Player2' &&
+            remainingPlayerUsername !== 'Player1' && 
+            remainingPlayerUsername !== 'Player2') {
+            
+            console.log(`Updating stats - Winner: ${remainingPlayerUsername}, Loser: ${disconnectedPlayerUsername}`);
+            
+            await updateDashboardStats(
+                match.state.player1Username, 
+                match.state.player2Username,
+                remainingPlayerUsername
+            );
+        } else {
+            console.log('Skipping stats update - invalid usernames detected');
+            console.log(`Disconnected: "${disconnectedPlayerUsername}", Remaining: "${remainingPlayerUsername}"`);
+        }
         broadcastGameOver(match, disconnectedPlayer === 1 ? 2 : 1, matchId);
-    }
-    if (!match.player1 && !match.player2) {
         activeMatches.delete(matchId);
-        console.log(`Match ${matchId} deleted from memory (both players gone).`);
     }
-
+    if (!match.player1 && !match.player2)
+        activeMatches.delete(matchId);
     return disconnectedPlayer;
 }
 
@@ -463,8 +479,7 @@ async function broadcastGameOver(match, winner, matchId)
     
     // Mark as finished
     match.state.gameFinished = true;
-    
-    console.log(`Game over broadcast complete for match ${matchId}`);
+    activeMatches.delete(matchId);
 }
 
 export async function findorCreateMatch(websocket, username)
@@ -493,6 +508,8 @@ export async function findorCreateMatch(websocket, username)
         {
             if (match.state.player1Username === username || match.state.player2Username === username)
                 continue;
+            match.state.player2Username = username;
+            await updatePlayer2(match.matchId, username);
             waitingPlayers.delete(waitingMatchId);
             return { matchId: waitingMatchId, created: false };
         }
@@ -508,11 +525,11 @@ export async function updateDashboardStats(player1Username, player2Username, win
     if (!winner || !player1Username || !player2Username)
         return;
     
-    //update Winner stats
     const winnerUser = await prisma.user.findUnique({
         where: { username: winner }
     });
-    if (winnerUser){
+    if (winnerUser)
+    {
         await prisma.user.update({
             where: { username: winner },
             data: {
@@ -520,14 +537,15 @@ export async function updateDashboardStats(player1Username, player2Username, win
                 wins: winnerUser.wins + 1,
             }
         });
-        console.log("Update winner successfully");
     }
 
+    // Update loser stats
     const loser = winner === player1Username ? player2Username : player1Username;
     const loserUser = await prisma.user.findUnique({
         where: { username: loser }
     });
-    if (loserUser) {
+    if (loserUser)
+    {
         await prisma.user.update({
             where: { username: loser },
             data: {
@@ -535,6 +553,5 @@ export async function updateDashboardStats(player1Username, player2Username, win
                 losses: loserUser.losses + 1,
             }
         });
-        console.log("Update loser successfully");
     }
 }
