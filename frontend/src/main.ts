@@ -65,7 +65,7 @@ class SimpleAuth {
     
     private aiGameConfig = {
         CANVAS: { WIDTH: 800, HEIGHT: 600 },
-        PADDLE: { WIDTH: 15, HEIGHT: 100, SPEED: 5 },
+        PADDLE: { WIDTH: 15, HEIGHT: 100, SPEED: 8 },
         BALL: { RADIUS: 10, SPEED: 5 },
         WINNING_SCORE: 5
     };
