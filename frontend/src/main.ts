@@ -58,7 +58,17 @@ class SimpleAuth {
         playerScore: 0,
         aiScore: 0,
         currentDifficulty: 'easy',
-        gameStarted: false
+        gameStarted: false,
+        // Power-ups (similar to 1v1 game)
+        powerUps: [] as Array<{
+            x: number, y: number, width: number, height: number,
+            type: 'point', active: boolean, duration: number,
+            speedX: number, speedY: number
+        }>,
+        powerUpSpawnTimer: 0,
+        powerUpsSpawned: 0,
+        maxPowerUpsPerGame: 2,
+        powerupsEnabled: true
     };
     
     private aiGameStartTime: Date | null = null;
@@ -78,6 +88,11 @@ class SimpleAuth {
     private aiGameAnimationId: number | null = null;
     private aiGameKeys = { w: false, s: false };
     private aiGameAvailableDifficulties: any = {};
+    
+    // AI Game Audio Properties
+    private aiPaddleHitAudio: HTMLAudioElement | null = null;
+    private aiScoreAudio: HTMLAudioElement | null = null;
+    private aiEndGameAudio: HTMLAudioElement | null = null;
 
     constructor() {
         this.init();
@@ -3214,6 +3229,79 @@ class SimpleAuth {
         console.log(`Spawned power-up square at (${powerUp.x}, ${powerUp.y}) - ${this.gameState.powerUpsSpawned}/${this.gameState.maxPowerUpsPerGame}`);
     }
 
+    // AI Game Power-up Methods
+    private updateAIPowerUps(): void {
+        // Check if power-ups are enabled
+        if (!this.aiGameState.powerupsEnabled) {
+            return;
+        }
+        
+        // Spawn power-ups (max 2 per game total)
+        if (this.aiGameState.powerUpsSpawned < this.aiGameState.maxPowerUpsPerGame && 
+            this.aiGameState.powerUps.length === 0 && 
+            Math.random() < 0.1) { // 10% chance per frame
+            this.spawnAIPowerUp();
+        }
+        
+        // Update existing power-ups (decrease duration, remove expired)
+        this.aiGameState.powerUps = this.aiGameState.powerUps.filter((powerUp: any) => {
+            powerUp.duration--;
+            return powerUp.duration > 0;
+        });
+        
+        // Check ball collision with power-ups
+        this.aiGameState.powerUps.forEach((powerUp: any, index: number) => {
+            const ballX = this.aiGameState.ballX;
+            const ballY = this.aiGameState.ballY;
+            const ballRadius = this.aiGameState.ballRadius;
+            
+            // Check collision with ball
+            if (ballX + ballRadius > powerUp.x && 
+                ballX - ballRadius < powerUp.x + powerUp.width &&
+                ballY + ballRadius > powerUp.y && 
+                ballY - ballRadius < powerUp.y + powerUp.height) {
+                
+                // Determine which player gets the point (closest to ball)
+                const playerDistance = Math.abs(ballX - 50); // Distance to player paddle
+                const aiDistance = Math.abs(ballX - 735); // Distance to AI paddle
+                const playerGetsPoint = playerDistance < aiDistance;
+                
+                if (playerGetsPoint) {
+                    this.aiGameState.playerScore++;
+                    console.log('Player gets the point!');
+                } else {
+                    this.aiGameState.aiScore++;
+                    console.log('AI gets the point!');
+                }
+                
+                this.playAIScoreSound();
+                this.updateAIScore();
+                
+                // Remove power-up
+                this.aiGameState.powerUps.splice(index, 1);
+                
+                console.log(`AI Power-up collected! ${playerGetsPoint ? 'Player' : 'AI'} gets a point!`);
+            }
+        });
+    }
+
+    private spawnAIPowerUp(): void {
+        const powerUp = {
+            x: Math.random() * (this.aiGameConfig.CANVAS.WIDTH - 30),
+            y: Math.random() * (this.aiGameConfig.CANVAS.HEIGHT - 30),
+            width: 25,
+            height: 25,
+            speedX: 0,
+            speedY: 0,
+            type: 'point' as 'point',
+            active: true,
+            duration: 600 // 10 seconds at 60fps
+        };
+        
+        this.aiGameState.powerUps.push(powerUp);
+        this.aiGameState.powerUpsSpawned++;
+        console.log(`Spawned AI power-up square at (${powerUp.x}, ${powerUp.y}) - ${this.aiGameState.powerUpsSpawned}/${this.aiGameState.maxPowerUpsPerGame}`);
+    }
 
     private advanceServeAfterPoint(scoredPlayer: number): void {
         // Decrement serves left for current server; switch after two serves
@@ -3246,6 +3334,31 @@ class SimpleAuth {
         try {
             this.endGameAudio.currentTime = 0;
             void this.endGameAudio.play();
+        } catch {}
+    }
+
+    // AI Game Sound Methods
+    private playAIPaddleHit(): void {
+        if (!this.aiPaddleHitAudio) return;
+        try {
+            this.aiPaddleHitAudio.currentTime = 0;
+            void this.aiPaddleHitAudio.play();
+        } catch {}
+    }
+
+    private playAIScoreSound(): void {
+        if (!this.aiScoreAudio) return;
+        try {
+            this.aiScoreAudio.currentTime = 0;
+            void this.aiScoreAudio.play();
+        } catch {}
+    }
+
+    private playAIEndGameSound(): void {
+        if (!this.aiEndGameAudio) return;
+        try {
+            this.aiEndGameAudio.currentTime = 0;
+            void this.aiEndGameAudio.play();
         } catch {}
     }
 
@@ -6236,6 +6349,13 @@ class SimpleAuth {
                 console.log('Current gameState.powerupsEnabled:', this.gameState.powerupsEnabled);
             }
             
+            // Update AI game state
+            if (gameMode === 'ai') {
+                this.aiGameState.powerupsEnabled = enabled;
+                console.log('Power-ups preference updated for AI game:', enabled);
+                console.log('Current aiGameState.powerupsEnabled:', this.aiGameState.powerupsEnabled);
+            }
+            
             // Update the game state immediately if it exists
             if (this.gameState) {
                 this.gameState.powerupsEnabled = enabled;
@@ -6403,6 +6523,16 @@ class SimpleAuth {
             this.endGameAudio = new Audio('/imgs/077512_end-game-90582.mp3');
             this.endGameAudio.preload = 'auto';
             
+            // Initialize AI Game Audio
+            this.aiPaddleHitAudio = new Audio('/imgs/Ping-pong-ball-bouncing.mp3');
+            this.aiPaddleHitAudio.preload = 'auto';
+            
+            this.aiScoreAudio = new Audio('/imgs/point-smooth-beep-230573.mp3');
+            this.aiScoreAudio.preload = 'auto';
+            
+            this.aiEndGameAudio = new Audio('/imgs/077512_end-game-90582.mp3');
+            this.aiEndGameAudio.preload = 'auto';
+            
             // Attempt to unlock on first user interaction
             const unlock = () => {
                 if (!this.paddleHitAudio || !this.scoreAudio || !this.endGameAudio) return;
@@ -6548,7 +6678,7 @@ class SimpleAuth {
                     
                     // Play scoring sound if scores increased
                     if (this.aiGameState.playerScore > prevPlayerScore || this.aiGameState.aiScore > prevAiScore) {
-                        this.playScoreSound();
+                        this.playAIScoreSound();
                     }
                     
                     this.updateAIScore();
@@ -6578,6 +6708,7 @@ class SimpleAuth {
                 // Show power-ups toggle when AI game ends
                 this.showPowerupsToggle('ai');
                 
+                this.playAIEndGameSound(); // Play AI-specific end game sound
                 this.showAIGameOverModal(data.winner, data.playerScore, data.aiScore);
                 break;
                 
@@ -6592,6 +6723,7 @@ class SimpleAuth {
 
     private aiGameLoop(): void {
         this.updatePlayerPaddle();
+        this.updateAIPowerUps(); // Add power-up updates
         this.drawAIGame();
         this.aiGameAnimationId = requestAnimationFrame(() => this.aiGameLoop());
     }
@@ -6693,7 +6825,17 @@ class SimpleAuth {
             playerScore: 0,
             aiScore: 0,
             currentDifficulty: 'easy',
-            gameStarted: false
+            gameStarted: false,
+            // Power-ups (similar to 1v1 game)
+            powerUps: [] as Array<{
+                x: number, y: number, width: number, height: number,
+                type: 'point', active: boolean, duration: number,
+                speedX: number, speedY: number
+            }>,
+            powerUpSpawnTimer: 0,
+            powerUpsSpawned: 0,
+            maxPowerUpsPerGame: 2,
+            powerupsEnabled: true
         };
         
         // Update score display
@@ -6976,6 +7118,23 @@ class SimpleAuth {
         } else {
             console.log('Ball not drawn - game not started, gameStarted =', this.aiGameState.gameStarted);
         }
+
+        // Draw power-ups (similar to 1v1 game)
+        this.aiGameState.powerUps.forEach((powerUp: any) => {
+            // Draw square power-up with Powerpuff colors
+            const colors = ['#FF69B4', '#87CEEB', '#98FB98']; // Pink, Blue, Green
+            const color = colors[this.aiGameState.powerUpsSpawned % colors.length];
+            
+            ctx.save();
+            ctx.fillStyle = color;
+            ctx.fillRect(powerUp.x, powerUp.y, powerUp.width, powerUp.height);
+            
+            // Add a subtle border
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(powerUp.x, powerUp.y, powerUp.width, powerUp.height);
+            ctx.restore();
+        });
         
         console.log('=== AI GAME DRAWING COMPLETE ===');
     }
