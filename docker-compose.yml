@@ -39,10 +39,8 @@ services:
   # frontend service
   backend:
     build: ./backend
-    environment:
-      - JWT_SECRET=${JWT_SECRET}
-      - DATABASE_URL=${DATABASE_URL}
-      - HOST_IP=${HOST_IP:-localhost}
+    env_file:
+      - .env
     expose:
       - "3000"
     networks: [webapp]
