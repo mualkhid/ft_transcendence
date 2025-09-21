@@ -1479,7 +1479,9 @@ class SimpleAuth {
                 this.showSection(urlSection, false); // Don't update history on initial load
               } else {
                 console.log("🏠 No saved section, showing home");
-                this.showSection("homeSection", false); // Don't update history on initial load
+                setTimeout(() => {
+                    this.showSection("homeSection", false); // Don't update history on initial load
+                }, 100);
               }
       
               return;
@@ -1515,7 +1517,9 @@ class SimpleAuth {
               this.showSection(urlSection, false); // Don't update history on initial load
             } else {
               console.log("🏠 No saved section, showing home");
-              this.showSection("homeSection", false); // Don't update history on initial load
+              setTimeout(() => {
+                  this.showSection("homeSection", false); // Don't update history on initial load
+              }, 100);
             }
       
             return;
@@ -1559,7 +1563,10 @@ class SimpleAuth {
             this.initializeHistoryState();
             
             // Show home section by default after Google login
-            this.showSection("homeSection", false); // Don't update history on initial load
+            // Use setTimeout to ensure DOM is ready and background is applied properly
+            setTimeout(() => {
+                this.showSection("homeSection", false); // Don't update history on initial load
+            }, 100);
           } else {
             console.log("❌ Token verification failed, status:", response.status);
             
@@ -1635,7 +1642,9 @@ class SimpleAuth {
                 this.showSection(urlSection, false); // Don't update history on initial load
               } else {
                 console.log("🏠 No saved section, showing home");
-                this.showSection("homeSection", false); // Don't update history on initial load
+                setTimeout(() => {
+                    this.showSection("homeSection", false); // Don't update history on initial load
+                }, 100);
               }
             } else {
               console.log("❌ Token refresh failed, clearing localStorage");
@@ -1671,7 +1680,9 @@ class SimpleAuth {
               this.showSection(urlSection, false); // Don't update history on initial load
             } else {
               console.log("🏠 No saved section, showing home");
-              this.showSection("homeSection", false); // Don't update history on initial load
+              setTimeout(() => {
+                  this.showSection("homeSection", false); // Don't update history on initial load
+              }, 100);
             }
           }
         }
@@ -2608,7 +2619,7 @@ class SimpleAuth {
             this.scoreAudio = new Audio('/imgs/point-smooth-beep-230573.mp3');
             this.scoreAudio.preload = 'auto';
             
-            this.endGameAudio = new Audio('/imgs/077512_end-game-90582.mp3');
+            this.endGameAudio = new Audio('/imgs/sound.mp3');
             this.endGameAudio.preload = 'auto';
             
             // Attempt to unlock on first user interaction
@@ -6458,7 +6469,7 @@ class SimpleAuth {
             this.scoreAudio = new Audio('/imgs/point-smooth-beep-230573.mp3');
             this.scoreAudio.preload = 'auto';
             
-            this.endGameAudio = new Audio('/imgs/077512_end-game-90582.mp3');
+            this.endGameAudio = new Audio('/imgs/sound.mp3');
             this.endGameAudio.preload = 'auto';
             
             // Attempt to unlock on first user interaction

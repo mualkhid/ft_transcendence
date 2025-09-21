@@ -23,6 +23,34 @@
     z-index: 1 !important;
 }
 
+/* Transparent navigation bar with dark shade */
+.main-nav {
+    background: rgba(0, 0, 0, 0.3) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.2) !important;
+    padding: 1rem 0 !important;
+    margin-bottom: 2rem !important;
+    border-radius: 0 0 20px 20px !important;
+}
+
+/* Enhanced navigation link visibility */
+.main-nav-link {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8) !important;
+    font-weight: bold !important;
+}
+
+.main-nav-link:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    backdrop-filter: blur(5px) !important;
+    -webkit-backdrop-filter: blur(5px) !important;
+}
+
+.main-nav-title {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8) !important;
+}
+
 /* Background image classes */
 .bg-home {
     background-image: url('/imgs/powerpuff-bg.png') !important;
@@ -38,6 +66,10 @@
 
 .bg-game-options {
     background-image: url('../imgs/bg.md') !important;
+}
+
+.bg-dashboard {
+    background-image: url('../imgs/dashboard.jpg') !important;
 }
 
 
