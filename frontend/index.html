@@ -1359,9 +1359,11 @@
                             <div id="aiGameOverlay" class="absolute inset-0 flex items-center justify-center rounded-lg z-10" style="display: flex !important; align-items: center; justify-content: center; flex-direction: column;">
                                 <div class="text-center w-full flex flex-col items-center justify-center">
                                     <h2 id="aiGameMessage" class="text-3xl font-bold mb-6 text-white drop-shadow-lg">Ready to play against AI?</h2>
-                                    <button id="aiStartButton" class="bg-powerpuff-pink hover:bg-powerpuff-purple text-white font-bold py-3 px-6 rounded-full text-xl transition-colors shadow-lg">
-                                        Start AI Game
-                                    </button>
+                                    <div class="flex space-x-4">
+                                        <button id="aiStartButton" class="bg-powerpuff-pink hover:bg-powerpuff-purple text-white font-bold py-3 px-6 rounded-full text-xl transition-colors shadow-lg">
+                                            Start AI Game
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2096,15 +2098,7 @@
                 });
             }
 
-            const backBtn = document.getElementById('backBtn');
-            if (backBtn) {
-                backBtn.addEventListener('click', () => {
-                    // Navigate back to home using the SPA navigation
-                    if (window.simpleAuth && window.simpleAuth.navigateToSection) {
-                        window.simpleAuth.navigateToSection('home');
-                    }
-                });
-            }
+            // Back button event listener is handled in setupAIGameEventListeners()
 
             // AI Game Over Modal buttons
             const aiPlayAgainBtn = document.getElementById('aiPlayAgainBtn');
@@ -2121,8 +2115,8 @@
                 aiGoHomeBtn.addEventListener('click', () => {
                     hideAIGameOverModal();
                     // Navigate back to home using the SPA navigation
-                    if (window.simpleAuth && window.simpleAuth.navigateToSection) {
-                        window.simpleAuth.navigateToSection('home');
+                    if (window.simpleAuth && window.simpleAuth.showSection) {
+                        window.simpleAuth.showSection('homeSection');
                     }
                 });
             }

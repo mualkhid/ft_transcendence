@@ -1737,7 +1737,7 @@ class SimpleAuth {
         return null;
     }
 
-    private showSection(sectionId: string, updateHistory: boolean = true): void {
+    public showSection(sectionId: string, updateHistory: boolean = true): void {
         console.log(`🎯 showSection called with: ${sectionId}, updateHistory: ${updateHistory}`);
         
         // Check if we're leaving the game section and clean up
@@ -1816,8 +1816,7 @@ class SimpleAuth {
             if (sectionId === 'homeSection' && this.currentUser) {
                 console.log('Home section shown, updating dashboard...');
                 this.updateHomeDashboard();
-                // Also load detailed dashboard data for individual game type stats
-                this.loadDashboardData();
+                // Dashboard data will be loaded by loadSectionData() method
             } else if (sectionId === 'dashboardSection') {
                 console.log('Dashboard section shown, loading dashboard data...');
                 // Load dashboard data even if user is not logged in (for demo purposes)
@@ -1844,14 +1843,18 @@ class SimpleAuth {
         // Listen for browser back/forward button clicks
         window.addEventListener('popstate', (event) => {
             console.log('🔙 Browser navigation detected:', event.state);
+            console.log('🔙 Current URL:', window.location.href);
+            console.log('🔙 Current search params:', window.location.search);
             this.handleBrowserNavigation(event.state);
         });
         
-        // Initialize history state if none exists
-        if (!history.state) {
+        // Initialize history state if none exists or if it doesn't have a section
+        if (!history.state || !history.state.section) {
             const currentSection = this.getCurrentSectionFromUrl() || 'homeSection';
-            console.log('🔗 No history state, initializing with section:', currentSection);
+            console.log('🔗 No history state or missing section, initializing with section:', currentSection);
             this.replaceBrowserHistory(currentSection);
+        } else {
+            console.log('🔗 History state already exists:', history.state);
         }
         
         console.log('🔗 Browser history setup complete');
@@ -1863,6 +1866,12 @@ class SimpleAuth {
     private updateBrowserHistory(sectionId: string): void {
         const url = this.getUrlForSection(sectionId);
         const state = { section: sectionId, timestamp: Date.now() };
+        
+        // Don't create duplicate history entries for the same section
+        if (history.state && history.state.section === sectionId) {
+            console.log(`📝 Skipping duplicate history entry for section: ${sectionId}`);
+            return;
+        }
         
         console.log(`📝 Updating browser history: ${url}`, state);
         history.pushState(state, '', url);
@@ -1929,6 +1938,7 @@ class SimpleAuth {
      */
     private handleBrowserNavigation(state: any): void {
         console.log('🔙 Handling browser navigation with state:', state);
+        console.log('🔙 handleBrowserNavigation called at:', new Date().toISOString());
         
         // Check if we're leaving a game section and need to stop the game
         const currentSection = this.getCurrentSectionFromUrl();
@@ -2032,10 +2042,17 @@ class SimpleAuth {
         // Get the current section from URL or default to home
         const currentSection = this.getCurrentSectionFromUrl() || 'homeSection';
         
-        // Only update history if we're not already on the correct URL
-        const expectedUrl = this.getUrlForSection(currentSection);
-        if (window.location.href !== expectedUrl) {
+        // Always ensure we have a proper history state, especially for home page
+        if (!history.state || !history.state.section) {
+            console.log('🔗 No history state found, creating one for section:', currentSection);
             this.replaceBrowserHistory(currentSection);
+        } else {
+            console.log('🔗 History state exists:', history.state);
+            // Only update history if we're not already on the correct URL
+            const expectedUrl = this.getUrlForSection(currentSection);
+            if (window.location.href !== expectedUrl) {
+                this.replaceBrowserHistory(currentSection);
+            }
         }
     }
 
@@ -6787,13 +6804,7 @@ class SimpleAuth {
             });
         }
 
-        const backBtn = document.getElementById('backBtn');
-        if (backBtn) {
-            backBtn.addEventListener('click', () => {
-                this.hideAIGameOverlay();
-                this.showSection('homeSection');
-            });
-        }
+        // Back button removed - not needed for browser back button functionality
 
         // AI Game Over Modal buttons
         const aiReplayBtn = document.getElementById('aiReplayBtn');
@@ -6882,7 +6893,7 @@ class SimpleAuth {
     }
 
     private hideAIGameOverlay(): void {
-        const gameOverlay = document.getElementById('gameOverlay');
+        const gameOverlay = document.getElementById('aiGameOverlay');
         if (gameOverlay) {
             gameOverlay.classList.add('hidden');
         }

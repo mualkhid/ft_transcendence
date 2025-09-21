@@ -87,7 +87,6 @@ class SimpleAuth {
         this.originalEndGame = null;
         this.colorblindMode = false;
         this.init();
-<<<<<<< HEAD
         this.initializeAudio();
         // Add global test function for debugging
         window.testPowerUps = () => {
@@ -106,8 +105,6 @@ class SimpleAuth {
                 console.log('No gameState available');
             }
         };
-=======
->>>>>>> parent of 5650101 (addition of oauth (fully working))
     }
     init() {
         this.checkAuthStatus();
@@ -117,10 +114,7 @@ class SimpleAuth {
         this.setupDashboardNavigation();
         this.initializeColorblindMode();
         this.setupBrowserHistory();
-<<<<<<< HEAD
         this.setupAllPowerupsToggles();
-=======
->>>>>>> parent of 5650101 (addition of oauth (fully working))
     }
     setupEventListeners() {
         // Form submissions
@@ -1620,15 +1614,12 @@ class SimpleAuth {
     }
     showSection(sectionId, updateHistory = true) {
         console.log(`🎯 showSection called with: ${sectionId}, updateHistory: ${updateHistory}`);
-<<<<<<< HEAD
         // Check if we're leaving the game section and clean up
         const currentSection = this.getCurrentSectionFromUrl();
         if (currentSection === 'game' && sectionId !== 'gameSection') {
             console.log('🎯 Leaving game section, cleaning up...');
             this.cleanupGameState();
         }
-=======
->>>>>>> parent of 5650101 (addition of oauth (fully working))
         const sections = document.querySelectorAll('.section');
         sections.forEach(section => {
             section.classList.remove('active');
@@ -1661,7 +1652,6 @@ class SimpleAuth {
                     case 'aiPongSection':
                         mainApp.classList.add('bg-game-options');
                         break;
-<<<<<<< HEAD
                     case 'localTournamentSection':
                         mainApp.classList.add('bg-game-options');
                         // Ensure tournament is properly reset when showing tournament section
@@ -1670,8 +1660,6 @@ class SimpleAuth {
                             this.resetTournamentState();
                         }
                         break;
-=======
->>>>>>> parent of 5650101 (addition of oauth (fully working))
                     default:
                         mainApp.classList.add('bg-home'); // Default to home background
                 }
@@ -1694,8 +1682,7 @@ class SimpleAuth {
             if (sectionId === 'homeSection' && this.currentUser) {
                 console.log('Home section shown, updating dashboard...');
                 this.updateHomeDashboard();
-                // Also load detailed dashboard data for individual game type stats
-                this.loadDashboardData();
+                // Dashboard data will be loaded by loadSectionData() method
             }
             else if (sectionId === 'dashboardSection') {
                 console.log('Dashboard section shown, loading dashboard data...');
@@ -1723,13 +1710,18 @@ class SimpleAuth {
         // Listen for browser back/forward button clicks
         window.addEventListener('popstate', (event) => {
             console.log('🔙 Browser navigation detected:', event.state);
+            console.log('🔙 Current URL:', window.location.href);
+            console.log('🔙 Current search params:', window.location.search);
             this.handleBrowserNavigation(event.state);
         });
-        // Initialize history state if none exists
-        if (!history.state) {
+        // Initialize history state if none exists or if it doesn't have a section
+        if (!history.state || !history.state.section) {
             const currentSection = this.getCurrentSectionFromUrl() || 'homeSection';
-            console.log('🔗 No history state, initializing with section:', currentSection);
+            console.log('🔗 No history state or missing section, initializing with section:', currentSection);
             this.replaceBrowserHistory(currentSection);
+        }
+        else {
+            console.log('🔗 History state already exists:', history.state);
         }
         console.log('🔗 Browser history setup complete');
     }
@@ -1739,6 +1731,11 @@ class SimpleAuth {
     updateBrowserHistory(sectionId) {
         const url = this.getUrlForSection(sectionId);
         const state = { section: sectionId, timestamp: Date.now() };
+        // Don't create duplicate history entries for the same section
+        if (history.state && history.state.section === sectionId) {
+            console.log(`📝 Skipping duplicate history entry for section: ${sectionId}`);
+            return;
+        }
         console.log(`📝 Updating browser history: ${url}`, state);
         history.pushState(state, '', url);
     }
@@ -1795,7 +1792,7 @@ class SimpleAuth {
      */
     handleBrowserNavigation(state) {
         console.log('🔙 Handling browser navigation with state:', state);
-<<<<<<< HEAD
+        console.log('🔙 handleBrowserNavigation called at:', new Date().toISOString());
         // Check if we're leaving a game section and need to stop the game
         const currentSection = this.getCurrentSectionFromUrl();
         console.log('🔙 Current section from URL:', currentSection);
@@ -1839,8 +1836,6 @@ class SimpleAuth {
             // Show power-ups toggle again
             this.showPowerupsToggle('tournament');
         }
-=======
->>>>>>> parent of 5650101 (addition of oauth (fully working))
         if (state && state.section) {
             // Navigate to the section from browser history
             console.log(`🔙 Navigating to section from state: ${state.section}`);
@@ -1891,10 +1886,18 @@ class SimpleAuth {
         console.log('🔗 Initializing history state...');
         // Get the current section from URL or default to home
         const currentSection = this.getCurrentSectionFromUrl() || 'homeSection';
-        // Only update history if we're not already on the correct URL
-        const expectedUrl = this.getUrlForSection(currentSection);
-        if (window.location.href !== expectedUrl) {
+        // Always ensure we have a proper history state, especially for home page
+        if (!history.state || !history.state.section) {
+            console.log('🔗 No history state found, creating one for section:', currentSection);
             this.replaceBrowserHistory(currentSection);
+        }
+        else {
+            console.log('🔗 History state exists:', history.state);
+            // Only update history if we're not already on the correct URL
+            const expectedUrl = this.getUrlForSection(currentSection);
+            if (window.location.href !== expectedUrl) {
+                this.replaceBrowserHistory(currentSection);
+            }
         }
     }
     updatePasswordRequirements(password) {
@@ -2341,14 +2344,11 @@ class SimpleAuth {
             // Redirect to tournament section
             this.showSection('localTournamentSection');
             console.log('Tournament section shown');
-<<<<<<< HEAD
             // Ensure tournament is properly reset when returning to section
             if (this.currentTournamentMatch === null) {
                 console.log('Ensuring tournament UI is reset...');
                 this.resetTournamentState();
             }
-=======
->>>>>>> parent of 5650101 (addition of oauth (fully working))
         }
         else if (gameType === 'online') {
             // Redirect to online game section for direct remote connection
@@ -2514,23 +2514,16 @@ class SimpleAuth {
             powerUpsSpawned: 0,
             maxPowerUpsPerGame: 2,
             leftPaddleBuffUntil: 0,
-<<<<<<< HEAD
             rightPaddleBuffUntil: 0,
             powerupsEnabled: true // Default to enabled, toggle will update this
-=======
-            rightPaddleBuffUntil: 0
->>>>>>> parent of 5650101 (addition of oauth (fully working))
         };
         // Clear any existing game loop
         if (this.gameLoopInterval) {
             clearInterval(this.gameLoopInterval);
             this.gameLoopInterval = null;
         }
-<<<<<<< HEAD
         // Show power-ups toggle when game is reset
         this.showPowerupsToggle('1v1');
-=======
->>>>>>> parent of 5650101 (addition of oauth (fully working))
     }
     setupGameControls() {
         // Remove existing listeners to prevent duplicates
@@ -2657,7 +2650,6 @@ class SimpleAuth {
         else {
             console.log('Start button not found!');
         }
-<<<<<<< HEAD
         // Hide power-ups toggle when game starts
         this.hidePowerupsToggle('1v1');
         // Set powerupsEnabled based on toggle state
@@ -2673,8 +2665,6 @@ class SimpleAuth {
         console.log('powerupsEnabled AFTER setting:', this.gameState?.powerupsEnabled);
         console.log('powerUpsSpawned:', this.gameState?.powerUpsSpawned);
         console.log('maxPowerUpsPerGame:', this.gameState?.maxPowerUpsPerGame);
-=======
->>>>>>> parent of 5650101 (addition of oauth (fully working))
         // Keep customize button visible during gameplay
         const customizeBtn = document.getElementById('customizeBtn');
         if (customizeBtn) {
@@ -2803,7 +2793,6 @@ class SimpleAuth {
         }
     }
     updatePowerUps() {
-<<<<<<< HEAD
         // Debug: Log power-ups state occasionally
         if (Math.random() < 0.01) { // Log occasionally to avoid spam
             console.log('updatePowerUps called - powerupsEnabled:', this.gameState.powerupsEnabled, 'powerUpsSpawned:', this.gameState.powerUpsSpawned, 'activePowerUps:', this.gameState.powerUps.length);
@@ -2820,12 +2809,6 @@ class SimpleAuth {
         if (this.gameState.powerUpsSpawned < this.gameState.maxPowerUpsPerGame &&
             this.gameState.powerUps.length === 0 &&
             Math.random() < 0.1) { // Increased spawn rate from 5% to 10%
-=======
-        // Spawn power-ups (max 2 per game total)
-        if (this.gameState.powerUpsSpawned < this.gameState.maxPowerUpsPerGame &&
-            this.gameState.powerUps.length === 0 &&
-            Math.random() < 0.05) {
->>>>>>> parent of 5650101 (addition of oauth (fully working))
             console.log(`Attempting to spawn power-up ${this.gameState.powerUpsSpawned + 1}/${this.gameState.maxPowerUpsPerGame}`);
             this.spawnPowerUp();
         }
@@ -3052,12 +3035,9 @@ class SimpleAuth {
         ctx.arc(this.gameState.ballPositionX, this.gameState.ballPositionY, this.gameState.radius, 0, Math.PI * 2);
         ctx.fill();
         // Draw power-ups (improved system)
-<<<<<<< HEAD
         if (this.gameState.powerUps.length > 0 && Math.random() < 0.01) {
             console.log('Drawing power-ups:', this.gameState.powerUps.length, 'power-ups');
         }
-=======
->>>>>>> parent of 5650101 (addition of oauth (fully working))
         this.gameState.powerUps.forEach((powerUp) => {
             // Draw square power-up with Powerpuff colors
             const colors = ['#FF69B4', '#87CEEB', '#98FB98']; // Pink, Blue, Green
@@ -3133,11 +3113,8 @@ class SimpleAuth {
             }
             // Show the modal
             gameOverModal.classList.remove('hidden');
-<<<<<<< HEAD
             // Show power-ups toggle when game ends
             this.showPowerupsToggle('1v1');
-=======
->>>>>>> parent of 5650101 (addition of oauth (fully working))
             // Set up button event listeners
             const playAgainBtn = document.getElementById('playAgainBtn');
             const goHomeBtn = document.getElementById('goHomeBtn');
@@ -3881,15 +3858,12 @@ class SimpleAuth {
             currentMatchDiv.classList.add('hidden');
         // Show the game section and initialize the actual game
         this.showSection('gameSection');
-<<<<<<< HEAD
         // Hide power-ups toggle when tournament match starts
         this.hidePowerupsToggle('tournament');
         // Set powerupsEnabled based on tournament toggle state
         const toggleTournament = document.getElementById('powerupsToggleTournament');
         const enabled = toggleTournament ? toggleTournament.checked : true; // Default to true if toggle not found
         console.log('Set powerupsEnabled based on tournament toggle:', enabled);
-=======
->>>>>>> parent of 5650101 (addition of oauth (fully working))
         // Set up the game with tournament players
         setTimeout(() => {
             this.initializeTournamentGame(currentMatch);
@@ -4002,11 +3976,8 @@ class SimpleAuth {
         }
         // Update bracket display
         this.displayBracket();
-<<<<<<< HEAD
         // Show power-ups toggle when tournament match ends
         this.showPowerupsToggle('tournament');
-=======
->>>>>>> parent of 5650101 (addition of oauth (fully working))
         // Restore original endGame method
         if (this.originalEndGame) {
             this.endGame = this.originalEndGame;
@@ -4507,15 +4478,12 @@ class SimpleAuth {
                             console.log('🚀 Game started!');
                             this.hideCountdown();
                             this.updateRemoteGameStatus('Playing', 'Game in progress', true);
-<<<<<<< HEAD
                             // Hide power-ups toggle when remote game starts
                             this.hidePowerupsToggle('online');
                             // Set powerupsEnabled based on online toggle state
                             const toggleOnline = document.getElementById('powerupsToggleOnline');
                             const enabled = toggleOnline ? toggleOnline.checked : true; // Default to true if toggle not found
                             console.log('Set powerupsEnabled based on online toggle:', enabled);
-=======
->>>>>>> parent of 5650101 (addition of oauth (fully working))
                             this.startRemoteGame();
                             // Make sure score display is visible and updated
                             this.showScoreDisplay();
@@ -4563,11 +4531,8 @@ class SimpleAuth {
                                 const winnerScore = data.player1Score >= 5 ? data.player1Score : data.player2Score;
                                 const loserScore = data.player1Score >= 5 ? data.player2Score : data.player1Score;
                                 this.onlineGameState.gameFinished = true;
-<<<<<<< HEAD
                                 // Play end game sound
                                 this.playEndGameSound();
-=======
->>>>>>> parent of 5650101 (addition of oauth (fully working))
                                 this.showGameOverScreen({
                                     winner: winner,
                                     winnerScore: winnerScore,
@@ -4585,11 +4550,8 @@ class SimpleAuth {
                             this.onlineGameState.gameState.player1Score = data.player1Score;
                             this.onlineGameState.gameState.player2Score = data.player2Score;
                             this.updateRemoteScore();
-<<<<<<< HEAD
                             // Play end game sound
                             this.playEndGameSound();
-=======
->>>>>>> parent of 5650101 (addition of oauth (fully working))
                             // Prepare game over screen data
                             const gameOverScreenDataD = {
                                 winner: data.winnerAlias || data.winner,
@@ -4602,11 +4564,8 @@ class SimpleAuth {
                             };
                             // Show game over screen
                             this.showGameOverScreen(gameOverScreenDataD);
-<<<<<<< HEAD
                             // Show power-ups toggle when remote game ends
                             this.showPowerupsToggle('online');
-=======
->>>>>>> parent of 5650101 (addition of oauth (fully working))
                             // Update game status
                             this.updateRemoteGameStatus('Game Over', `${data.winnerAlias} wins!`);
                             // Refresh user data to update dashboard
@@ -5438,11 +5397,8 @@ class SimpleAuth {
     // AI Pong Game Methods
     initializeAIGame() {
         console.log('Initializing AI Pong game...');
-<<<<<<< HEAD
         // Setup power-ups toggle
         this.setupPowerupsToggle();
-=======
->>>>>>> parent of 5650101 (addition of oauth (fully working))
         // Connect to AI game WebSocket
         this.connectAIGame();
         // Setup keyboard controls
@@ -5470,7 +5426,6 @@ class SimpleAuth {
             }
         });
     }
-<<<<<<< HEAD
     setupPowerupsToggle() {
         console.log('Setting up power-ups toggle...');
         const powerupsToggle = document.getElementById('powerupsToggle');
@@ -5720,8 +5675,6 @@ class SimpleAuth {
             console.error('Failed to initialize audio files:', error);
         }
     }
-=======
->>>>>>> parent of 5650101 (addition of oauth (fully working))
     connectAIGame() {
         try {
             this.aiGameWs = new WebSocket(`wss://${HOST_IP}/api/ai-game`);
@@ -5844,11 +5797,8 @@ class SimpleAuth {
                 const userWon = data.winner === 'player';
                 const gameDuration = this.aiGameStartTime ? new Date().getTime() - this.aiGameStartTime.getTime() : 60000; // Default to 1 minute if no start time
                 this.updateUserStats(userWon, 'AI', data.playerScore, data.aiScore, gameDuration);
-<<<<<<< HEAD
                 // Show power-ups toggle when AI game ends
                 this.showPowerupsToggle('ai');
-=======
->>>>>>> parent of 5650101 (addition of oauth (fully working))
                 this.showAIGameOverModal(data.winner, data.playerScore, data.aiScore);
                 break;
             case 'error':
@@ -5949,11 +5899,8 @@ class SimpleAuth {
         };
         // Update score display
         this.updateAIScore();
-<<<<<<< HEAD
         // Show power-ups toggle when AI game is reset
         this.showPowerupsToggle('ai');
-=======
->>>>>>> parent of 5650101 (addition of oauth (fully working))
         console.log('AI game state reset');
     }
     startAIGameFromOverlay() {
@@ -5969,15 +5916,12 @@ class SimpleAuth {
             aiGameOverlay.style.display = 'none';
             console.log('AI game overlay hidden');
         }
-<<<<<<< HEAD
         // Hide power-ups toggle when AI game starts
         this.hidePowerupsToggle('ai');
         // Set powerupsEnabled based on AI toggle state
         const toggleAI = document.getElementById('powerupsToggle');
         const enabled = toggleAI ? toggleAI.checked : true; // Default to true if toggle not found
         console.log('Set powerupsEnabled based on AI toggle:', enabled);
-=======
->>>>>>> parent of 5650101 (addition of oauth (fully working))
         // Connect to AI game WebSocket and start the game
         this.connectAIGame();
         // Send start-game message after a short delay to ensure connection is established
@@ -6046,13 +5990,7 @@ class SimpleAuth {
                 this.restartAIGame();
             });
         }
-        const backBtn = document.getElementById('backBtn');
-        if (backBtn) {
-            backBtn.addEventListener('click', () => {
-                this.hideAIGameOverlay();
-                this.showSection('homeSection');
-            });
-        }
+        // Back button removed - not needed for browser back button functionality
         // AI Game Over Modal buttons
         const aiReplayBtn = document.getElementById('aiReplayBtn');
         if (aiReplayBtn) {
@@ -6130,7 +6068,7 @@ class SimpleAuth {
         }
     }
     hideAIGameOverlay() {
-        const gameOverlay = document.getElementById('gameOverlay');
+        const gameOverlay = document.getElementById('aiGameOverlay');
         if (gameOverlay) {
             gameOverlay.classList.add('hidden');
         }
