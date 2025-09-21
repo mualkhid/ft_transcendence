@@ -9,7 +9,7 @@ import crypto from 'crypto';
 import {notFoundError, AuthenticationError} from '../utils/errors.js'
 import validator from 'validator'
 
-const sanitizedUserSelect = { id: true, username: true, email: true, createdAt: true, lastSeen: true, updatedAt: true }
+const sanitizedUserSelect = { id: true, username: true, email: true, createdAt: true, lastSeen: true, updatedAt: true, isTwoFactorEnabled: true};
 
 // function generateBackupCodes(count = 5) {
 //     return Array.from({ length: count }, () =>
@@ -364,13 +364,19 @@ export async function verify2FA(req, reply) {
             return reply.status(400).send({ error: 'Invalid verification code' });
         }
 
-        // Enable 2FA
+        // After successful 2FA verification:
         await prisma.user.update({
-            where: { id: userId },
+            where: { id: req.user.id },
             data: { isTwoFactorEnabled: true }
         });
 
-        reply.send({ message: '2FA enabled successfully' });
+        // Fetch updated user
+        const updatedUser = await prisma.user.findUnique({
+            where: { id: req.user.id },
+            select: sanitizedUserSelect // Make sure this includes isTwoFactorEnabled
+        });
+
+        return reply.status(200).send({ user: updatedUser });
     } catch (error) {
         console.error('Verify 2FA error:', error);
         reply.status(500).send({ error: 'Failed to verify 2FA' });
@@ -384,15 +390,16 @@ export async function disable2FA(req, reply) {
 
         // Disable 2FA and clear secrets
         await prisma.user.update({
-            where: { id: userId },
-            data: {
-                isTwoFactorEnabled: false,
-                twoFactorSecret: null,
-                twoFactorBackupCodes: null
-            }
+            where: { id: req.user.id },
+            data: { isTwoFactorEnabled: false }
         });
 
-        reply.send({ message: '2FA disabled successfully' });
+        const user = await prisma.user.findUnique({
+            where: { id: req.user.id },
+            select: sanitizedUserSelect // Make sure this includes isTwoFactorEnabled
+        });
+
+        return reply.status(200).send({ user });
     } catch (error) {
         console.error('Disable 2FA error:', error);
         reply.status(500).send({ error: 'Failed to disable 2FA' });

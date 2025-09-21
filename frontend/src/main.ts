@@ -218,24 +218,43 @@ class SimpleAuth {
             });
         }
         
-        const anonymizeAccountBtn = document.getElementById('anonymizeAccountBtn');
-        if (anonymizeAccountBtn) {
-            anonymizeAccountBtn.addEventListener('click', async () => {
-            if (confirm('Are you sure you want to anonymize your account?')) {
-                try {
-                const response = await fetch('/api/user/anonymize', { method: 'POST', credentials: 'include' });
+        // const anonymizeAccountBtn = document.getElementById('anonymizeAccountBtn');
+        // if (anonymizeAccountBtn) {
+        //     anonymizeAccountBtn.addEventListener('click', async () => {
+        //     if (confirm('Are you sure you want to anonymize your account?')) {
+        //         try {
+        //         const response = await fetch('/api/user/anonymize', { method: 'POST', credentials: 'include' });
+        //         if (response.ok) {
+        //             alert('Account anonymized.');
+        //             window.location.reload(); // Optionally reload the page
+        //         } else {
+        //             alert('Failed to anonymize account.');
+        //         }
+        //         } catch (error) {
+        //         console.error('Error anonymizing account:', error);
+        //         alert('An error occurred while anonymizing your account.');
+        //         }
+        //     }
+        //     });
+        // }
+
+        const unanonymizeAccountBtn = document.getElementById('unanonymizeAccountBtn');
+        if (unanonymizeAccountBtn) {
+        unanonymizeAccountBtn.addEventListener('click', async () => {
+            if (confirm('Restore your original account data?')) {
+            try {
+                const response = await fetch('/api/user/unanonymize', { method: 'POST', credentials: 'include' });
                 if (response.ok) {
-                    alert('Account anonymized.');
-                    window.location.reload(); // Optionally reload the page
+                alert('Account restored.');
+                window.location.reload();
                 } else {
-                    alert('Failed to anonymize account.');
+                alert('Failed to restore account.');
                 }
-                } catch (error) {
-                console.error('Error anonymizing account:', error);
-                alert('An error occurred while anonymizing your account.');
-                }
+            } catch (error) {
+                alert('An error occurred while restoring your account.');
             }
-            });
+            }
+        });
         }
     
         const downloadDataBtn = document.getElementById('downloadDataBtn');
@@ -401,6 +420,7 @@ class SimpleAuth {
             });
 
             if (response.ok) {
+                const data = await response.json();
                 this.showStatus('2FA setup complete!', 'success');
                 
                 // Hide setup sections
@@ -418,10 +438,15 @@ class SimpleAuth {
                 }
 
                 // Update current user data
-                if (this.currentUser) {
-                    // this.currentUser.isTwoFactorEnabled = true;
-                    localStorage.setItem('user', JSON.stringify(this.currentUser));
-                }
+                // if (this.currentUser) {
+                //     this.currentUser.isTwoFactorEnabled = true;
+                //     localStorage.setItem('user', JSON.stringify(this.currentUser));
+                // }
+                
+                this.currentUser = data.user;
+                localStorage.setItem('user', JSON.stringify(data.user));
+                // await this.loadUserProfile(); // (optional, but should also update currentUser)
+                // this.updateProfileDisplay();
 
                 // Clear the verification input
                 verifyCodeInput.value = '';
@@ -451,10 +476,10 @@ class SimpleAuth {
                 const twoFactorToggle = document.getElementById('twoFactorToggle') as HTMLInputElement;
                 if (twoFactorToggle) twoFactorToggle.checked = false;
     
-                if (this.currentUser) {
-                    // this.currentUser.isTwoFactorEnabled = false;
-                    localStorage.setItem('user', JSON.stringify(this.currentUser));
-                }
+                // if (this.currentUser) {
+                //     // this.currentUser.isTwoFactorEnabled = false;
+                //     localStorage.setItem('user', JSON.stringify(this.currentUser));
+                // }
                 await this.loadUserProfile();
                 this.updateProfileDisplay();
             } else {
@@ -646,18 +671,13 @@ class SimpleAuth {
         const currentPassword = currentPasswordInput?.value.trim();
         const newPassword = newPasswordInput?.value.trim();
 
-        if (!currentPassword || !newPassword) {
-            this.showStatus('Please enter both current and new passwords', 'error');
-            return;
-        }
-
         if (!this.currentUser) {
             this.showStatus('Please log in to change password', 'error');
             return;
         }
-        const requiresCurrent = this.currentUser.passwordHash !== '';
+        const requiresCurrent = !!this.currentUser.hasPassword;
         if ((requiresCurrent && (!currentPassword || !newPassword)) || (!requiresCurrent && !newPassword)) {
-            this.showStatus('Please enter ' + (requiresCurrent ? 'both current and new passwords' : 'a new password'), 'error');
+            this.showStatus('Please enter ' + (requiresCurrent ? 'both curreent and new passwords' : 'a new password'), 'error');
             return;
         }
         console.log('Password change - Current user:', this.currentUser);
@@ -3431,7 +3451,7 @@ class SimpleAuth {
         console.log('New game started');
     }
 
-        private async loadUserProfile(): Promise<void> {
+    private async loadUserProfile(): Promise<void> {
         if (!this.currentUser) {
             console.log('No current user found, cannot load profile');
             return;
@@ -3710,7 +3730,7 @@ class SimpleAuth {
         const twofaSection = document.getElementById('twofa-setup');
         const twofaMessage = document.getElementById('twofa-message');
 
-        if (this.currentUser && this.currentUser.passwordHash === '') {
+        if (this.currentUser && !this.currentUser.hasPassword) {
             // Google-only user: disable 2FA controls and show message
             if (twoFactorToggle) twoFactorToggle.disabled = true;
             if (enable2faBtn) enable2faBtn.style.display = 'none';
@@ -3728,7 +3748,7 @@ class SimpleAuth {
         // Update 2FA toggle
 
         if (twoFactorToggle && this.currentUser) {
-            twoFactorToggle.checked = this.currentUser.isTwoFactorEnabled || false;
+            twoFactorToggle.checked = !!this.currentUser.isTwoFactorEnabled;
             
             // Show/hide enable button based on current state
             const enable2faBtn = document.getElementById('enable2faBtn');

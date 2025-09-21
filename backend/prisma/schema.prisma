@@ -53,6 +53,8 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   isEmailVerified Boolean @default(false)
+  // originalUsername  String? 
+  // originalEmail     String?  
 
 
   // Game statistics
