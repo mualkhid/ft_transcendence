@@ -413,10 +413,13 @@ export class DashboardService {
                 };
             }
 
-            // Count tournament games (matches with tournamentId not null)
+            // Count tournament games (matches with tournamentId not null) - check both player1 and player2
             const totalGames = await prisma.match.count({
                 where: {
-                    player1Alias: user.username,
+                    OR: [
+                        { player1Alias: user.username },
+                        { player2Alias: user.username }
+                    ],
                     tournamentId: { not: null }, // Only tournament games
                     status: 'FINISHED'
                 }
@@ -424,7 +427,10 @@ export class DashboardService {
 
             const wins = await prisma.match.count({
                 where: {
-                    player1Alias: user.username,
+                    OR: [
+                        { player1Alias: user.username },
+                        { player2Alias: user.username }
+                    ],
                     tournamentId: { not: null }, // Only tournament games
                     status: 'FINISHED',
                     winnerAlias: user.username
@@ -434,11 +440,14 @@ export class DashboardService {
             const losses = totalGames - wins;
             const winRate = totalGames > 0 ? (wins / totalGames * 100).toFixed(1) : 0;
 
-            // Get best and average scores for tournament games
+            // Get best and average scores for tournament games - check both player1 and player2
             const matchPlayers = await prisma.matchPlayer.findMany({
                 where: {
                     match: {
-                        player1Alias: user.username,
+                        OR: [
+                            { player1Alias: user.username },
+                            { player2Alias: user.username }
+                        ],
                         tournamentId: { not: null },
                         status: 'FINISHED'
                     },
