@@ -41,14 +41,6 @@ export const anonymizeAccountSchema = {
   }
 };
 
-// export const unAnonymizeAccountSchema = {
-//   body: {
-//     type: 'object',
-//     properties: {}, // No body expected, but you can add fields if needed
-//     // additionalProperties: false
-//   }
-// };
-
 export const deleteAccountSchema = {
   body: {
     type: 'object',

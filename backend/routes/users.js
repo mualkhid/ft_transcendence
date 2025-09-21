@@ -3,7 +3,6 @@ import { registerSchema, deleteAccountSchema, anonymizeAccountSchema } from '../
 import { authenticate } from '../services/jwtService.js';
 
 export default function userRoutes(fastify, _opts, done) {
-    // Removed conflicting /register route - using /auth/registerUser instead
     fastify.delete('/user/delete', {preHandler: authenticate}, deleteUser);
     fastify.post('/user/anonymize', {preHandler: authenticate}, anonymizeUser);
     fastify.get('/user/data', {preHandler: authenticate}, getUserData);

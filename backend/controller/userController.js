@@ -49,46 +49,8 @@ export async function unAnonymizeUser(req, reply) {
 
 export async function deleteUser(req, reply) {
     const userId = req.user.id;
-    try {
-        // Delete in proper order to avoid foreign key constraints
-        
-        // Delete friendships
-        // await prisma.friendship.deleteMany({ 
-        //     where: { 
-        //         OR: [
-        //             { requesterId: userId }, 
-        //             { addresseeId: userId }
-        //         ] 
-        //     } 
-        // });
-        
-        // // Delete game history
-        // await prisma.gameHistory.deleteMany({ 
-        //     where: { 
-        //         OR: [
-        //             { player1Id: userId }, 
-        //             { player2Id: userId }
-        //         ] 
-        //     } 
-        // });
-        
-        // // Delete tournaments created by this user
-        // await prisma.tournament.deleteMany({ 
-        //     where: { creatorId: userId } 
-        // });
-        
-        // // Delete any additional related data
-        // await prisma.matchPlayer?.deleteMany?.({ 
-        //     where: { userId: userId }
-        // });
-        
-        // await prisma.tournamentPlayer?.deleteMany?.({ 
-        //     where: { userId: userId }
-        // });
-        
-        // Finally delete the user
+    try {        
         await prisma.user.delete({ where: { id: userId } });
-        
         reply.send({ message: 'Your account and all data have been deleted.' });
     } catch (err) {
         console.error("Account deletion error:", err);

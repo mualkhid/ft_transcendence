@@ -455,17 +455,9 @@ class SimpleAuth {
                     twoFactorToggle.disabled = false;
                     twoFactorToggle.checked = true;
                 }
-
-                // Update current user data
-                // if (this.currentUser) {
-                //     this.currentUser.isTwoFactorEnabled = true;
-                //     localStorage.setItem('user', JSON.stringify(this.currentUser));
-                // }
                 
                 this.currentUser = data.user;
                 localStorage.setItem('user', JSON.stringify(data.user));
-                // await this.loadUserProfile(); // (optional, but should also update currentUser)
-                // this.updateProfileDisplay();
 
                 // Clear the verification input
                 verifyCodeInput.value = '';
@@ -493,10 +485,6 @@ class SimpleAuth {
                 const twoFactorToggle = document.getElementById('twoFactorToggle') as HTMLInputElement;
                 if (twoFactorToggle) twoFactorToggle.checked = false;
     
-                // if (this.currentUser) {
-                //     // this.currentUser.isTwoFactorEnabled = false;
-                //     localStorage.setItem('user', JSON.stringify(this.currentUser));
-                // }
                 await this.loadUserProfile();
                 this.updateProfileDisplay();
             } else {
@@ -681,102 +669,6 @@ class SimpleAuth {
         } 
     }
 
-    // private async handlePasswordChange(): Promise<void> {
-    //     const currentPasswordInput = document.getElementById('currentPassword') as HTMLInputElement;
-    //     const newPasswordInput = document.getElementById('newPassword') as HTMLInputElement;
-        
-    //     const currentPassword = currentPasswordInput?.value.trim();
-    //     const newPassword = newPasswordInput?.value.trim();
-
-    //     if (!this.currentUser) {
-    //         this.showStatus('Please log in to change password', 'error');
-    //         return;
-    //     }
-    //     const requiresCurrent = !!this.currentUser.hasPassword;
-    //     if ((requiresCurrent && (!currentPassword || !newPassword)) || (!requiresCurrent && !newPassword)) {
-    //         this.showStatus('Please enter ' + (requiresCurrent ? 'both curreent and new passwords' : 'a new password'), 'error');
-    //         return;
-    //     }
-    //     console.log('Password change - Current user:', this.currentUser);
-    //     console.log('Password change - Current cookies:', document.cookie);
-
-    //     // Validate new password meets requirements
-    //     const requirements = {
-    //         length: newPassword.length >= 8,
-    //         lowercase: /[a-z]/.test(newPassword),
-    //         uppercase: /[A-Z]/.test(newPassword),
-    //         number: /\d/.test(newPassword),
-    //         special: /[!@#$%^&*(),.?":{}|<>]/.test(newPassword)
-    //     };
-
-    //     const allRequirementsMet = Object.values(requirements).every(met => met);
-    //     if (!allRequirementsMet) {
-    //         this.showStatus('New password does not meet all requirements', 'error');
-    //         return;
-    //     }
-
-    //     try {
-    //         console.log('Sending password update request');
-    //         console.log('Request URL:', `api/profile/password`);
-    //         console.log('Request method:', 'PATCH');
-    //         console.log('Request headers:', {
-    //             'Content-Type': 'application/json',
-    //         });
-    //         console.log('Request body:', JSON.stringify({ currentPassword, newPassword: '***' }));
-    //         console.log('Credentials:', 'include');
-            
-    //         const response = await fetch(`api/profile/password`, {
-    //             method: 'PATCH',
-    //             headers: {
-    //                 'Content-Type': 'application/json',
-    //             },
-    //             body: JSON.stringify({ currentPassword, newPassword }),
-    //             credentials: 'include'
-    //         });
-
-    //         console.log('Password update response status:', response.status);
-
-    //         if (response.ok) {
-    //             const data = await response.json();
-    //             console.log('Password update response:', data);
-                
-    //             // Clear inputs
-    //             currentPasswordInput.value = '';
-    //             newPasswordInput.value = '';
-                
-    //             // Reset password requirements display
-    //             this.updatePasswordRequirements('');
-                
-    //             this.showStatus('Password updated successfully!', 'success');
-    //         } else if (response.status === 401) {
-    //             const errorData = await response.json();
-    //             console.error('Password update 401 error:', errorData);
-                
-    //             // Check if it's a password error or session error
-    //             if (errorData.error && errorData.error.includes('password Incorrect')) {
-    //                 this.showStatus('Current password is incorrect', 'error');
-    //             } else {
-    //                 this.showStatus('Session expired. Please login again.', 'error');
-    //                 localStorage.removeItem('user');
-    //                 this.currentUser = null;
-    //                 setTimeout(() => {
-    //                     this.showPage('loginPage');
-    //                 }, 2000);
-    //             }
-    //         } else if (response.status === 400) {
-    //             const errorData = await response.json();
-    //             console.error('Password update 400 error:', errorData);
-    //             this.showStatus(errorData.message || 'Invalid request', 'error');
-    //         } else {
-    //             const errorData = await response.json();
-    //             console.error('Password update error:', errorData);
-    //             this.showStatus(errorData.message || errorData.error || 'Failed to update password', 'error');
-    //         }
-    //     } catch (error) {
-    //         console.error('Password update error:', error);
-    //         this.showStatus('Network error updating password. Please check if the backend server is running.', 'error');
-    //     }
-    // }
     private async handlePasswordChange(): Promise<void> {
         const currentPasswordInput = document.getElementById('currentPassword') as HTMLInputElement;
         const newPasswordInput = document.getElementById('newPassword') as HTMLInputElement;
@@ -829,14 +721,6 @@ class SimpleAuth {
                 body: JSON.stringify(body),
                 credentials: 'include'
             });
-            // const response = await fetch(`/api/profile/password`, {
-            //     method: 'PATCH',
-            //     headers: {
-            //         'Content-Type': 'application/json',
-            //     },
-            //     body: JSON.stringify({ currentPassword, newPassword }),
-            //     credentials: 'include'
-            // });
 
             console.log('Password update response status:', response.status);
 
@@ -2271,14 +2155,6 @@ class SimpleAuth {
         // this.setupFriendsRefresh();
     }
 
-    // private setupFriendsRefresh(): void {
-    //     // Refresh friends list every 30 seconds to update online status
-    //     setInterval(() => {
-    //         if (this.currentUser && document.getElementById('friendsSection')?.classList.contains('hidden') === false) {
-    //             this.loadFriendsData();
-    //         }
-    //     }, 30000); // 30 seconds
-    // }
 
     private setupDashboardNavigation(): void {
         // Setup dashboard navigation buttons

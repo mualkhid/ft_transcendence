@@ -167,10 +167,10 @@ export async function handleGoogleCallback(req, reply) {
     // Set cookie with proper settings for your domain
     const cookieOptions = {
       httpOnly: true,
-      secure: false, // Set to false for localhost development
+      secure: false, 
       sameSite: 'lax',
       path: '/',
-      maxAge: 24 * 60 * 60, // 24 hours in seconds
+      maxAge: 24 * 60 * 60, 
     };
     
     // Don't set domain for localhost
