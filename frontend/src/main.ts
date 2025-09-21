@@ -2743,7 +2743,7 @@ class SimpleAuth {
             this.scoreAudio = new Audio('/imgs/point-smooth-beep-230573.mp3');
             this.scoreAudio.preload = 'auto';
             
-            this.endGameAudio = new Audio('/imgs/077512_end-game-90582.mp3');
+            this.endGameAudio = new Audio('/imgs/sound.mp3');
             this.endGameAudio.preload = 'auto';
             
             // Attempt to unlock on first user interaction
@@ -6593,7 +6593,7 @@ class SimpleAuth {
             this.scoreAudio = new Audio('/imgs/point-smooth-beep-230573.mp3');
             this.scoreAudio.preload = 'auto';
             
-            this.endGameAudio = new Audio('/imgs/077512_end-game-90582.mp3');
+            this.endGameAudio = new Audio('/imgs/sound.mp3');
             this.endGameAudio.preload = 'auto';
             
             // Attempt to unlock on first user interaction
