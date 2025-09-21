@@ -2112,6 +2112,8 @@ class SimpleAuth {
             }
             // Reset tournament state and UI
             this.resetTournamentState();
+            // Reset tournament on server to clean up incomplete data
+            this.resetTournamentOnServer();
             // Show power-ups toggle again
             this.showPowerupsToggle('tournament');
         }
@@ -2900,6 +2902,8 @@ class SimpleAuth {
                 if (this.currentUser) {
                     this.handleTournamentPlayerLeave(this.currentUser.username);
                 }
+                // Also reset tournament on server to clean up incomplete data
+                this.resetTournamentOnServer();
             }
         });
     }
@@ -4909,6 +4913,9 @@ class SimpleAuth {
             if (element) element.classList.add('hidden');
         });
 
+        // Reset tournament on server to clean up incomplete data
+        this.resetTournamentOnServer();
+
         this.showStatus('Tournament reset. Select number of players to start a new tournament.', 'info');
     }
 
@@ -6497,7 +6504,38 @@ class SimpleAuth {
             tournamentSetup.classList.remove('hidden');
         }
         
+        // Show player count selection again
+        const tournament4Players = document.getElementById('tournament4Players');
+        if (tournament4Players) {
+            tournament4Players.style.display = 'block';
+        }
+        
+        // Hide all other sections
+        const sections = ['playerNamesForm', 'tournamentBracket', 'currentMatch', 'matchResults', 'tournamentResults'];
+        sections.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) element.classList.add('hidden');
+        });
+        
         console.log('✅ Tournament state and UI reset complete');
+    }
+
+    private async resetTournamentOnServer(): Promise<void> {
+        try {
+            console.log('🔄 Resetting tournament on server...');
+            const response = await fetch('/api/tournament/reset', {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                console.log('✅ Tournament reset on server successfully');
+            } else {
+                console.warn('⚠️ Failed to reset tournament on server:', response.status);
+            }
+        } catch (error) {
+            console.error('❌ Error resetting tournament on server:', error);
+        }
     }
 
     private cleanupGameState(): void {
