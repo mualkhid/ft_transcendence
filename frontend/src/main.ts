@@ -258,24 +258,24 @@ class SimpleAuth {
             });
         }
 
-        // const unanonymizeAccountBtn = document.getElementById('unanonymizeAccountBtn');
-        // if (unanonymizeAccountBtn) {
-        // unanonymizeAccountBtn.addEventListener('click', async () => {
-        //     if (confirm('Restore your original account data?')) {
-        //     try {
-        //         const response = await fetch('/api/user/unanonymize', { method: 'POST', credentials: 'include' });
-        //         if (response.ok) {
-        //         alert('Account restored.');
-        //         window.location.reload();
-        //         } else {
-        //         alert('Failed to restore account.');
-        //         }
-        //     } catch (error) {
-        //         alert('An error occurred while restoring your account.');
-        //     }
-        //     }
-        // });
-        // }
+        const unanonymizeAccountBtn = document.getElementById('unanonymizeAccountBtn');
+        if (unanonymizeAccountBtn) {
+          unanonymizeAccountBtn.addEventListener('click', async () => {
+            if (confirm('Restore your original account data?')) {
+              try {
+                const response = await fetch('/api/user/unanonymize', { method: 'POST', credentials: 'include' });
+                if (response.ok) {
+                  alert('Account restored.');
+                  window.location.reload();
+                } else {
+                  alert('Failed to restore account.');
+                }
+              } catch (error) {
+                alert('An error occurred while restoring your account.');
+              }
+            }
+          });
+        }
     
         const downloadDataBtn = document.getElementById('downloadDataBtn');
         if (downloadDataBtn) {
