@@ -44,6 +44,8 @@ export async function updateUsername (req, reply)
     if (!validator.isAlphanumeric(newUsername))
         throw new ValidationError("username should consist of letters and digits")
 
+    console.log('Received username:', req.body.newUsername);
+    console.log('Username length:', req.body.newUsername.length);
 	const updatedUser = await prisma.user.update({
 		where: {id: id},
 		data: {username: newUsername.trim()},
@@ -54,6 +56,8 @@ export async function updateUsername (req, reply)
 
 		}
 	})
+    console.log('Received username:', req.body.newUsername);
+    console.log('Username length:', req.body.newUsername.length);
 	return reply.status(200).send({message: 'username updated successfully'})
 }
 
