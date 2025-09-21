@@ -779,19 +779,22 @@ class SimpleAuth {
 
             if (response.ok) {
                 const data = await response.json();
-                console.log('Avatar upload response:', data);
+                console.log('✅ Avatar upload response:', data);
                 
                 // Update the avatar display
                 const profileAvatar = document.getElementById('profileAvatar') as HTMLImageElement;
                 if (profileAvatar) {
                     // Add timestamp to prevent caching
-                    profileAvatar.src = `https://${HOST_IP}${data.avatarUrl}?t=${Date.now()}`;
+                    const avatarSrc = `https://${HOST_IP}${data.avatarUrl}?t=${Date.now()}`;
+                    profileAvatar.src = avatarSrc;
+                    console.log('✅ Updated profile avatar src to:', avatarSrc);
                 }
                 
                 // Update current user data
                 if (this.currentUser) {
                     this.currentUser.avatarUrl = data.avatarUrl;
                     localStorage.setItem('user', JSON.stringify(this.currentUser));
+                    console.log('✅ Updated currentUser.avatarUrl to:', data.avatarUrl);
                 }
                 
                 this.showStatus('Avatar uploaded successfully!', 'success');
@@ -922,7 +925,7 @@ class SimpleAuth {
                 <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
                     <div class="flex items-center space-x-3">
                         <div class="relative">
-                            <img src="${user.avatarUrl ? `https://${HOST_IP}${user.avatarUrl}?t=${Date.now()}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}`}" 
+                            <img src="${user.avatarUrl && user.avatarUrl !== '/avatars/default.jpg' ? `https://${HOST_IP}${user.avatarUrl}?t=${Date.now()}` : `./imgs/default.jpg`}" 
                                  alt="${user.username}" 
                                  class="w-12 h-12 rounded-full object-cover border-2 border-white border-opacity-30">
                         </div>
@@ -958,7 +961,7 @@ class SimpleAuth {
                 <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
                     <div class="flex items-center space-x-3">
                         <div class="relative">
-                            <img src="${friend.avatarUrl ? `https://${HOST_IP}${friend.avatarUrl}?t=${Date.now()}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(friend.username)}`}" 
+                            <img src="${friend.avatarUrl && friend.avatarUrl !== '/avatars/default.jpg' ? `https://${HOST_IP}${friend.avatarUrl}?t=${Date.now()}` : `./imgs/default.jpg`}" 
                                  alt="${friend.username}" 
                                  class="w-12 h-12 rounded-full object-cover border-2 border-white border-opacity-30">
                             <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${isOnline ? 'bg-green-400' : 'bg-gray-400'}"></div>
@@ -1001,7 +1004,7 @@ class SimpleAuth {
             <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
                 <div class="flex items-center space-x-3">
                     <div class="relative">
-                        <img src="${request.avatarUrl ? `https://${HOST_IP}${request.avatarUrl}?t=${Date.now()}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(request.username)}`}" 
+                        <img src="${request.avatarUrl && request.avatarUrl !== '/avatars/default.jpg' ? `https://${HOST_IP}${request.avatarUrl}?t=${Date.now()}` : `./imgs/default.jpg`}" 
                              alt="${request.username}" 
                              class="w-12 h-12 rounded-full object-cover border-2 border-white border-opacity-30">
                     </div>
@@ -3643,14 +3646,21 @@ class SimpleAuth {
 
         // Update avatar
         if (profileAvatar) {
-            if (this.currentUser.avatarUrl) {
-                // Use the user's custom avatar
-                profileAvatar.src = `https://${HOST_IP}${this.currentUser.avatarUrl}?t=${Date.now()}`;
-                console.log('Updated avatar with custom image:', this.currentUser.avatarUrl);
+            console.log('🔍 Avatar debug info:', {
+                hasAvatarUrl: !!this.currentUser.avatarUrl,
+                avatarUrl: this.currentUser.avatarUrl,
+                currentUser: this.currentUser
+            });
+            
+            if (this.currentUser.avatarUrl && this.currentUser.avatarUrl !== '/avatars/default.jpg') {
+                // Use the user's custom avatar (not the default one from database)
+                const avatarSrc = `https://${HOST_IP}${this.currentUser.avatarUrl}?t=${Date.now()}`;
+                profileAvatar.src = avatarSrc;
+                console.log('✅ Updated avatar with custom image:', avatarSrc);
             } else {
-                // Use default avatar with username
-                profileAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(this.currentUser.username || 'Player')}`;
-                console.log('Updated avatar with default image for:', this.currentUser.username);
+                // Use default avatar image (either no avatarUrl or it's the default one)
+                profileAvatar.src = `./imgs/default.jpg`;
+                console.log('✅ Updated avatar with default image for:', this.currentUser.username);
             }
         }
 
