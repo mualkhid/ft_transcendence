@@ -4270,7 +4270,13 @@ class SimpleAuth {
         if (gameSection)
             gameSection.classList.remove('active');
         // Check if this was the last match in the current round
+        console.log(`Tournament match completion check:`);
+        console.log(`Current match: ${this.tournamentState.currentMatch}`);
+        console.log(`Total matches in current round: ${this.tournamentState.matches.length}`);
+        console.log(`Current round: ${this.tournamentState.currentRound}`);
+        console.log(`Total rounds: ${this.tournamentState.bracket.length}`);
         if (this.tournamentState.currentMatch >= this.tournamentState.matches.length - 1) {
+            console.log('Last match of current round completed, advancing to next round...');
             // Round is complete, automatically advance to next round
             setTimeout(() => {
                 this.nextMatch();
@@ -4371,28 +4377,46 @@ class SimpleAuth {
     }
     nextMatch() {
         this.tournamentState.currentMatch++;
+        console.log(`Next match called:`);
+        console.log(`Current match: ${this.tournamentState.currentMatch}`);
+        console.log(`Total matches in current round: ${this.tournamentState.matches.length}`);
+        console.log(`Current round: ${this.tournamentState.currentRound}`);
         // Hide results section
         const matchResults = document.getElementById('matchResults');
         if (matchResults)
             matchResults.classList.add('hidden');
         // Check if current round is complete
         if (this.tournamentState.currentMatch >= this.tournamentState.matches.length) {
+            console.log('Current round is complete, generating next round...');
             // Round is complete, generate next round
             this.generateNextRound();
         }
         else {
+            console.log('Showing next match in current round...');
             // Show next match in current round
             this.showNextMatch();
         }
     }
     generateNextRound() {
         const currentRound = this.tournamentState.bracket[this.tournamentState.currentRound];
+        // Check if current round exists
+        if (!currentRound) {
+            console.log('No current round found, ending tournament');
+            this.showTournamentResults();
+            return;
+        }
         const winners = currentRound.map(match => match.winner).filter(Boolean);
         console.log(`Generating next round from ${winners.length} winners:`, winners);
         // Only end tournament if we have exactly 1 winner
         if (winners.length === 1) {
             console.log('Tournament complete - single winner found');
             // Tournament complete
+            this.showTournamentResults();
+            return;
+        }
+        // Check if we have enough winners to create at least one match
+        if (winners.length < 2) {
+            console.log('Not enough winners to create next round, ending tournament');
             this.showTournamentResults();
             return;
         }
@@ -4406,6 +4430,18 @@ class SimpleAuth {
                     winner: undefined
                 });
             }
+            else {
+                // If there's an odd number of winners, the last player gets a bye
+                console.log(`Player ${winners[i]} gets a bye to the next round`);
+                // For now, we'll skip the bye and just end the tournament
+                // In a more complex system, we'd handle byes properly
+            }
+        }
+        // If no matches were created, end the tournament
+        if (nextRound.length === 0) {
+            console.log('No matches could be created for next round, ending tournament');
+            this.showTournamentResults();
+            return;
         }
         console.log(`Generated ${nextRound.length} matches for next round:`, nextRound);
         this.tournamentState.bracket.push(nextRound);
@@ -5859,14 +5895,21 @@ class SimpleAuth {
     }
     resetTournamentState() {
         console.log('🔄 Resetting tournament state and UI...');
-        // Reset tournament state
-        this.tournamentState = {
-            players: [],
-            currentRound: 0,
-            currentMatch: 0,
-            matches: [],
-            bracket: []
-        };
+        // Only reset if tournament is not in progress
+        if (this.tournamentState.players.length === 0 || this.tournamentState.bracket.length === 0) {
+            console.log('Tournament not in progress, resetting state...');
+            // Reset tournament state
+            this.tournamentState = {
+                players: [],
+                currentRound: 0,
+                currentMatch: 0,
+                matches: [],
+                bracket: []
+            };
+        }
+        else {
+            console.log('Tournament in progress, preserving state...');
+        }
         // Clear tournament UI elements
         const bracketContainer = document.getElementById('tournamentBracket');
         if (bracketContainer) {
