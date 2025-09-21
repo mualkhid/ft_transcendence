@@ -37,16 +37,14 @@ export async function createNewTournament(name, aliases, creatorId = null) {
                 data: {
                     name: name || 'Tournament',
                     maxPlayers: aliases.length,
-                    status: 'ONGOING',
-                    creatorId,
-                    currentRound: 0
+                    status: 'ACTIVE',
+                    createdBy: creatorId
                 }
             });
 
             const playerData = cleanAliases.map((alias, index) => ({
                 tournamentId: newTournament.id,
-                alias: alias,
-                playerOrder: index + 1,
+                name: alias,
                 userId: null
             }));
 
@@ -59,7 +57,7 @@ export async function createNewTournament(name, aliases, creatorId = null) {
             return await tx.tournament.findUnique({
                 where: { id: newTournament.id },
                 include: {
-                    players: { orderBy: { playerOrder: 'asc' } },
+                    players: true,
                     matches: {
                         orderBy: [
                             { roundNumber: 'asc' },
@@ -123,7 +121,7 @@ export async function getCurrentMatch(tournamentId = null)
         else
         {
             tournament = await prisma.tournament.findFirst({
-                where: { status: 'ONGOING' },
+                where: { status: 'ACTIVE' },
                 orderBy: { createdAt: 'desc' }
             });
         }
@@ -264,8 +262,8 @@ async function advanceToNextRound(tx, tournamentId, completedRound)
         await tx.tournament.update({
             where: { id: tournamentId },
             data: {
-                status: 'FINISHED',
-                winnerAlias: winnerAliases[0]
+                status: 'COMPLETED',
+                completedAt: new Date()
             }
         });
         return;
@@ -289,9 +287,10 @@ async function advanceToNextRound(tx, tournamentId, completedRound)
         data: nextRoundMatches
     });
 
+    // Update tournament status if needed
     await tx.tournament.update({
         where: { id: tournamentId },
-        data: { currentRound: nextRound - 1 }
+        data: { updatedAt: new Date() }
     });
 }
 
@@ -308,7 +307,7 @@ export async function getTournament(tournamentId = null)
             tournament = await prisma.tournament.findUnique({
                 where: { id: tournamentId },
                 include: {
-                    players: { orderBy: { playerOrder: 'asc' } },
+                    players: true,
                     matches: {
                         orderBy: [
                             { roundNumber: 'asc' },
@@ -321,10 +320,10 @@ export async function getTournament(tournamentId = null)
         else
         {
             tournament = await prisma.tournament.findFirst({
-                where: { status: { in: ['ONGOING', 'FINISHED'] } },
+                where: { status: { in: ['ACTIVE', 'COMPLETED'] } },
                 orderBy: { createdAt: 'desc' },
                 include: {
-                    players: { orderBy: { playerOrder: 'asc' } },
+                    players: true,
                     matches: {
                         orderBy: [
                             { roundNumber: 'asc' },
@@ -384,7 +383,7 @@ export async function resetTournament(tournamentId = null)
         else
         {
             const tournaments = await prisma.tournament.findMany({
-                where: { status: { in: ['ONGOING', 'FINISHED'] } },
+                where: { status: { in: ['ACTIVE', 'COMPLETED'] } },
                 select: { id: true }
             });
             tournamentsToDelete = tournaments.map(t => t.id);
@@ -438,12 +437,12 @@ function mapTournamentForResponse(tournament)
         name: tournament.name,
         maxPlayers: tournament.maxPlayers,
         status: tournament.status.toLowerCase(),
-        participants: tournament.players.map(p => ({
-            id: p.playerOrder,
-            alias: p.alias
+        participants: tournament.players.map((p, index) => ({
+            id: index + 1,
+            alias: p.name
         })),
         bracket,
-        currentRound: tournament.currentRound,
-        winner: tournament.winnerAlias ? { alias: tournament.winnerAlias } : null
+        currentRound: 0, // Default since we don't have this field
+        winner: null // Default since we don't have this field
     };
 }
