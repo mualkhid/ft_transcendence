@@ -18,6 +18,7 @@ class SimpleAuth {
         this.remoteGameLeaveHandlersSetup = false;
         this.remoteGameEventHandlers = null;
         this.remoteGameAnimationFrameId = null;
+        this.colorblindMode = false;
         // AI Game state and configuration
         this.aiGameState = {
             ballX: 400,
@@ -85,9 +86,9 @@ class SimpleAuth {
         };
         this.currentTournamentMatch = null;
         this.originalEndGame = null;
-        this.colorblindMode = false;
         this.init();
         this.initializeAudio();
+        this.initializeColorblindMode();
         // Add global test function for debugging
         window.testPowerUps = () => {
             console.log('Testing power-ups...');
@@ -105,6 +106,9 @@ class SimpleAuth {
                 console.log('No gameState available');
             }
         };
+    }
+    isLoggedIn() {
+        return this.currentUser !== null;
     }
     init() {
         this.checkAuthStatus();
@@ -1238,6 +1242,10 @@ class SimpleAuth {
             console.log('Registration response data:', data);
             if (response.ok) {
                 console.log('Registration successful');
+                // Reset contrast mode on registration
+                this.colorblindMode = false;
+                localStorage.removeItem('colorblindMode');
+                this.applyColorblindMode();
                 this.showStatus('Registration successful! Redirecting to login...', 'success');
                 setTimeout(() => {
                     this.showPage('loginPage');
@@ -1284,6 +1292,10 @@ class SimpleAuth {
             if (response.ok) {
                 // Success - handle login
                 this.currentUser = data.user;
+                // Reset contrast mode on login
+                this.colorblindMode = false;
+                localStorage.removeItem('colorblindMode');
+                this.applyColorblindMode();
                 this.showPage('mainApp');
                 this.loadUserProfile();
             }
@@ -1560,6 +1572,10 @@ class SimpleAuth {
         }
         this.currentUser = null;
         localStorage.removeItem('user');
+        // Reset contrast mode on logout
+        this.colorblindMode = false;
+        localStorage.removeItem('colorblindMode');
+        this.applyColorblindMode();
         this.showStatus('Logged out successfully', 'success');
         setTimeout(() => {
             this.showPage('registrationPage');
@@ -6232,9 +6248,18 @@ class SimpleAuth {
      * Initialize colorblind mode from localStorage
      */
     initializeColorblindMode() {
-        const savedMode = localStorage.getItem('colorblindMode');
-        if (savedMode === 'true') {
-            this.colorblindMode = true;
+        // Only restore contrast mode if user is logged in
+        if (this.isLoggedIn()) {
+            const savedMode = localStorage.getItem('colorblindMode');
+            if (savedMode === 'true') {
+                this.colorblindMode = true;
+                this.applyColorblindMode();
+            }
+        }
+        else {
+            // Reset contrast mode when not logged in
+            this.colorblindMode = false;
+            localStorage.removeItem('colorblindMode');
             this.applyColorblindMode();
         }
     }
@@ -6246,8 +6271,10 @@ class SimpleAuth {
         this.colorblindMode = !this.colorblindMode;
         console.log('New contrast mode:', this.colorblindMode);
         this.applyColorblindMode();
-        // Save preference to localStorage
-        localStorage.setItem('colorblindMode', this.colorblindMode.toString());
+        // Save preference only if logged in
+        if (this.isLoggedIn()) {
+            localStorage.setItem('colorblindMode', this.colorblindMode.toString());
+        }
         // Update button text
         const colorblindToggle = document.getElementById('colorblindToggle');
         if (colorblindToggle) {

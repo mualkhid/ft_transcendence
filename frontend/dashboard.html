@@ -418,6 +418,42 @@
             background: #ff6b00 !important;
             color: #000000 !important;
         }
+        
+        /* Contrast Mode Overlay */
+        .contrast-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000000;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .colorblind-mode .contrast-overlay {
+            opacity: 1;
+        }
+        
+        .colorblind-mode #mainApp,
+        .colorblind-mode .page {
+            background-image: none !important;
+            background: #000000 !important;
+        }
+        
+        .colorblind-mode .main-nav {
+            z-index: 10 !important;
+            position: relative !important;
+        }
+        
+        .colorblind-mode .main-nav-link,
+        .colorblind-mode .game-option {
+            z-index: 11 !important;
+            position: relative !important;
+        }
+        
             background: rgba(255, 255, 255, 0.03);
             border-radius: 10px;
             padding: 20px;
@@ -629,6 +665,8 @@
     </style>
 </head>
 <body>
+    <!-- Contrast Mode Overlay -->
+    <div id="contrastOverlay" class="contrast-overlay"></div>
     <!-- Main Website Navigation -->
     <nav class="main-nav">
         <div class="main-nav-content">

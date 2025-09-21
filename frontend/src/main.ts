@@ -44,6 +44,7 @@ class SimpleAuth {
     private remoteGameLeaveHandlersSetup: boolean = false;
     private remoteGameEventHandlers: any = null;
     private remoteGameAnimationFrameId: number | null = null;
+    private colorblindMode: boolean = false;
     
     // AI Game state and configuration
     private aiGameState = {
@@ -81,6 +82,7 @@ class SimpleAuth {
     constructor() {
         this.init();
         this.initializeAudio();
+        this.initializeColorblindMode();
         
         // Add global test function for debugging
         (window as any).testPowerUps = () => {
@@ -101,6 +103,10 @@ class SimpleAuth {
         };
     }
 
+    private isLoggedIn(): boolean {
+        return this.currentUser !== null;
+    }
+
     private init(): void {
         this.checkAuthStatus();
         this.setupEventListeners();
@@ -111,6 +117,7 @@ class SimpleAuth {
         this.setupBrowserHistory();
         this.setupAllPowerupsToggles();
     }
+
 
     private setupEventListeners(): void {
         // Form submissions
@@ -1311,6 +1318,12 @@ class SimpleAuth {
 
             if (response.ok) {
                 console.log('Registration successful');
+                
+                // Reset contrast mode on registration
+                this.colorblindMode = false;
+                localStorage.removeItem('colorblindMode');
+                this.applyColorblindMode();
+                
                 this.showStatus('Registration successful! Redirecting to login...', 'success');
                 setTimeout(() => {
                     this.showPage('loginPage');
@@ -1363,6 +1376,12 @@ class SimpleAuth {
             if (response.ok) {
                 // Success - handle login
                 this.currentUser = data.user;
+                
+                // Reset contrast mode on login
+                this.colorblindMode = false;
+                localStorage.removeItem('colorblindMode');
+                this.applyColorblindMode();
+                
                 this.showPage('mainApp');
                 this.loadUserProfile();
             } else if (response.status === 401 && data.require2FA) {
@@ -1676,6 +1695,11 @@ class SimpleAuth {
 
         this.currentUser = null;
         localStorage.removeItem('user');
+        
+        // Reset contrast mode on logout
+        this.colorblindMode = false;
+        localStorage.removeItem('colorblindMode');
+        this.applyColorblindMode();
         
         this.showStatus('Logged out successfully', 'success');
         setTimeout(() => {
@@ -3969,7 +3993,6 @@ class SimpleAuth {
 
     private currentTournamentMatch: {player1: string, player2: string, winner?: string} | null = null;
     private originalEndGame: ((winner: number) => Promise<void>) | null = null;
-    private colorblindMode: boolean = false;
 
     private async recordTournamentResult(winner: string, loser: string): Promise<void> {
         console.log('=== RECORDING TOURNAMENT RESULT ===');
@@ -7088,9 +7111,17 @@ class SimpleAuth {
      * Initialize colorblind mode from localStorage
      */
     private initializeColorblindMode(): void {
-        const savedMode = localStorage.getItem('colorblindMode');
-        if (savedMode === 'true') {
-            this.colorblindMode = true;
+        // Only restore contrast mode if user is logged in
+        if (this.isLoggedIn()) {
+            const savedMode = localStorage.getItem('colorblindMode');
+            if (savedMode === 'true') {
+                this.colorblindMode = true;
+                this.applyColorblindMode();
+            }
+        } else {
+            // Reset contrast mode when not logged in
+            this.colorblindMode = false;
+            localStorage.removeItem('colorblindMode');
             this.applyColorblindMode();
         }
     }
@@ -7104,8 +7135,10 @@ class SimpleAuth {
         console.log('New contrast mode:', this.colorblindMode);
         this.applyColorblindMode();
         
-        // Save preference to localStorage
-        localStorage.setItem('colorblindMode', this.colorblindMode.toString());
+        // Save preference only if logged in
+        if (this.isLoggedIn()) {
+            localStorage.setItem('colorblindMode', this.colorblindMode.toString());
+        }
         
         // Update button text
         const colorblindToggle = document.getElementById('colorblindToggle');
