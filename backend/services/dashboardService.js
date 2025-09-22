@@ -115,7 +115,7 @@ export class DashboardService {
                     wins: 0,
                     losses: 0,
                     winRate: 0,
-                    difficultyStats: {},
+                    
                     recentGames: [],
                     averageScore: 0,
                     bestScore: 0,
@@ -153,8 +153,7 @@ export class DashboardService {
             const losses = totalGames - wins;
             const winRate = totalGames > 0 ? (wins / totalGames * 100).toFixed(1) : 0;
 
-            // Get difficulty breakdown
-            const difficultyStats = await this.getAIGameDifficultyStats();
+            // Difficulty breakdown removed
 
             // Get recent AI game performance
             const recentAIGames = await prisma.match.findMany({
@@ -175,7 +174,7 @@ export class DashboardService {
                 wins,
                 losses,
                 winRate: parseFloat(winRate),
-                difficultyStats,
+                
                 recentGames: recentAIGames,
                 averageScore: await this.calculateAverageScore('AI'),
                 bestScore: await this.getBestScore('AI'),
@@ -770,15 +769,7 @@ export class DashboardService {
     /**
      * Helper Methods
      */
-    static async getAIGameDifficultyStats() {
-        // This would be implemented when difficulty tracking is added to the database
-        return {
-            EASY: { games: 0, wins: 0, winRate: 0 },
-            MEDIUM: { games: 0, wins: 0, winRate: 0 },
-            HARD: { games: 0, wins: 0, winRate: 0 },
-            EXPERT: { games: 0, wins: 0, winRate: 0 }
-        };
-    }
+    // Difficulty stats removed (unified AI)
 
     static async getOpponentStats() {
         try {

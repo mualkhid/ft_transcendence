@@ -7,7 +7,7 @@
  * 
  * Benefits:
  * - Single source of truth for all game settings
- * - Easy to modify game difficulty, speed, and dimensions
+ * - Easy to modify game speed and dimensions
  * - No more magic numbers scattered throughout the code
  * - Professional software engineering practices
  */
@@ -38,41 +38,6 @@ export const GAME_CONFIG = {
         COLOR: '#facc15'  // Yellow
     },
     
-    // AI Difficulty levels
-    AI_DIFFICULTY: {
-        EASY: {
-            name: 'Easy',
-            description: 'AI makes more mistakes and has slower reactions',
-            tolerance: 25,
-            predictionAccuracy: 0.7,
-            reactionDelay: 100,
-            color: '#10b981'  // Green
-        },
-        MEDIUM: {
-            name: 'Medium',
-            description: 'Balanced AI performance',
-            tolerance: 10,
-            predictionAccuracy: 0.9,
-            reactionDelay: 50,
-            color: '#f59e0b'  // Orange
-        },
-        HARD: {
-            name: 'Hard',
-            description: 'AI is very accurate with quick reactions',
-            tolerance: 5,
-            predictionAccuracy: 0.95,
-            reactionDelay: 25,
-            color: '#ef4444'  // Red
-        },
-        EXPERT: {
-            name: 'Expert',
-            description: 'AI is nearly perfect with instant reactions',
-            tolerance: 2,
-            predictionAccuracy: 0.98,
-            reactionDelay: 16,
-            color: '#7c3aed'  // Purple
-        }
-    },
     
     // Game rules and timing
     GAME: {
@@ -117,15 +82,7 @@ export function validateGameConfig() {
     if (GAME_CONFIG.BALL.RADIUS <= 0) errors.push('Ball radius must be positive');
     if (GAME_CONFIG.GAME.WINNING_SCORE <= 0) errors.push('Winning score must be positive');
     
-    // Validate AI difficulty settings
-    Object.entries(GAME_CONFIG.AI_DIFFICULTY).forEach(([level, config]) => {
-        if (config.speed <= 0) errors.push(`${level} AI speed must be positive`);
-        if (config.tolerance < 0) errors.push(`${level} AI tolerance must be non-negative`);
-        if (config.predictionAccuracy < 0 || config.predictionAccuracy > 1) {
-            errors.push(`${level} AI prediction accuracy must be between 0 and 1`);
-        }
-        if (config.reactionDelay < 0) errors.push(`${level} AI reaction delay must be non-negative`);
-    });
+    // Difficulty validation removed (using unified AI parameters)
     
     if (errors.length > 0) {
         throw new Error(`Game configuration validation failed:\n${errors.join('\n')}`);
@@ -170,9 +127,6 @@ export function getPaddleBounds(paddleY, isPlayer = true) {
     };
 }
 
-// Helper function to get AI difficulty configuration
-export function getAIDifficulty(difficultyLevel = 'MEDIUM') {
-    return GAME_CONFIG.AI_DIFFICULTY[difficultyLevel] || GAME_CONFIG.AI_DIFFICULTY.MEDIUM;
-}
+// Difficulty helper removed (using unified AI parameters)
 
 export default GAME_CONFIG;
