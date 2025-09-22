@@ -19,6 +19,7 @@ class SimpleAuth {
         this.remoteGameEventHandlers = null;
         this.remoteGameAnimationFrameId = null;
         this.colorblindMode = false;
+        this.statusTimeout = null;
         // AI Game state and configuration
         this.aiGameState = {
             ballX: 400,
@@ -1233,6 +1234,8 @@ class SimpleAuth {
                 this.colorblindMode = false;
                 localStorage.removeItem('colorblindMode');
                 this.applyColorblindMode();
+                // Show success message
+                this.showStatus('Login successful! Welcome back!', 'success');
                 this.showPage('mainApp');
                 this.showSection('homeSection');
                 this.loadUserProfile();
@@ -1503,14 +1506,47 @@ class SimpleAuth {
     }
     showStatus(message, type = 'info') {
         const statusDiv = document.getElementById('status');
-        if (statusDiv) {
-            statusDiv.textContent = message;
-            statusDiv.className = `status ${type}`;
-            statusDiv.style.display = 'block';
+        if (!statusDiv) {
+            console.error('Status div not found');
+            return;
+        }
+        // Clear any existing timeouts
+        if (this.statusTimeout) {
+            clearTimeout(this.statusTimeout);
+        }
+        statusDiv.textContent = message;
+        // Set responsive classes and colors
+        const baseClasses = 'fixed top-4 right-4 p-3 sm:p-4 rounded-lg shadow-lg z-50 max-w-xs sm:max-w-sm md:max-w-md text-sm sm:text-base font-medium';
+        let typeClasses = '';
+        switch (type) {
+            case 'success':
+                typeClasses = 'bg-green-500 text-white border border-green-600';
+                break;
+            case 'error':
+                typeClasses = 'bg-red-500 text-white border border-red-600';
+                break;
+            case 'info':
+            default:
+                typeClasses = 'bg-blue-500 text-white border border-blue-600';
+                break;
+        }
+        statusDiv.className = `${baseClasses} ${typeClasses}`;
+        statusDiv.style.display = 'block';
+        statusDiv.style.transform = 'translateX(100%)';
+        statusDiv.style.transition = 'transform 0.3s ease-in-out';
+        // Force reflow to ensure the initial transform is applied
+        statusDiv.offsetHeight;
+        // Trigger slide-in animation
+        requestAnimationFrame(() => {
+            statusDiv.style.transform = 'translateX(0)';
+        });
+        // Auto-hide after 5 seconds with slide-out animation
+        this.statusTimeout = setTimeout(() => {
+            statusDiv.style.transform = 'translateX(100%)';
             setTimeout(() => {
                 statusDiv.style.display = 'none';
-            }, 5000);
-        }
+            }, 300);
+        }, 5000);
     }
     showPage(pageId) {
         const pages = document.querySelectorAll('.page');
