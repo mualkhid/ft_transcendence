@@ -705,7 +705,13 @@ class SimpleAuth {
             else {
                 const errorData = await response.json();
                 console.error('Username update error:', errorData);
-                this.showStatus(errorData.error || 'Failed to update username', 'error');
+                
+                // Handle unique constraint errors with user-friendly messages
+                if (errorData.error && (errorData.error.includes('Unique constraints') || errorData.error.includes('username') || errorData.error.includes('User_username_key'))) {
+                    this.showStatus('Username already exists', 'error');
+                } else {
+                    this.showStatus(errorData.error || 'Failed to update username', 'error');
+                }
             }
         }
         catch (error) {
@@ -727,7 +733,7 @@ class SimpleAuth {
         }
         const requiresCurrent = !!this.currentUser.hasPassword;
         if ((requiresCurrent && (!currentPassword || !newPassword)) || (!requiresCurrent && !newPassword)) {
-            this.showStatus('Please enter ' + (requiresCurrent ? 'both curreent and new passwords' : 'a new password'), 'error');
+            this.showStatus('Please enter ' + (requiresCurrent ? 'both current and new passwords' : 'a new password'), 'error');
             return;
         }
 
@@ -1305,15 +1311,24 @@ class SimpleAuth {
                 this.colorblindMode = false;
                 localStorage.removeItem('colorblindMode');
                 this.applyColorblindMode();
-                
+
                 this.showStatus('Registration successful! Redirecting to login...', 'success');
                 setTimeout(() => {
                     this.showPage('loginPage');
                 }, 2000);
             } else {
-                // Check if it's a password validation error and show custom message
+                // Check for specific error types and show custom messages
                 if (data.error && data.error.includes('password')) {
                     this.showStatus('Enter valid characters, check password requirements', 'error');
+                } else if (data.error && (data.error.includes('Unique constraints') || data.error.includes('username') || data.error.includes('email'))) {
+                    // Handle unique constraint errors with user-friendly messages
+                    if (data.error.includes('username') || data.error.includes('User_username_key')) {
+                        this.showStatus('Username already exists', 'error');
+                    } else if (data.error.includes('email') || data.error.includes('User_email_key')) {
+                        this.showStatus('Email already exists', 'error');
+                    } else {
+                        this.showStatus('Username or email already exists', 'error');
+                    }
                 } else {
                     this.showStatus(data.error || 'Registration failed', 'error');
                 }

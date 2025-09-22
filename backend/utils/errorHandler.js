@@ -9,8 +9,19 @@ function handlePrismaErrors(e, reply) {
 	if (e.code === "P2001"|| e.code === "P2015" || e.code === "P2018" || e.code === "P2025")
 		return reply.status(404).send({error:clean})
  
-	if (e.code === "P2002" || e.code === "P2003" || e.code === "P2014" || e.code === "P2034")
+	if (e.code === "P2002" || e.code === "P2003" || e.code === "P2014" || e.code === "P2034") {
+		// Handle unique constraint violations with user-friendly messages
+		if (e.code === "P2002") {
+			// Check if it's a username or email constraint
+			if (clean.includes('username') || clean.includes('User_username_key')) {
+				return reply.status(409).send({error: 'Username already exists'});
+			}
+			if (clean.includes('email') || clean.includes('User_email_key')) {
+				return reply.status(409).send({error: 'Email already exists'});
+			}
+		}
 		return reply.status(409).send({error:clean})
+	}
 	
 	if (e.code === "P2000" || e.code === "P2004" || e.code === "P2005" || e.code === "P2006" 
 		|| e.code === "P2007" || e.code === "P2008" || e.code === "P2009"
