@@ -745,7 +745,7 @@
                     this.setupEventListeners();
                     this.renderDashboard();
                 } catch (error) {
-                    console.error('Dashboard initialization failed:', error);
+                    // Dashboard initialization failed
                     this.showError('Failed to initialize dashboard');
                 }
             }
@@ -759,7 +759,7 @@
                     
                     this.dashboardData = await response.json();
                 } catch (error) {
-                    console.error('Error loading dashboard data:', error);
+                    // Error loading dashboard data
                     this.showError('Failed to load dashboard data. Please try again.');
                 }
             }
@@ -960,7 +960,7 @@
                     return payload.username || payload.email || 'User';
                 }
             } catch (error) {
-                console.error('Error parsing token:', error);
+                // Error parsing token
             }
             return null;
         }

@@ -56,7 +56,7 @@ export class DashboardService {
                 }
             };
         } catch (error) {
-            console.error('Error getting user dashboard:', error);
+            // Error getting user dashboard
             throw new Error('Failed to load dashboard data');
         }
     }
@@ -93,7 +93,7 @@ export class DashboardService {
                 }
             };
         } catch (error) {
-            console.error('Error getting general dashboard:', error);
+            // Error getting general dashboard
             throw new Error('Failed to load general dashboard data');
         }
     }
@@ -183,7 +183,7 @@ export class DashboardService {
                 currentStreak: await this.getCurrentStreak('AI')
             };
         } catch (error) {
-            console.error('Error getting AI game stats:', error);
+            // Error getting AI game stats
             throw error;
         }
     }
@@ -265,7 +265,7 @@ export class DashboardService {
                 averageScore: parseFloat(averageScore)
             };
         } catch (error) {
-            console.error('Error getting local game stats:', error);
+            // Error getting local game stats
             throw error;
         }
     }
@@ -342,7 +342,7 @@ export class DashboardService {
                 currentStreak: await this.getCurrentStreak('multiplayer')
             };
         } catch (error) {
-            console.error('Error getting multiplayer stats:', error);
+            // Error getting multiplayer stats
             throw error;
         }
     }
@@ -386,7 +386,7 @@ export class DashboardService {
                 bestScore: 0     // Would need to calculate from match players
             };
         } catch (error) {
-            console.error('Error getting general multiplayer stats:', error);
+            // Error getting general multiplayer stats
             throw error;
         }
     }
@@ -469,7 +469,7 @@ export class DashboardService {
                 averageScore
             };
         } catch (error) {
-            console.error('Error getting tournament stats:', error);
+            // Error getting tournament stats
             throw error;
         }
     }
@@ -486,11 +486,11 @@ export class DashboardService {
             });
 
             if (!user) {
-                console.log('❌ No user found for userId:', userId);
+                // No user found for userId
                 return [];
             }
 
-            console.log('🔍 Looking for recent games for user:', user.username);
+            // Looking for recent games for user
 
             const recentGames = await prisma.match.findMany({
                 where: {
@@ -507,8 +507,7 @@ export class DashboardService {
                 take: limit
             });
 
-            console.log('🎮 Found recent games:', recentGames.length, 'games');
-            console.log('🎮 Recent games data:', recentGames);
+            // Found recent games
 
             return recentGames.map(game => {
                 const playerScore = game.players.find(p => p.alias === user.username)?.score || 0;
@@ -548,7 +547,7 @@ export class DashboardService {
                 };
             });
         } catch (error) {
-            console.error('Error getting recent games:', error);
+            // Error getting recent games
             throw error;
         }
     }
@@ -582,7 +581,7 @@ export class DashboardService {
                 peakPerformance: await this.getPeakPerformance(userId)
             };
         } catch (error) {
-            console.error('Error getting performance metrics:', error);
+            // Error getting performance metrics
             throw error;
         }
     }
@@ -629,7 +628,7 @@ export class DashboardService {
                 progress: this.getAchievementProgress(achievement, userStats)
             }));
         } catch (error) {
-            console.error('Error getting user achievements:', error);
+            // Error getting user achievements
             return [];
         }
     }
@@ -821,7 +820,7 @@ export class DashboardService {
 
             return Math.round(totalScore / matches.length);
         } catch (error) {
-            console.error('Error calculating average score:', error);
+            // Error calculating average score
             return 0;
         }
     }
@@ -878,7 +877,7 @@ export class DashboardService {
 
             return longestStreak;
         } catch (error) {
-            console.error('Error calculating longest win streak:', error);
+            // Error calculating longest win streak
             return 0;
         }
     }
@@ -910,7 +909,7 @@ export class DashboardService {
 
             return currentStreak;
         } catch (error) {
-            console.error('Error calculating current streak:', error);
+            // Error calculating current streak
             return 0;
         }
     }
@@ -935,7 +934,7 @@ export class DashboardService {
 
             return tournament;
         } catch (error) {
-            console.error('Error getting current tournament:', error);
+            // Error getting current tournament
             return null;
         }
     }

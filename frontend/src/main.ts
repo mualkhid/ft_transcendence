@@ -319,7 +319,7 @@ class SimpleAuth {
                     alert('Failed to delete account.');
                 }
                 } catch (error) {
-                console.error('Error deleting account:', error);
+                // Error deleting account
                 alert('An error occurred while deleting your account.');
                 }
             }
@@ -339,7 +339,7 @@ class SimpleAuth {
                     alert('Failed to anonymize account.');
                 }
                 } catch (error) {
-                console.error('Error anonymizing account:', error);
+                // Error anonymizing account
                 alert('An error occurred while anonymizing your account.');
                 }
             }
@@ -396,7 +396,7 @@ class SimpleAuth {
                         alert('Failed to download data.');
                     }
                 } catch (error) {
-                    console.error('Error downloading data:', error);
+                    // Error downloading data
                     alert('An error occurred while downloading your data.');
                 }
             });
@@ -500,7 +500,7 @@ class SimpleAuth {
                 this.showStatus(data.error || 'Failed to setup 2FA', 'error');
             }
         } catch (error) {
-            console.error('Error setting up 2FA:', error);
+            // Error setting up 2FA
             this.showStatus('An error occurred while setting up 2FA.', 'error');
         }
     }
@@ -549,7 +549,7 @@ class SimpleAuth {
                 this.showStatus(errorData.error || 'Invalid verification code', 'error');
             }
         } catch (error) {
-            console.error('Error verifying 2FA:', error);
+            // Error verifying 2FA
             this.showStatus('An error occurred while verifying 2FA.', 'error');
         }
     }
@@ -658,7 +658,7 @@ class SimpleAuth {
                 return;
             }
         } catch (error) {
-            console.error('Health check failed:', error);
+            // Health check failed
             this.showStatus('Cannot connect to server. Please make sure the backend is running.', 'error');
             return;
         }
@@ -694,7 +694,7 @@ class SimpleAuth {
             }
             else if (response.status === 401) {
                 const errorData = await response.json();
-                console.error('Username update 401 error:', errorData);
+                // Username update 401 error
                 this.showStatus('Session expired. Please login again.', 'error');
                 localStorage.removeItem('user');
                 this.currentUser = null;
@@ -704,7 +704,7 @@ class SimpleAuth {
             }
             else {
                 const errorData = await response.json();
-                console.error('Username update error:', errorData);
+                // Username update error
                 
                 // Handle unique constraint errors with user-friendly messages
                 if (errorData.error && (errorData.error.includes('Unique constraints') || errorData.error.includes('username') || errorData.error.includes('User_username_key'))) {
@@ -715,7 +715,7 @@ class SimpleAuth {
             }
         }
         catch (error) {
-            console.error('Error updating username:', error);
+            // Error updating username
             this.showStatus('Network error updating username. Please check if the backend server is running.', 'error');
         } 
     }
@@ -778,7 +778,7 @@ class SimpleAuth {
                 this.showStatus('Password updated successfully!', 'success');
             } else if (response.status === 401) {
                 const errorData = await response.json();
-                console.error('Password update 401 error:', errorData);
+                // Password update 401 error
                 
                 // Check if it's a password error or session error
                 if (errorData.error && errorData.error.includes('password Incorrect')) {
@@ -793,11 +793,11 @@ class SimpleAuth {
                 }
             } else if (response.status === 400) {
                 const errorData = await response.json();
-                console.error('Password update 400 error:', errorData);
+                // Password update 400 error
                 this.showStatus(errorData.message || 'Invalid request', 'error');
             } else {
                 const errorData = await response.json();
-                console.error('Password update error:', errorData);
+                // Password update error
                 
                 // Check if it's a password validation error and show custom message
                 if (errorData.message && errorData.message.includes('password')) {
@@ -807,7 +807,7 @@ class SimpleAuth {
                 }
             }
         } catch (error) {
-            console.error('Password update error:', error);
+            // Password update error
             this.showStatus('Network error updating password. Please check if the backend server is running.', 'error');
         }
     }
@@ -888,12 +888,12 @@ class SimpleAuth {
                 fileInput.value = ''; // Clear the file input
             } else {
                 const errorData = await response.json();
-                console.error('Avatar upload error:', errorData);
+                // Avatar upload error
                 this.showStatus(errorData.error || 'Failed to upload avatar', 'error');
                 fileInput.value = ''; // Clear the file input
             }
         } catch (error) {
-            console.error('Avatar upload error:', error);
+            // Avatar upload error
             this.showStatus('Network error uploading avatar. Please check if the backend server is running.', 'error');
             fileInput.value = ''; // Clear the file input
             fileInput.value = ''; // Clear the file input
@@ -931,11 +931,11 @@ class SimpleAuth {
                 }, 2000);
             } else {
                 const errorData = await response.json();
-                console.error('User search error:', errorData);
+                // User search error
                 this.showStatus(errorData.error || 'Failed to search users', 'error');
             }
         } catch (error) {
-            console.error('User search error:', error);
+            // User search error
             this.showStatus('Network error searching users. Please check if the backend server is running.', 'error');
         }
     }
@@ -967,11 +967,11 @@ class SimpleAuth {
                 }, 2000);
             } else {
                 const errorData = await response.json();
-                console.error('Friends data error:', errorData);
+                // Friends data error
                 this.showStatus(errorData.error || 'Failed to load friends data', 'error');
             }
         } catch (error) {
-            console.error('Friends data error:', error);
+            // Friends data error
             this.showStatus('Network error loading friends data. Please check if the backend server is running.', 'error');
         }
     }
@@ -1148,11 +1148,11 @@ class SimpleAuth {
                 }, 2000);
             } else {
                 const errorData = await response.json();
-                console.error('Send friend request error:', errorData);
+                // Send friend request error
                 this.showStatus(errorData.error || 'Failed to send friend request', 'error');
             }
         } catch (error) {
-            console.error('Send friend request error:', error);
+            // Send friend request error
             this.showStatus('Network error sending friend request. Please check if the backend server is running.', 'error');
         }
     }
@@ -1191,11 +1191,11 @@ class SimpleAuth {
                 }, 2000);
             } else {
                 const errorData = await response.json();
-                console.error('Accept friend request error:', errorData);
+                // Accept friend request error
                 this.showStatus(errorData.error || 'Failed to accept friend request', 'error');
             }
         } catch (error) {
-            console.error('Accept friend request error:', error);
+            // Accept friend request error
             this.showStatus('Network error accepting friend request. Please check if the backend server is running.', 'error');
         }
     }
@@ -1230,11 +1230,11 @@ class SimpleAuth {
                 }, 2000);
             } else {
                 const errorData = await response.json();
-                console.error('Decline friend request error:', errorData);
+                // Decline friend request error
                 this.showStatus(errorData.error || 'Failed to decline friend request', 'error');
             }
         } catch (error) {
-            console.error('Decline friend request error:', error);
+            // Decline friend request error
             this.showStatus('Network error declining friend request. Please check if the backend server is running.', 'error');
         }
     }
@@ -1270,11 +1270,11 @@ class SimpleAuth {
                 }, 2000);
             } else {
                 const errorData = await response.json();
-                console.error('Remove friend error:', errorData);
+                // Remove friend error
                 this.showStatus(errorData.error || 'Failed to remove friend', 'error');
             }
         } catch (error) {
-            console.error('Remove friend error:', error);
+            // Remove friend error
             this.showStatus('Network error removing friend. Please check if the backend server is running.', 'error');
         }
     }
@@ -1334,7 +1334,7 @@ class SimpleAuth {
                 }
             }
         } catch (error) {
-            console.error('Registration error:', error);
+            // Registration error
             this.showStatus('Registration failed. Please try again.', 'error');
         }
     }
@@ -1421,7 +1421,7 @@ class SimpleAuth {
                 this.showStatus(data.error || 'Login failed', 'error');
             }
         } catch (error) {
-            console.error('Login error:', error);
+            // Login error
             this.showStatus('An error occurred during login', 'error');
         }
     }
@@ -1526,7 +1526,7 @@ class SimpleAuth {
       
             return;
           } catch (error) {
-            console.error("Error parsing stored user data:", error);
+            // Error parsing stored user data
             localStorage.removeItem("user");
           }
         }
@@ -1595,7 +1595,7 @@ class SimpleAuth {
             this.showPage("loginPage");
           }
         } catch (error) {
-          console.error("Token verification error:", error);
+          // Token verification error
           
           // For Google OAuth, be more forgiving of network errors
           const urlParams = new URLSearchParams(window.location.search);
@@ -1652,7 +1652,7 @@ class SimpleAuth {
               }, 2000);
             }
           } catch (error) {
-            console.error("❌ Token refresh error:", error);
+            // Token refresh error
 
             // Show the main app with cached data as a fallback
             this.showPage("mainApp");
@@ -1684,7 +1684,7 @@ class SimpleAuth {
                 credentials: 'include'
             });
         } catch (error) {
-            console.error('Logout error:', error);
+            // Logout error
         }
         
         // Reset contrast mode on logout
@@ -1704,7 +1704,7 @@ class SimpleAuth {
     private showStatus(message: string, type: 'success' | 'error' | 'info' = 'info'): void {
         const statusDiv = document.getElementById('status');
         if (!statusDiv) {
-            console.error('Status div not found');
+            // Status div not found
             return;
         }        
         // Clear any existing timeouts
@@ -1767,7 +1767,7 @@ class SimpleAuth {
             targetPage.classList.add('active');
 
         } else {
-            console.error(`Page not found: ${pageId}`);
+            // Page not found
         }
     }
 
@@ -1953,7 +1953,7 @@ class SimpleAuth {
                 }, 100);
             }
         } else {
-            console.error(`Section not found: ${sectionId}`);
+            // Section not found
         }
     }
 
@@ -2311,10 +2311,10 @@ class SimpleAuth {
 
                 this.renderDashboardData(data);
             } else {
-                console.error('Failed to load dashboard data:', response.status, response.statusText);
+                // Failed to load dashboard data
             }
         } catch (error) {
-            console.error('Error loading dashboard data:', error);
+            // Error loading dashboard data
         }
     }
 
@@ -2611,7 +2611,7 @@ class SimpleAuth {
             });
             
             if (!response.ok) {
-                console.error('Authentication failed, redirecting to login');
+                // Authentication failed, redirecting to login
                 this.showStatus('Session expired. Please login again.', 'error');
                 setTimeout(() => {
                     this.showPage('registrationPage');
@@ -2619,7 +2619,7 @@ class SimpleAuth {
                 return;
             }
         } catch (error) {
-            console.error('Network error checking authentication:', error);
+            // Network error checking authentication
             this.showStatus('Network error. Please try again.', 'error');
             return;
         }
@@ -2683,7 +2683,7 @@ class SimpleAuth {
         const customizeButton = document.getElementById('customizeBtn');
 
         if (!canvas || !ctx || !startButton || !gameOverlay || !gameMessage || !player1Name || !player2Name || !customizeButton) {
-            console.error('Game elements not found');
+            // Game elements not found
             return;
         }
 
@@ -3780,13 +3780,11 @@ class SimpleAuth {
                 // Try to refresh the token instead of immediately logging out
                 await this.tryRefreshToken();
             } else {
-                console.error('Failed to load user profile:', response.status, response.statusText);
-                const errorText = await response.text();
-                console.error('Error response:', errorText);
+                // Failed to load user profile
                 this.showStatus(`Failed to load profile data: ${response.status}`, 'error');
             }
         } catch (error) {
-            console.error('Error loading user profile:', error);
+            // Error loading user profile
             this.showStatus('Network error loading profile', 'error');
         }
     }
@@ -3880,15 +3878,11 @@ class SimpleAuth {
                 // Also refresh dashboard data if dashboard is currently shown
                 this.loadDashboardData();
             } else {
-                console.error('Failed to update stats:', response.status, response.statusText);
-                const errorText = await response.text();
-                console.error('Error response:', errorText);
-                console.error('Response headers:', response.headers);
-                console.error('Request URL:', response.url);
+                // Failed to update stats
                 this.showStatus(`Failed to update game stats: ${response.status} ${response.statusText}`, 'error');
             }
         } catch (error) {
-            console.error('Error updating user stats:', error);
+            // Error updating user stats
             this.showStatus('Network error updating stats', 'error');
         }
     }
@@ -3927,13 +3921,11 @@ class SimpleAuth {
                 this.updateHomeDashboard();
                 this.loadDashboardData();
             } else {
-                console.error('Failed to update tournament stats:', response.status, response.statusText);
-                const errorText = await response.text();
-                console.error('Error response:', errorText);
+                // Failed to update tournament stats
                 this.showStatus(`Failed to update tournament stats: ${response.status} ${response.statusText}`, 'error');
             }
         } catch (error) {
-            console.error('Error updating tournament stats:', error);
+            // Error updating tournament stats
             this.showStatus('Network error updating tournament stats', 'error');
         }
     }

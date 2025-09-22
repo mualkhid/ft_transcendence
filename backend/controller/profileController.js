@@ -230,7 +230,7 @@ export async function updateStats(req, reply) {
                 });
 
             } catch (error) {
-                console.error(`Failed to save ${gameType} game result:`, error);
+                // Failed to save game result
                 // Continue with stats update even if match saving fails
             }
         }
@@ -262,7 +262,7 @@ export async function updateStats(req, reply) {
             gameResult: won ? 'won' : 'lost'
         });
     } catch (error) {
-        console.error('Error updating user stats:', error);
+        // Error updating user stats
         return reply.status(500).send({ error: 'Failed to update user stats' });
     }
 }

@@ -19,6 +19,7 @@ class SimpleAuth {
         this.remoteGameEventHandlers = null;
         this.remoteGameAnimationFrameId = null;
         this.colorblindMode = false;
+        this.statusTimeout = null;
         // AI Game state and configuration
         this.aiGameState = {
             ballX: 400,
@@ -74,7 +75,8 @@ class SimpleAuth {
                 player1Score: 0,
                 player2Score: 0,
                 speedX: 5,
-                speedY: 3
+                speedY: 3,
+                powerUps: []
             },
             prevBallX: null,
             prevBallY: null
@@ -285,7 +287,7 @@ class SimpleAuth {
                         }
                     }
                     catch (error) {
-                        console.error('Error deleting account:', error);
+                        // Error deleting account
                         alert('An error occurred while deleting your account.');
                     }
                 }
@@ -306,7 +308,7 @@ class SimpleAuth {
                         }
                     }
                     catch (error) {
-                        console.error('Error anonymizing account:', error);
+                        // Error anonymizing account
                         alert('An error occurred while anonymizing your account.');
                     }
                 }
@@ -364,7 +366,7 @@ class SimpleAuth {
                     }
                 }
                 catch (error) {
-                    console.error('Error downloading data:', error);
+                    // Error downloading data
                     alert('An error occurred while downloading your data.');
                 }
             });
@@ -465,7 +467,7 @@ class SimpleAuth {
             }
         }
         catch (error) {
-            console.error('Error setting up 2FA:', error);
+            // Error setting up 2FA
             this.showStatus('An error occurred while setting up 2FA.', 'error');
         }
     }
@@ -510,7 +512,7 @@ class SimpleAuth {
             }
         }
         catch (error) {
-            console.error('Error verifying 2FA:', error);
+            // Error verifying 2FA
             this.showStatus('An error occurred while verifying 2FA.', 'error');
         }
     }
@@ -601,7 +603,7 @@ class SimpleAuth {
             }
         }
         catch (error) {
-            console.error('Health check failed:', error);
+            // Health check failed
             this.showStatus('Cannot connect to server. Please make sure the backend is running.', 'error');
             return;
         }
@@ -632,7 +634,7 @@ class SimpleAuth {
             }
             else if (response.status === 401) {
                 const errorData = await response.json();
-                console.error('Username update 401 error:', errorData);
+                // Username update 401 error
                 this.showStatus('Session expired. Please login again.', 'error');
                 localStorage.removeItem('user');
                 this.currentUser = null;
@@ -642,12 +644,18 @@ class SimpleAuth {
             }
             else {
                 const errorData = await response.json();
-                console.error('Username update error:', errorData);
-                this.showStatus(errorData.error || 'Failed to update username', 'error');
+                // Username update error
+                // Handle unique constraint errors with user-friendly messages
+                if (errorData.error && (errorData.error.includes('Unique constraints') || errorData.error.includes('username') || errorData.error.includes('User_username_key'))) {
+                    this.showStatus('Username already exists', 'error');
+                }
+                else {
+                    this.showStatus(errorData.error || 'Failed to update username', 'error');
+                }
             }
         }
         catch (error) {
-            console.error('Error updating username:', error);
+            // Error updating username
             this.showStatus('Network error updating username. Please check if the backend server is running.', 'error');
         }
     }
@@ -662,7 +670,7 @@ class SimpleAuth {
         }
         const requiresCurrent = !!this.currentUser.hasPassword;
         if ((requiresCurrent && (!currentPassword || !newPassword)) || (!requiresCurrent && !newPassword)) {
-            this.showStatus('Please enter ' + (requiresCurrent ? 'both curreent and new passwords' : 'a new password'), 'error');
+            this.showStatus('Please enter ' + (requiresCurrent ? 'both current and new passwords' : 'a new password'), 'error');
             return;
         }
         // Validate new password meets requirements
@@ -699,7 +707,7 @@ class SimpleAuth {
             }
             else if (response.status === 401) {
                 const errorData = await response.json();
-                console.error('Password update 401 error:', errorData);
+                // Password update 401 error
                 // Check if it's a password error or session error
                 if (errorData.error && errorData.error.includes('password Incorrect')) {
                     this.showStatus('Current password is incorrect', 'error');
@@ -715,17 +723,23 @@ class SimpleAuth {
             }
             else if (response.status === 400) {
                 const errorData = await response.json();
-                console.error('Password update 400 error:', errorData);
+                // Password update 400 error
                 this.showStatus(errorData.message || 'Invalid request', 'error');
             }
             else {
                 const errorData = await response.json();
-                console.error('Password update error:', errorData);
-                this.showStatus(errorData.message || errorData.error || 'Failed to update password', 'error');
+                // Password update error
+                // Check if it's a password validation error and show custom message
+                if (errorData.message && errorData.message.includes('password')) {
+                    this.showStatus('Enter valid characters, check password requirements', 'error');
+                }
+                else {
+                    this.showStatus(errorData.message || errorData.error || 'Failed to update password', 'error');
+                }
             }
         }
         catch (error) {
-            console.error('Password update error:', error);
+            // Password update error
             this.showStatus('Network error updating password. Please check if the backend server is running.', 'error');
         }
     }
@@ -769,7 +783,7 @@ class SimpleAuth {
                 const profileAvatar = document.getElementById('profileAvatar');
                 if (profileAvatar) {
                     // Add timestamp to prevent caching
-                    const avatarSrc = `https://${HOST_IP}${data.avatarUrl}?t=${Date.now()}`;
+                    const avatarSrc = `${data.avatarUrl}?t=${Date.now()}`;
                     profileAvatar.src = avatarSrc;
                 }
                 // Update current user data
@@ -797,13 +811,13 @@ class SimpleAuth {
             }
             else {
                 const errorData = await response.json();
-                console.error('Avatar upload error:', errorData);
+                // Avatar upload error
                 this.showStatus(errorData.error || 'Failed to upload avatar', 'error');
                 fileInput.value = ''; // Clear the file input
             }
         }
         catch (error) {
-            console.error('Avatar upload error:', error);
+            // Avatar upload error
             this.showStatus('Network error uploading avatar. Please check if the backend server is running.', 'error');
             fileInput.value = ''; // Clear the file input
             fileInput.value = ''; // Clear the file input
@@ -837,12 +851,12 @@ class SimpleAuth {
             }
             else {
                 const errorData = await response.json();
-                console.error('User search error:', errorData);
+                // User search error
                 this.showStatus(errorData.error || 'Failed to search users', 'error');
             }
         }
         catch (error) {
-            console.error('User search error:', error);
+            // User search error
             this.showStatus('Network error searching users. Please check if the backend server is running.', 'error');
         }
     }
@@ -871,12 +885,12 @@ class SimpleAuth {
             }
             else {
                 const errorData = await response.json();
-                console.error('Friends data error:', errorData);
+                // Friends data error
                 this.showStatus(errorData.error || 'Failed to load friends data', 'error');
             }
         }
         catch (error) {
-            console.error('Friends data error:', error);
+            // Friends data error
             this.showStatus('Network error loading friends data. Please check if the backend server is running.', 'error');
         }
     }
@@ -899,7 +913,7 @@ class SimpleAuth {
                 <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
                     <div class="flex items-center space-x-3">
                         <div class="relative">
-                            <img src="${user.avatarUrl && user.avatarUrl !== '/avatars/default.jpg' ? `https://${HOST_IP}${user.avatarUrl}?t=${Date.now()}` : `./imgs/default.jpg`}" 
+                            <img src="${user.avatarUrl && user.avatarUrl !== '/avatars/default.jpg' ? `${user.avatarUrl}?t=${Date.now()}` : `./imgs/default.jpg`}" 
                                  alt="${user.username}" 
                                  class="w-12 h-12 rounded-full object-cover border-2 border-white border-opacity-30">
                         </div>
@@ -933,7 +947,7 @@ class SimpleAuth {
                 <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
                     <div class="flex items-center space-x-3">
                         <div class="relative">
-                            <img src="${friend.avatarUrl && friend.avatarUrl !== '/avatars/default.jpg' ? `https://${HOST_IP}${friend.avatarUrl}?t=${Date.now()}` : `./imgs/default.jpg`}" 
+                            <img src="${friend.avatarUrl && friend.avatarUrl !== '/avatars/default.jpg' ? `${friend.avatarUrl}?t=${Date.now()}` : `./imgs/default.jpg`}" 
                                  alt="${friend.username}" 
                                  class="w-12 h-12 rounded-full object-cover border-2 border-white border-opacity-30">
                             <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${isOnline ? 'bg-green-400' : 'bg-gray-400'}"></div>
@@ -970,7 +984,7 @@ class SimpleAuth {
             <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
                 <div class="flex items-center space-x-3">
                     <div class="relative">
-                        <img src="${request.avatarUrl && request.avatarUrl !== '/avatars/default.jpg' ? `https://${HOST_IP}${request.avatarUrl}?t=${Date.now()}` : `./imgs/default.jpg`}" 
+                        <img src="${request.avatarUrl && request.avatarUrl !== '/avatars/default.jpg' ? `${request.avatarUrl}?t=${Date.now()}` : `./imgs/default.jpg`}" 
                              alt="${request.username}" 
                              class="w-12 h-12 rounded-full object-cover border-2 border-white border-opacity-30">
                     </div>
@@ -1042,12 +1056,12 @@ class SimpleAuth {
             }
             else {
                 const errorData = await response.json();
-                console.error('Send friend request error:', errorData);
+                // Send friend request error
                 this.showStatus(errorData.error || 'Failed to send friend request', 'error');
             }
         }
         catch (error) {
-            console.error('Send friend request error:', error);
+            // Send friend request error
             this.showStatus('Network error sending friend request. Please check if the backend server is running.', 'error');
         }
     }
@@ -1068,7 +1082,10 @@ class SimpleAuth {
             if (response.ok) {
                 const data = await response.json();
                 this.showStatus('Friend request accepted!', 'success');
-                this.loadFriendsData(); // Refresh friends data
+                setTimeout(() => {
+                    this.loadFriendsData();
+                }, 100);
+                // this.loadFriendsData(); // Refresh friends data
             }
             else if (response.status === 401) {
                 this.showStatus('Session expired. Please login again.', 'error');
@@ -1080,12 +1097,12 @@ class SimpleAuth {
             }
             else {
                 const errorData = await response.json();
-                console.error('Accept friend request error:', errorData);
+                // Accept friend request error
                 this.showStatus(errorData.error || 'Failed to accept friend request', 'error');
             }
         }
         catch (error) {
-            console.error('Accept friend request error:', error);
+            // Accept friend request error
             this.showStatus('Network error accepting friend request. Please check if the backend server is running.', 'error');
         }
     }
@@ -1117,12 +1134,12 @@ class SimpleAuth {
             }
             else {
                 const errorData = await response.json();
-                console.error('Decline friend request error:', errorData);
+                // Decline friend request error
                 this.showStatus(errorData.error || 'Failed to decline friend request', 'error');
             }
         }
         catch (error) {
-            console.error('Decline friend request error:', error);
+            // Decline friend request error
             this.showStatus('Network error declining friend request. Please check if the backend server is running.', 'error');
         }
     }
@@ -1155,12 +1172,12 @@ class SimpleAuth {
             }
             else {
                 const errorData = await response.json();
-                console.error('Remove friend error:', errorData);
+                // Remove friend error
                 this.showStatus(errorData.error || 'Failed to remove friend', 'error');
             }
         }
         catch (error) {
-            console.error('Remove friend error:', error);
+            // Remove friend error
             this.showStatus('Network error removing friend. Please check if the backend server is running.', 'error');
         }
     }
@@ -1192,11 +1209,29 @@ class SimpleAuth {
                 }, 2000);
             }
             else {
-                this.showStatus(data.error || 'Registration failed', 'error');
+                // Check for specific error types and show custom messages
+                if (data.error && data.error.includes('password')) {
+                    this.showStatus('Enter valid characters, check password requirements', 'error');
+                }
+                else if (data.error && (data.error.includes('Unique constraints') || data.error.includes('username') || data.error.includes('email'))) {
+                    // Handle unique constraint errors with user-friendly messages
+                    if (data.error.includes('username') || data.error.includes('User_username_key')) {
+                        this.showStatus('Username already exists', 'error');
+                    }
+                    else if (data.error.includes('email') || data.error.includes('User_email_key')) {
+                        this.showStatus('Email already exists', 'error');
+                    }
+                    else {
+                        this.showStatus('Username or email already exists', 'error');
+                    }
+                }
+                else {
+                    this.showStatus(data.error || 'Registration failed', 'error');
+                }
             }
         }
         catch (error) {
-            console.error('Registration error:', error);
+            // Registration error
             this.showStatus('Registration failed. Please try again.', 'error');
         }
     }
@@ -1233,8 +1268,21 @@ class SimpleAuth {
                 this.colorblindMode = false;
                 localStorage.removeItem('colorblindMode');
                 this.applyColorblindMode();
+                // Show success message
+                this.showStatus('Login successful!', 'success');
                 this.showPage('mainApp');
-                this.showSection('homeSection');
+                // Check for URL section or saved section first
+                const savedSection = localStorage.getItem("lastActiveSection");
+                const urlSection = this.getUrlSection();
+                if (savedSection) {
+                    this.showSection(savedSection, false);
+                }
+                else if (urlSection) {
+                    this.showSection(urlSection, false);
+                }
+                else {
+                    this.showSection('homeSection');
+                }
                 this.loadUserProfile();
             }
             else if (response.status === 401 && data.require2FA) {
@@ -1261,7 +1309,7 @@ class SimpleAuth {
             }
         }
         catch (error) {
-            console.error('Login error:', error);
+            // Login error
             this.showStatus('An error occurred during login', 'error');
         }
     }
@@ -1293,7 +1341,6 @@ class SimpleAuth {
                 if (!hasCookie) {
                     // Show the main app with cached data even without cookie
                     this.showPage("mainApp");
-                    this.showSection('homeSection');
                     this.updateHomeDashboard();
                     this.updateProfileDisplay();
                     // Initialize history state after main app is shown
@@ -1314,15 +1361,12 @@ class SimpleAuth {
                         this.showSection(urlSection, false); // Don't update history on initial load
                     }
                     else {
-                        setTimeout(() => {
-                            this.showSection("homeSection", false); // Don't update history on initial load
-                        }, 100);
+                        this.showSection("homeSection", false); // Don't update history on initial load
                     }
                     return;
                 }
                 // Show the main app with cached data
                 this.showPage("mainApp");
-                this.showSection('homeSection');
                 this.updateHomeDashboard();
                 this.updateProfileDisplay();
                 // Initialize history state after main app is shown
@@ -1343,14 +1387,12 @@ class SimpleAuth {
                     this.showSection(urlSection, false); // Don't update history on initial load
                 }
                 else {
-                    setTimeout(() => {
-                        this.showSection("homeSection", false); // Don't update history on initial load
-                    }, 100);
+                    this.showSection("homeSection", false); // Don't update history on initial load
                 }
                 return;
             }
             catch (error) {
-                console.error("Error parsing stored user data:", error);
+                // Error parsing stored user data
                 localStorage.removeItem("user");
             }
         }
@@ -1374,16 +1416,22 @@ class SimpleAuth {
                 this.currentUser = data.user;
                 localStorage.setItem("user", JSON.stringify(data.user));
                 this.showPage("mainApp");
-                this.showSection('homeSection');
-                this.loadUserProfile();
-                this.updateHomeDashboard();
                 // Initialize history state after main app is shown
                 this.initializeHistoryState();
-                // Show home section by default after Google login
-                // Use setTimeout to ensure DOM is ready and background is applied properly
-                setTimeout(() => {
-                    this.showSection("homeSection", false); // Don't update history on initial load
-                }, 100);
+                // Check for URL section or saved section first
+                const savedSection = localStorage.getItem("lastActiveSection");
+                const urlSection = this.getUrlSection();
+                if (savedSection) {
+                    this.showSection(savedSection, false);
+                }
+                else if (urlSection) {
+                    this.showSection(urlSection, false);
+                }
+                else {
+                    this.showSection('homeSection');
+                }
+                this.loadUserProfile();
+                this.updateHomeDashboard();
             }
             else {
                 // For Google OAuth, we should try to handle this more gracefully
@@ -1402,7 +1450,7 @@ class SimpleAuth {
             }
         }
         catch (error) {
-            console.error("Token verification error:", error);
+            // Token verification error
             // For Google OAuth, be more forgiving of network errors
             const urlParams = new URLSearchParams(window.location.search);
             const authParam = urlParams.get('auth');
@@ -1425,7 +1473,6 @@ class SimpleAuth {
             if (response.ok) {
                 // Show the main app with cached data
                 this.showPage("mainApp");
-                this.showSection('homeSection');
                 this.updateHomeDashboard();
                 this.updateProfileDisplay();
                 // Initialize history state after main app is shown
@@ -1440,9 +1487,7 @@ class SimpleAuth {
                     this.showSection(urlSection, false); // Don't update history on initial load
                 }
                 else {
-                    setTimeout(() => {
-                        this.showSection("homeSection", false); // Don't update history on initial load
-                    }, 100);
+                    this.showSection("homeSection", false); // Don't update history on initial load
                 }
             }
             else {
@@ -1455,10 +1500,9 @@ class SimpleAuth {
             }
         }
         catch (error) {
-            console.error("❌ Token refresh error:", error);
+            // Token refresh error
             // Show the main app with cached data as a fallback
             this.showPage("mainApp");
-            this.showSection('homeSection');
             this.updateHomeDashboard();
             this.updateProfileDisplay();
             // Initialize history state after main app is shown
@@ -1473,9 +1517,7 @@ class SimpleAuth {
                 this.showSection(urlSection, false); // Don't update history on initial load
             }
             else {
-                setTimeout(() => {
-                    this.showSection("homeSection", false); // Don't update history on initial load
-                }, 100);
+                this.showSection("homeSection", false); // Don't update history on initial load
             }
         }
     }
@@ -1488,7 +1530,7 @@ class SimpleAuth {
             });
         }
         catch (error) {
-            console.error('Logout error:', error);
+            // Logout error
         }
         // Reset contrast mode on logout
         this.colorblindMode = false;
@@ -1503,14 +1545,47 @@ class SimpleAuth {
     }
     showStatus(message, type = 'info') {
         const statusDiv = document.getElementById('status');
-        if (statusDiv) {
-            statusDiv.textContent = message;
-            statusDiv.className = `status ${type}`;
-            statusDiv.style.display = 'block';
+        if (!statusDiv) {
+            // Status div not found
+            return;
+        }
+        // Clear any existing timeouts
+        if (this.statusTimeout) {
+            clearTimeout(this.statusTimeout);
+        }
+        statusDiv.textContent = message;
+        // Set responsive classes and colors
+        const baseClasses = 'fixed top-4 right-4 p-3 sm:p-4 rounded-lg shadow-lg z-50 max-w-xs sm:max-w-sm md:max-w-md text-sm sm:text-base font-medium';
+        let typeClasses = '';
+        switch (type) {
+            case 'success':
+                typeClasses = 'bg-green-500 text-white border border-green-600';
+                break;
+            case 'error':
+                typeClasses = 'bg-red-500 text-white border border-red-600';
+                break;
+            case 'info':
+            default:
+                typeClasses = 'bg-blue-500 text-white border border-blue-600';
+                break;
+        }
+        statusDiv.className = `${baseClasses} ${typeClasses}`;
+        statusDiv.style.display = 'block';
+        statusDiv.style.transform = 'translateX(100%)';
+        statusDiv.style.transition = 'transform 0.3s ease-in-out';
+        // Force reflow to ensure the initial transform is applied
+        statusDiv.offsetHeight;
+        // Trigger slide-in animation
+        requestAnimationFrame(() => {
+            statusDiv.style.transform = 'translateX(0)';
+        });
+        // Auto-hide after 5 seconds with slide-out animation
+        this.statusTimeout = setTimeout(() => {
+            statusDiv.style.transform = 'translateX(100%)';
             setTimeout(() => {
                 statusDiv.style.display = 'none';
-            }, 5000);
-        }
+            }, 300);
+        }, 5000);
     }
     showPage(pageId) {
         const pages = document.querySelectorAll('.page');
@@ -1522,7 +1597,7 @@ class SimpleAuth {
             targetPage.classList.add('active');
         }
         else {
-            console.error(`Page not found: ${pageId}`);
+            // Page not found
         }
     }
     getUrlSection() {
@@ -1537,6 +1612,16 @@ class SimpleAuth {
                     return 'profileSection';
                 case 'home':
                     return 'homeSection';
+                case 'dashboard':
+                    return 'dashboardSection';
+                case 'game':
+                    return 'gameSection';
+                case 'online-game':
+                    return 'onlineGameSection';
+                case 'ai-game':
+                    return 'aiPongSection';
+                case 'tournament':
+                    return 'localTournamentSection';
                 default:
                     return null;
             }
@@ -1685,7 +1770,7 @@ class SimpleAuth {
             }
         }
         else {
-            console.error(`Section not found: ${sectionId}`);
+            // Section not found
         }
     }
     /**
@@ -1983,11 +2068,11 @@ class SimpleAuth {
                 this.renderDashboardData(data);
             }
             else {
-                console.error('Failed to load dashboard data:', response.status, response.statusText);
+                // Failed to load dashboard data
             }
         }
         catch (error) {
-            console.error('Error loading dashboard data:', error);
+            // Error loading dashboard data
         }
     }
     renderDashboardData(data) {
@@ -2260,7 +2345,7 @@ class SimpleAuth {
                 credentials: 'include'
             });
             if (!response.ok) {
-                console.error('Authentication failed, redirecting to login');
+                // Authentication failed, redirecting to login
                 this.showStatus('Session expired. Please login again.', 'error');
                 setTimeout(() => {
                     this.showPage('registrationPage');
@@ -2269,7 +2354,7 @@ class SimpleAuth {
             }
         }
         catch (error) {
-            console.error('Network error checking authentication:', error);
+            // Network error checking authentication
             this.showStatus('Network error. Please try again.', 'error');
             return;
         }
@@ -2327,7 +2412,7 @@ class SimpleAuth {
         const player2Name = document.getElementById('player2Name');
         const customizeButton = document.getElementById('customizeBtn');
         if (!canvas || !ctx || !startButton || !gameOverlay || !gameMessage || !player1Name || !player2Name || !customizeButton) {
-            console.error('Game elements not found');
+            // Game elements not found
             return;
         }
         // Preload paddle hit sound, score sound, and end game sound
@@ -3187,14 +3272,12 @@ class SimpleAuth {
                 await this.tryRefreshToken();
             }
             else {
-                console.error('Failed to load user profile:', response.status, response.statusText);
-                const errorText = await response.text();
-                console.error('Error response:', errorText);
+                // Failed to load user profile
                 this.showStatus(`Failed to load profile data: ${response.status}`, 'error');
             }
         }
         catch (error) {
-            console.error('Error loading user profile:', error);
+            // Error loading user profile
             this.showStatus('Network error loading profile', 'error');
         }
     }
@@ -3270,16 +3353,12 @@ class SimpleAuth {
                 this.loadDashboardData();
             }
             else {
-                console.error('Failed to update stats:', response.status, response.statusText);
-                const errorText = await response.text();
-                console.error('Error response:', errorText);
-                console.error('Response headers:', response.headers);
-                console.error('Request URL:', response.url);
+                // Failed to update stats
                 this.showStatus(`Failed to update game stats: ${response.status} ${response.statusText}`, 'error');
             }
         }
         catch (error) {
-            console.error('Error updating user stats:', error);
+            // Error updating user stats
             this.showStatus('Network error updating stats', 'error');
         }
     }
@@ -3314,14 +3393,12 @@ class SimpleAuth {
                 this.loadDashboardData();
             }
             else {
-                console.error('Failed to update tournament stats:', response.status, response.statusText);
-                const errorText = await response.text();
-                console.error('Error response:', errorText);
+                // Failed to update tournament stats
                 this.showStatus(`Failed to update tournament stats: ${response.status} ${response.statusText}`, 'error');
             }
         }
         catch (error) {
-            console.error('Error updating tournament stats:', error);
+            // Error updating tournament stats
             this.showStatus('Network error updating tournament stats', 'error');
         }
     }
@@ -3340,7 +3417,7 @@ class SimpleAuth {
         if (profileAvatar) {
             if (this.currentUser.avatarUrl && this.currentUser.avatarUrl !== '/avatars/default.jpg') {
                 // Use the user's custom avatar (not the default one from database)
-                const avatarSrc = `https://${HOST_IP}${this.currentUser.avatarUrl}?t=${Date.now()}`;
+                const avatarSrc = `${this.currentUser.avatarUrl}?t=${Date.now()}`;
                 profileAvatar.src = avatarSrc;
             }
             else {
@@ -4184,6 +4261,11 @@ class SimpleAuth {
             console.error('Remote game elements not found');
             return;
         }
+        const instructionsSection = document.querySelector('#onlineGameSection .mb-8.text-center:first-of-type');
+        if (instructionsSection) {
+            instructionsSection.style.display = 'block';
+        }
+        this.showPowerupsToggle('online');
         // Reset game state
         this.resetGameState();
         // Set player names
@@ -4208,6 +4290,7 @@ class SimpleAuth {
         }
         // Show the score display
         this.showScoreDisplay();
+        this.resetRemoteGameVisibility();
         // Initialize remote game state
         this.initializeRemoteGameState();
         // Set up remote game controls
@@ -4220,6 +4303,37 @@ class SimpleAuth {
         }
         // Set up input handling
         this.setupRemoteGameInput();
+    }
+    resetRemoteGameVisibility() {
+        // 1. Game instructions section (How to Play) - should be visible
+        const instructionsSection = document.querySelector('#onlineGameSection .mb-8.text-center');
+        if (instructionsSection) {
+            instructionsSection.style.display = 'block';
+        }
+        // 2. Power-ups toggle section - should be visible
+        const powerUpsToggleSection = document.querySelector('#onlineGameSection .mb-8.text-center .max-w-md.mx-auto');
+        if (powerUpsToggleSection && powerUpsToggleSection.parentElement) {
+            powerUpsToggleSection.parentElement.style.display = 'block';
+        }
+        // 3. Show power-ups toggle when game is reset
+        this.showPowerupsToggle('online');
+        // 4. Score display should be visible but with initial "Waiting..." text
+        const scoreDisplay = document.getElementById('onlineScoreDisplay');
+        if (scoreDisplay) {
+            scoreDisplay.style.display = 'block';
+            scoreDisplay.style.visibility = 'visible';
+            scoreDisplay.style.opacity = '1';
+        }
+        // 5. Game canvas container should be visible
+        const gameCanvasContainer = document.querySelector('#onlineGameSection .flex.justify-center.mb-8');
+        if (gameCanvasContainer) {
+            gameCanvasContainer.style.display = 'flex';
+        }
+        // 6. Matchmaking status should be hidden initially
+        const matchmakingStatus = document.getElementById('matchmakingStatus');
+        if (matchmakingStatus) {
+            matchmakingStatus.style.display = 'none';
+        }
     }
     initializeRemoteGameState() {
         this.onlineGameState = {
@@ -4238,7 +4352,8 @@ class SimpleAuth {
                 player1Score: 0,
                 player2Score: 0,
                 speedX: 5,
-                speedY: 3
+                speedY: 3,
+                powerUps: []
             }
         };
     }
@@ -4323,7 +4438,25 @@ class SimpleAuth {
         }
         const scoreDisplay = document.getElementById('onlineScoreDisplay');
         if (scoreDisplay && scoreDisplay.style.display === 'none') {
+            console.warn('Score display was hidden during game, reshowing...');
             this.showScoreDisplay();
+        }
+        if (this.onlineGameState.gameState.powerUps) {
+            this.onlineGameState.gameState.powerUps.forEach((powerUp) => {
+                const colors = ['#FF69B4', '#87CEEB', '#98FB98']; // Pink, Blue, Green
+                const color = colors[0]; // You could vary this based on powerUp index
+                ctx.save();
+                ctx.fillStyle = color;
+                ctx.fillRect(powerUp.x, powerUp.y, powerUp.width, powerUp.height);
+                // Add sparkle effect
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.fillRect(powerUp.x + 3, powerUp.y + 3, powerUp.width - 6, powerUp.height - 6);
+                // Add border
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(powerUp.x, powerUp.y, powerUp.width, powerUp.height);
+                ctx.restore();
+            });
         }
     }
     connectToRemoteGame() {
@@ -4332,8 +4465,10 @@ class SimpleAuth {
         // const protocol = 'ws:';
         const protocol = 'wss:';
         const host = window.location.host;
+        const toggleOnline = document.getElementById('powerupsToggleOnline');
+        const powerupsEnabled = toggleOnline ? toggleOnline.checked : true;
         // Use the integrated Fastify WebSocket endpoint instead of separate port
-        const wsUrl = `${protocol}//${host}/api/find-match?username=${encodeURIComponent(username)}`;
+        const wsUrl = `${protocol}//${host}/api/find-match?username=${encodeURIComponent(username)}&powerups=${powerupsEnabled}`;
         // Update status to show we're connecting
         this.updateRemoteGameStatus('Connecting', 'Establishing connection...', true);
         try {
@@ -4353,7 +4488,6 @@ class SimpleAuth {
                     switch (data.type) {
                         case 'match-assigned':
                             this.onlineGameState.matchId = data.matchId;
-                        // Don't update status here - wait for success message
                         case 'success':
                             this.onlineGameState.playerNumber = data.playerNumber;
                             this.updateRemoteGameStatus(`Connected as Player ${data.playerNumber}`, 'Searching for opponent...', true);
@@ -4381,17 +4515,49 @@ class SimpleAuth {
                         case 'ready-to-play':
                             this.showRemoteGameMessage('Ready to play?');
                             break;
+                        case 'powerups-status':
+                            // Update the toggle state based on the current player's preference
+                            const toggleOnlinel = document.getElementById('powerupsToggleOnline');
+                            if (toggleOnlinel) {
+                                if (this.onlineGameState.playerNumber === 1 && data.player1Preference !== null) {
+                                    toggleOnlinel.checked = data.player1Preference;
+                                }
+                                else if (this.onlineGameState.playerNumber === 2 && data.player2Preference !== null) {
+                                    toggleOnlinel.checked = data.player2Preference;
+                                }
+                            }
+                            // Show status message briefly
+                            this.showRemoteGameMessage(data.message);
+                            setTimeout(() => {
+                                this.hideRemoteGameMessage();
+                            }, 2000);
+                            break;
+                        case 'powerups-finalized':
+                            this.showRemoteGameMessage(data.message);
+                            // Show the power-ups status briefly
+                            setTimeout(() => {
+                                this.hideRemoteGameMessage();
+                            }, 3000);
+                            break;
                         case 'countdown':
                             this.showCountdown(data.count);
                             break;
                         case 'game-start':
                             this.hideCountdown();
                             this.updateRemoteGameStatus('Playing', 'Game in progress', true);
-                            // Hide power-ups toggle when remote game starts
                             this.hidePowerupsToggle('online');
                             // Set powerupsEnabled based on online toggle state
-                            const toggleOnline = document.getElementById('powerupsToggleOnline');
-                            const enabled = toggleOnline ? toggleOnline.checked : true; // Default to true if toggle not found
+                            const instructionsSection = document.querySelector('#onlineGameSection .mb-8.text-center:first-of-type');
+                            if (instructionsSection) {
+                                instructionsSection.style.display = 'none';
+                            }
+                            // Hide power-ups toggle when game starts
+                            this.hidePowerupsToggle('online');
+                            // Also hide the power-ups toggle container more specifically
+                            const powerUpToggleContainer = document.querySelector('#onlineGameSection .mb-8.text-center .max-w-md.mx-auto');
+                            if (powerUpToggleContainer && powerUpToggleContainer.parentElement) {
+                                powerUpToggleContainer.parentElement.style.display = 'none';
+                            }
                             this.startRemoteGame();
                             // Make sure score display is visible and updated
                             this.showScoreDisplay();
@@ -4427,6 +4593,8 @@ class SimpleAuth {
                             this.onlineGameState.gameState.rightPaddleY = data.rightPaddleY;
                             this.onlineGameState.gameState.player1Score = data.player1Score;
                             this.onlineGameState.gameState.player2Score = data.player2Score;
+                            if (data.powerUps)
+                                this.onlineGameState.gameState.powerUps = data.powerUps;
                             this.updateRemoteScore();
                             this.hideRemoteGameMessage();
                             // Redraw the game with updated positions
@@ -4458,6 +4626,11 @@ class SimpleAuth {
                             this.updateRemoteScore();
                             // Play end game sound
                             this.playEndGameSound();
+                            const instructionsSectionEnd = document.querySelector('#onlineGameSection .mb-8.text-center:first-of-type');
+                            if (instructionsSectionEnd) {
+                                instructionsSectionEnd.style.display = 'block';
+                            }
+                            this.showPowerupsToggle('online');
                             // Prepare game over screen data
                             const gameOverScreenDataD = {
                                 winner: data.winnerAlias || data.winner,
@@ -4548,19 +4721,28 @@ class SimpleAuth {
         }
         if (connectBtn) {
             if (hideConnectButton) {
-                connectBtn.style.display = 'none';
+                connectBtn.style.visibility = 'hidden';
+                connectBtn.style.pointerEvents = 'none';
             }
             else {
-                connectBtn.style.display = 'block';
+                connectBtn.style.visibility = 'visible';
+                connectBtn.style.pointerEvents = 'auto';
             }
+        }
+    }
+    sendPowerupsPreferenceChange(enabled) {
+        if (this.onlineGameState.gameSocket && this.onlineGameState.gameSocket.readyState === WebSocket.OPEN) {
+            const message = {
+                type: 'powerups-preference-change',
+                enabled: enabled
+            };
+            this.onlineGameState.gameSocket.send(JSON.stringify(message));
         }
     }
     updateRemoteScore() {
         const player1Score = document.getElementById('onlinePlayer1Score');
         const player2Score = document.getElementById('onlinePlayer2Score');
         const scoreDisplay = document.getElementById('onlineScoreDisplay');
-        if (scoreDisplay) {
-        }
         if (player1Score && player2Score) {
             // Force the score display to be visible
             if (scoreDisplay) {
@@ -4573,11 +4755,6 @@ class SimpleAuth {
             player1Score.textContent = this.onlineGameState.gameState.player1Score.toString();
             player2Score.textContent = this.onlineGameState.gameState.player2Score.toString();
             // Double-check visibility after update
-            if (scoreDisplay) {
-            }
-        }
-        else {
-            console.error('Score elements not found!');
         }
     }
     showRemoteGameMessage(message) {
@@ -4700,6 +4877,7 @@ class SimpleAuth {
         }
     }
     startRemoteGame() {
+        this.hidePowerupsToggle('online');
         // Show the score display
         const scoreDisplay = document.querySelector('#onlineGameSection .text-center.text-white.mb-8');
         if (scoreDisplay) {
@@ -4715,6 +4893,10 @@ class SimpleAuth {
         if (matchmakingStatus) {
             matchmakingStatus.style.display = 'none';
         }
+        const matchmakingControls = document.getElementById('matchmakingControls'); // Add this ID to your HTML
+        if (matchmakingControls) {
+            matchmakingControls.style.display = 'none';
+        }
         // Initialize the game canvas
         this.initializeRemoteGameCanvas();
         // Set up input handling
@@ -4724,7 +4906,9 @@ class SimpleAuth {
         const scoreDisplay = document.getElementById('onlineScoreDisplay');
         if (scoreDisplay) {
             scoreDisplay.style.display = 'block';
-            scoreDisplay.style.textAlign = 'center';
+            scoreDisplay.style.visibility = 'visible';
+            scoreDisplay.style.opacity = '1';
+            scoreDisplay.style.position = 'static';
         }
         else {
             console.error('❌ Score display element not found');
@@ -4735,31 +4919,6 @@ class SimpleAuth {
         if (scoreDisplay) {
             scoreDisplay.style.display = 'none';
         }
-    }
-    reconnectToRemoteGame() {
-        // Reset game state
-        this.onlineGameState.gameFinished = false;
-        this.onlineGameState.gameState = {
-            ballX: 400,
-            ballY: 300,
-            leftPaddleY: 250,
-            rightPaddleY: 250,
-            player1Score: 0,
-            player2Score: 0,
-            speedX: 5,
-            speedY: 3
-        };
-        // Close existing connection
-        if (this.onlineGameState.gameSocket) {
-            this.onlineGameState.gameSocket.close();
-        }
-        // Reset connection state
-        this.onlineGameState.isConnected = false;
-        this.onlineGameState.playerNumber = null;
-        // Reconnect after a short delay
-        setTimeout(() => {
-            this.connectToRemoteGame();
-        }, 1000);
     }
     showGameOverScreen(data) {
         // Show the game over modal
@@ -4797,6 +4956,7 @@ class SimpleAuth {
             }
             // Show the modal
             gameOverModal.classList.remove('hidden');
+            this.showPowerupsToggle('online');
             // Set up button event listeners
             const playAgainBtn = document.getElementById('playAgainBtn');
             const goHomeBtn = document.getElementById('goHomeBtn');
@@ -4819,31 +4979,6 @@ class SimpleAuth {
                 };
             }
         }
-    }
-    restartRemoteGame() {
-        // Reset game state
-        this.onlineGameState.gameState = {
-            ballX: 400,
-            ballY: 300,
-            leftPaddleY: 250,
-            rightPaddleY: 250,
-            player1Score: 0,
-            player2Score: 0,
-            speedX: 5,
-            speedY: 3
-        };
-        // Update score display
-        this.updateRemoteScore();
-        // Hide game over screen and score display
-        this.hideRemoteGameMessage();
-        this.hideScoreDisplay();
-        // Reconnect to game
-        if (this.onlineGameState.gameSocket) {
-            this.onlineGameState.gameSocket.close();
-        }
-        setTimeout(() => {
-            this.connectToRemoteGame();
-        }, 1000);
     }
     goHome() {
         // Prevent multiple calls
@@ -4871,7 +5006,8 @@ class SimpleAuth {
                 player1Score: 0,
                 player2Score: 0,
                 speedX: 5,
-                speedY: 3
+                speedY: 3,
+                powerUps: []
             }
         };
         // Reset local game state
@@ -4893,6 +5029,14 @@ class SimpleAuth {
         if (gameOverModal) {
             gameOverModal.classList.add('hidden');
         }
+        const powerupToggle = document.getElementById('powerupsToggleOnline');
+        if (powerupToggle) {
+            const immediateParent = powerupToggle.closest('.mb-8.text-center');
+            if (immediateParent) {
+                immediateParent.style.display = 'block';
+            }
+        }
+        this.showPowerupsToggle('online');
         // Close customization modal if open
         this.hideCustomizationModal();
         // Hide game section
@@ -4906,315 +5050,6 @@ class SimpleAuth {
         setTimeout(() => {
             this.isGoingHome = false;
         }, 1000);
-    }
-    // REMOVED: Old matchmaking method - replaced by initializeRemoteGame
-    /*
-    private initializeOnlineGame(): void {
-        
-        // Initialize online game state
-        this.onlineGameState = {
-            matchmakingSocket: null,
-            gameSocket: null,
-            matchId: null,
-            playerNumber: null,
-            isConnected: false,
-            isInMatch: false,
-            gameState: {
-                ballX: 400,
-                ballY: 300,
-                leftPaddleY: 250,
-                rightPaddleY: 250,
-                player1Score: 0,
-                player2Score: 0,
-                speedX: 5,
-                speedY: 3
-            }
-        };
-
-        // Set up matchmaking controls
-        this.setupMatchmakingControls();
-        
-        // Start matchmaking automatically
-        this.startMatchmaking();
-    }
-    */
-    setupMatchmakingControls() {
-        const cancelMatchmakingBtn = document.getElementById('cancelMatchmakingBtn');
-        if (cancelMatchmakingBtn) {
-            cancelMatchmakingBtn.addEventListener('click', () => {
-                this.cancelMatchmaking();
-            });
-        }
-    }
-    startMatchmaking() {
-        try {
-            // Connect to matchmaking WebSocket
-            const matchmakingSocket = new WebSocket('ws://10.11.1.6/api/matchmaking');
-            matchmakingSocket.onopen = () => {
-                this.onlineGameState.matchmakingSocket = matchmakingSocket;
-                this.onlineGameState.isConnected = true;
-                // Send join queue message with user info
-                const joinMessage = {
-                    type: 'join-queue',
-                    userId: this.currentUser.id,
-                    username: this.currentUser.username
-                };
-                matchmakingSocket.send(JSON.stringify(joinMessage));
-                this.updateMatchmakingStatus('Searching for opponent...', 'searching');
-            };
-            matchmakingSocket.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    if (data.type === 'match-found') {
-                        this.handleMatchFound(data);
-                    }
-                    else if (data.type === 'queue-status') {
-                        this.updateMatchmakingStatus(`Players in queue: ${data.status.waitingPlayers}`, 'searching');
-                    }
-                    else if (data.type === 'joined-queue') {
-                        this.updateMatchmakingStatus('Joined matchmaking queue. Searching for opponent...', 'searching');
-                    }
-                    else if (data.type === 'ping') {
-                        // Send pong response to keep connection alive
-                        matchmakingSocket.send(JSON.stringify({
-                            type: 'pong',
-                            timestamp: data.timestamp
-                        }));
-                    }
-                    else {
-                    }
-                }
-                catch (error) {
-                    console.error('Error parsing matchmaking message:', error);
-                }
-            };
-            matchmakingSocket.onerror = (error) => {
-                console.error('Matchmaking WebSocket error:', error);
-                this.updateMatchmakingStatus('Connection error. Please try again.', 'error');
-            };
-            matchmakingSocket.onclose = (event) => {
-                this.onlineGameState.isConnected = false;
-                if (!this.onlineGameState.isInMatch) {
-                    this.updateMatchmakingStatus(`Connection lost (Code: ${event.code}). Please try again.`, 'error');
-                }
-            };
-        }
-        catch (error) {
-            console.error('Failed to start matchmaking:', error);
-            this.updateMatchmakingStatus('Failed to connect to server. Retrying...', 'error');
-            // Retry after 3 seconds
-            setTimeout(() => {
-                if (!this.onlineGameState.isConnected && !this.onlineGameState.isInMatch) {
-                    this.startMatchmaking();
-                }
-            }, 3000);
-        }
-    }
-    handleMatchFound(data) {
-        if (!data.matchId) {
-            console.error('No matchId in match-found message');
-            return;
-        }
-        this.onlineGameState.matchId = data.matchId;
-        this.onlineGameState.isInMatch = true;
-        // Close matchmaking connection
-        if (this.onlineGameState.matchmakingSocket) {
-            this.onlineGameState.matchmakingSocket.close();
-        }
-        // Connect to game WebSocket
-        this.connectToGame(data.matchId);
-    }
-    connectToGame(matchId) {
-        try {
-            const gameSocket = new WebSocket(`ws://10.11.1.6/api/remote-game/${matchId}`);
-            gameSocket.onopen = () => {
-                this.onlineGameState.gameSocket = gameSocket;
-                this.updateMatchmakingStatus('Connected to game!', 'connected');
-            };
-            gameSocket.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                if (data.type === 'success') {
-                    this.handleGameSuccess(data);
-                }
-                else if (data.type === 'ready') {
-                    this.handleGameReady(data);
-                }
-                else if (data.type === 'input-update') {
-                    this.handleInputUpdate(data);
-                }
-                else if (data.type === 'disconnect') {
-                    this.handlePlayerDisconnect(data);
-                }
-            };
-            gameSocket.onerror = (error) => {
-                console.error('Game WebSocket error:', error);
-                this.updateMatchmakingStatus('Game connection error.', 'error');
-            };
-            gameSocket.onclose = () => {
-                this.onlineGameState.isInMatch = false;
-                this.updateMatchmakingStatus('Game ended.', 'ended');
-            };
-        }
-        catch (error) {
-            console.error('Failed to connect to game:', error);
-            this.updateMatchmakingStatus('Failed to connect to game.', 'error');
-        }
-    }
-    handleGameSuccess(data) {
-        this.onlineGameState.playerNumber = data.playerNumber;
-        this.updateMatchmakingStatus(`You are Player ${data.playerNumber}`, 'connected');
-        // Update player names display
-        const player1Name = document.getElementById('onlinePlayer1Name');
-        const player2Name = document.getElementById('onlinePlayer2Name');
-        if (player1Name)
-            player1Name.textContent = data.player1Username || 'Player 1';
-        if (player2Name)
-            player2Name.textContent = data.player2Username || 'Player 2';
-    }
-    handleGameReady(data) {
-        this.updateMatchmakingStatus('Both players ready! Game starting...', 'ready');
-        // Show game canvas and hide matchmaking
-        const matchmakingStatus = document.getElementById('matchmakingStatus');
-        const scoreDisplay = document.querySelector('.text-center.text-white.mb-8');
-        const gameContainer = document.querySelector('.flex.justify-center.mb-8');
-        if (matchmakingStatus)
-            matchmakingStatus.style.display = 'none';
-        if (scoreDisplay)
-            scoreDisplay.style.display = 'block';
-        if (gameContainer)
-            gameContainer.style.display = 'flex';
-        // Initialize online game canvas
-        this.initializeOnlineGameCanvas();
-    }
-    handleInputUpdate(data) {
-        // Handle real-time game state updates
-        // This will be implemented when we add the actual game rendering
-    }
-    handlePlayerDisconnect(data) {
-        this.updateMatchmakingStatus('Opponent disconnected.', 'error');
-        this.onlineGameState.isInMatch = false;
-        // Show matchmaking again
-        const matchmakingStatus = document.getElementById('matchmakingStatus');
-        if (matchmakingStatus)
-            matchmakingStatus.style.display = 'block';
-    }
-    cancelMatchmaking() {
-        if (this.onlineGameState.matchmakingSocket) {
-            this.onlineGameState.matchmakingSocket.close();
-        }
-        this.updateMatchmakingStatus('Matchmaking cancelled.', 'cancelled');
-        // Show home button
-        const matchmakingStatus = document.getElementById('matchmakingStatus');
-        if (matchmakingStatus) {
-            const homeBtn = document.createElement('button');
-            homeBtn.className = 'bg-powerpuff-blue hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full text-lg transition-colors shadow-lg mt-4';
-            homeBtn.textContent = '🏠 Go Home';
-            homeBtn.addEventListener('click', () => {
-                this.showSection('homeSection');
-            });
-            matchmakingStatus.appendChild(homeBtn);
-        }
-    }
-    updateMatchmakingStatus(message, status) {
-        const statusElement = document.getElementById('matchmakingStatus');
-        if (!statusElement)
-            return;
-        let icon = '🔍';
-        let color = 'text-white';
-        let showSpinner = false;
-        switch (status) {
-            case 'searching':
-                icon = '🔍';
-                color = 'text-powerpuff-green';
-                showSpinner = true;
-                break;
-            case 'connected':
-                icon = '✅';
-                color = 'text-powerpuff-green';
-                showSpinner = false;
-                break;
-            case 'ready':
-                icon = '🎮';
-                color = 'text-powerpuff-green';
-                showSpinner = false;
-                break;
-            case 'error':
-                icon = '❌';
-                color = 'text-powerpuff-red';
-                showSpinner = false;
-                break;
-            case 'cancelled':
-                icon = '🚫';
-                color = 'text-gray-400';
-                showSpinner = false;
-                break;
-            case 'ended':
-                icon = '🏁';
-                color = 'text-gray-400';
-                showSpinner = false;
-                break;
-        }
-        statusElement.innerHTML = `
-            <div class="text-3xl mb-4">${icon}</div>
-            <h3 class="text-xl font-bold mb-2 ${color}">${message}</h3>
-            ${showSpinner ? '<div class="mt-4"><div class="animate-spin rounded-full h-16 w-16 border-4 border-powerpuff-green border-t-transparent mx-auto shadow-lg"></div><div class="mt-2 text-sm text-gray-300">Searching for players...</div></div>' : ''}
-        `;
-    }
-    initializeOnlineGameCanvas() {
-        const canvas = document.getElementById('onlineGameCanvas');
-        if (!canvas)
-            return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx)
-            return;
-        // Set up canvas for online game
-        ctx.fillStyle = '#0f0f23';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        // Add game controls
-        this.setupOnlineGameControls();
-    }
-    setupOnlineGameControls() {
-        // Handle keyboard input for online game
-        document.addEventListener('keydown', (e) => {
-            if (!this.onlineGameState.gameSocket || !this.onlineGameState.isInMatch)
-                return;
-            let key = '';
-            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
-                key = 'up';
-            }
-            else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
-                key = 'down';
-            }
-            else {
-                return;
-            }
-            const inputMessage = {
-                type: 'input',
-                inputType: 'keydown',
-                key: key
-            };
-            this.onlineGameState.gameSocket.send(JSON.stringify(inputMessage));
-        });
-        document.addEventListener('keyup', (e) => {
-            if (!this.onlineGameState.gameSocket || !this.onlineGameState.isInMatch)
-                return;
-            let key = '';
-            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
-                key = 'up';
-            }
-            else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
-                key = 'down';
-            }
-            else {
-                return;
-            }
-            const inputMessage = {
-                type: 'input',
-                inputType: 'keyup',
-                key: key
-            };
-            this.onlineGameState.gameSocket.send(JSON.stringify(inputMessage));
-        });
     }
     // AI Pong Game Methods
     initializeAIGame() {
@@ -5318,6 +5153,9 @@ class SimpleAuth {
             if (gameMode === 'ai') {
                 this.aiGameState.powerupsEnabled = enabled;
             }
+            if (gameMode === 'online') {
+                this.sendPowerupsPreferenceChange(enabled);
+            }
             // Update the game state immediately if it exists
             if (this.gameState) {
                 this.gameState.powerupsEnabled = enabled;
@@ -5353,7 +5191,9 @@ class SimpleAuth {
                 toggleContainer = document.querySelector('#aiPongSection .mb-8:nth-of-type(2)');
                 break;
             case 'online':
-                toggleContainer = document.querySelector('#onlineGameSection .mb-8:nth-of-type(2)');
+                const powerUpSection = document.querySelector('#onlineGameSection .mb-8.text-center .max-w-md.mx-auto');
+                if (powerUpSection && powerUpSection.parentElement)
+                    toggleContainer = powerUpSection.parentElement;
                 break;
         }
         if (toggleContainer) {
@@ -5373,7 +5213,10 @@ class SimpleAuth {
                 toggleContainer = document.querySelector('#aiPongSection .mb-8:nth-of-type(2)');
                 break;
             case 'online':
-                toggleContainer = document.querySelector('#onlineGameSection .mb-8:nth-of-type(2)');
+                const powerUpSection = document.querySelector('#onlineGameSection .mb-8.text-center .max-w-md.mx-auto');
+                if (powerUpSection && powerUpSection.parentElement) {
+                    toggleContainer = powerUpSection.parentElement;
+                }
                 break;
         }
         if (toggleContainer) {
