@@ -20,7 +20,6 @@ import aiGameRoutes from './routes/aiGameRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 
 import { globalErrorHandler } from './utils/errorHandler.js';
-import { setupWebSocketServer } from './services/webSocketService.js';
 import { prisma } from './prisma/prisma_lib.js';
 import { setupGracefulShutdown } from './utils/gracefulShutdown.js';
 
@@ -105,8 +104,5 @@ setupGracefulShutdown(fastify, prisma);
 console.log('Attempting to start server...');
 const address = await fastify.listen({ port: 3000, host: '0.0.0.0' });
 console.log(`Server running at ${address}`);
-
-// Set up the separate WebSocket server
-setupWebSocketServer();
 
 console.log('✅ Server started successfully');

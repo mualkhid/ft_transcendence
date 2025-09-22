@@ -64,6 +64,13 @@ export async function createMatchState(matchId, player1Username = 'Player1', pla
                 player1Username,
                 player2Username,
                 readyState: false,
+                powerUps: [],
+                powerUpSpawnTimer: 0,
+                powerUpsSpawned: 0,
+                maxPowerUpsPerGame: 2,
+                powerupsEnabled: false,
+                player1PowerupsPreference: null,
+                player2PowerupsPreference: null
             }
         };
         
@@ -71,6 +78,72 @@ export async function createMatchState(matchId, player1Username = 'Player1', pla
         return matchState;
     }
     return activeMatches.get(numericMatchId);
+}
+
+export function updatePlayerPowerupsPreference(matchId, playerNumber, enabled)
+{
+    const match = getMatch(matchId);
+    if (!match)
+        return null;
+
+    if (playerNumber === 1)
+        match.state.player1PowerupsPreference = enabled;
+    else if (playerNumber === 2)
+        match.state.player2PowerupsPreference = enabled;
+
+    // Update overall powerups setting - only enable if BOTH players want it
+    if (match.state.player1PowerupsPreference !== null && match.state.player2PowerupsPreference !== null)
+        match.state.powerupsEnabled = match.state.player1PowerupsPreference && match.state.player2PowerupsPreference;
+
+    return {
+        player1Preference: match.state.player1PowerupsPreference,
+        player2Preference: match.state.player2PowerupsPreference,
+        finalSetting: match.state.powerupsEnabled
+    };
+}
+
+function updatePowerUps(match) {
+    if (!match.state.powerupsEnabled) return;
+    
+    // Spawn power-ups (max 2 per game total)
+    if (match.state.powerUpsSpawned < match.state.maxPowerUpsPerGame && match.state.powerUps.length === 0 && Math.random() < 0.1)
+    {
+        const powerUp = {
+            x: Math.random() * (match.state.canvasWidth - 30),
+            y: Math.random() * (match.state.canvasHeight - 30),
+            width: 25,
+            height: 25,
+            type: 'point',
+            active: true,
+            duration: 600 // 10 seconds at 60fps
+        };
+        
+        match.state.powerUps.push(powerUp);
+        match.state.powerUpsSpawned++;
+    }
+    
+    // Update existing power-ups (decrease duration)
+    match.state.powerUps = match.state.powerUps.filter(powerUp => {
+        powerUp.duration--;
+        return powerUp.duration > 0;
+    });
+    
+    // Check ball collision with power-ups
+    match.state.powerUps.forEach((powerUp, index) => {
+        const ballX = match.state.ballPositionX;
+        const ballY = match.state.ballPositionY;
+        const ballRadius = match.state.radius;
+        
+        if (ballX + ballRadius > powerUp.x && ballX - ballRadius < powerUp.x + powerUp.width && ballY + ballRadius > powerUp.y &&
+            ballY - ballRadius < powerUp.y + powerUp.height)
+        {
+            if (match.state.speedX > 0)
+                match.state.scorePlayer1++;
+            else
+                match.state.scorePlayer2++;
+            match.state.powerUps.splice(index, 1);
+        }
+    });
 }
 
 export async function addPlayerToMatch(matchId, websocket, username = null)
@@ -333,7 +406,7 @@ export async function updateBall(matchId)
         match.state.gameFinished = true;
         return null;
     }
-
+    updatePowerUps(match);
     if (!match.state.matchStarted && match.state.connectedPlayers === 2)
     {
         match.state.matchStarted = true;
@@ -398,6 +471,8 @@ export async function updateBall(matchId)
         broadcastGameState(match);
     }
     checkCollisions(match);
+    
+    
     broadcastGameState(match);
 }
 
@@ -417,13 +492,15 @@ function broadcastGameState(match)
         player1Score: match.state.scorePlayer1,
         player2Score: match.state.scorePlayer2,
         player1Username: match.state.player1Username,
-        player2Username: match.state.player2Username
+        player2Username: match.state.player2Username,
+        powerUps: match.state.powerUps
     });
     if(match.player1 && match.player1.readyState === 1)
         match.player1.send(gameUpdate);
     if(match.player2 && match.player2.readyState === 1)
         match.player2.send(gameUpdate);
 }
+
 
 async function broadcastGameOver(match, winner, matchId)
 {
@@ -467,7 +544,7 @@ async function broadcastGameOver(match, winner, matchId)
     activeMatches.delete(matchId);
 }
 
-export async function findorCreateMatch(websocket, username)
+export async function findorCreateMatch(websocket, username, powerupsEnabled = true)
 {
     for (const [matchId, match] of activeMatches)
     {
@@ -483,7 +560,11 @@ export async function findorCreateMatch(websocket, username)
             if (existingSocket && existingSocket.readyState === 1 && existingSocket !== websocket)
                 throw new Error('You are already in this match!');
             else
+            {
+                const playerNumber = isPlayer1 ? 1 : 2;
+                updatePlayerPowerupsPreference(matchId, playerNumber, powerupsEnabled);
                 return { matchId, created: false, reconnected: true };
+            }
         }
     }
     for(const [waitingMatchId, waitingData] of waitingPlayers)
@@ -495,12 +576,14 @@ export async function findorCreateMatch(websocket, username)
                 continue;
             match.state.player2Username = username;
             await updatePlayer2(match.matchId, username);
+            updatePlayerPowerupsPreference(waitingMatchId, 2, powerupsEnabled);
             waitingPlayers.delete(waitingMatchId);
             return { matchId: waitingMatchId, created: false };
         }
     }
     const matchId = generateMatchId();
     await createMatchState(matchId, username, 'Player2');
+    updatePlayerPowerupsPreference(matchId, 1, powerupsEnabled);
     waitingPlayers.set(matchId, { username, timestamp: Date.now() });
     return { matchId, created: true };
 }
