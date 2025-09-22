@@ -61,7 +61,7 @@ export async function createTournament(request, reply)
 
 export async function recordLocalTournamentResult(request, reply)
 {
-    const { winner, loser, tournamentName = 'Local Tournament', tournamentId, round = 1 } = request.body;
+    const { winner, loser, tournamentName = 'Local Tournament', tournamentId, round = 1, player1Score, player2Score } = request.body;
 
     if (!winner || !loser)
         return reply.status(400).send({ error: 'Winner and loser are required' });
@@ -156,6 +156,38 @@ export async function recordLocalTournamentResult(request, reply)
                 data: matchData
             })
         );
+
+        // Also create a legacy Match row so Dashboard Recent Games can reflect correct winner and score
+        const legacyMatch = await prisma.match.create({
+            data: {
+                tournamentId: parseInt(tournamentId),
+                roundNumber: round,
+                matchNumber: 1,
+                status: 'FINISHED',
+                player1Alias: winner,
+                player2Alias: loser,
+                winnerAlias: winner,
+                startedAt: new Date(Date.now() - 60000),
+                finishedAt: new Date()
+            }
+        });
+        // Create MatchPlayer entries with scores if provided
+        await prisma.matchPlayer.createMany({
+            data: [
+                {
+                    matchId: legacyMatch.id,
+                    alias: winner,
+                    score: typeof player1Score === 'number' ? player1Score : 0,
+                    result: 'WIN'
+                },
+                {
+                    matchId: legacyMatch.id,
+                    alias: loser,
+                    score: typeof player2Score === 'number' ? player2Score : 0,
+                    result: 'LOSS'
+                }
+            ]
+        });
     }
 
     if (updates.length > 0) {

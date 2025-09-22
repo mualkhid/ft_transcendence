@@ -58,7 +58,7 @@ class SimpleAuth {
         aiPaddleY: 250,
         playerScore: 0,
         aiScore: 0,
-        
+        currentDifficulty: 'easy',
         gameStarted: false,
         // Power-ups (similar to 1v1 game)
         powerUps: [] as Array<{
@@ -88,7 +88,7 @@ class SimpleAuth {
     private endGameAudio: HTMLAudioElement | null = null;
     private aiGameAnimationId: number | null = null;
     private aiGameKeys = { w: false, s: false };
-    
+    private aiGameAvailableDifficulties: any = {};
     
     // AI Game Audio Properties
     private aiPaddleHitAudio: HTMLAudioElement | null = null;
@@ -2332,7 +2332,18 @@ class SimpleAuth {
         if (overallWinRate) overallWinRate.textContent = `${dashboardData.summary.overallWinRate}%`;
         if (totalGames) totalGames.textContent = dashboardData.summary.totalGames;
         if (skillLevel) skillLevel.textContent = dashboardData.summary.skillLevel.level;
-        if (currentStreak) currentStreak.textContent = '3'; // Would come from actual data
+        if (currentStreak) {
+            try {
+                const games = (dashboardData.recentGames || []) as Array<{ result?: string }>;
+                let streak = 0;
+                for (const g of games) {
+                    if ((g.result || '').toUpperCase() === 'WIN') streak++; else break;
+                }
+                currentStreak.textContent = String(streak);
+            } catch {
+                currentStreak.textContent = '0';
+            }
+        }
 
         // Update AI games stats
         const aiGamesWon = document.getElementById('ai-games-won');
@@ -6335,7 +6346,9 @@ class SimpleAuth {
                 // Only update non-ball related state before game starts
                 if (data.gameState) {
                     // Update only non-ball properties before game starts
-                    // difficulty removed
+                    if (data.gameState.currentDifficulty) {
+                        this.aiGameState.currentDifficulty = data.gameState.currentDifficulty;
+                    }
                     if (data.gameState.playerScore !== undefined) {
                         this.aiGameState.playerScore = data.gameState.playerScore;
                     }
@@ -6347,12 +6360,23 @@ class SimpleAuth {
                         this.aiGameState = { ...this.aiGameState, ...data.gameState };
                     }
                 }
-                // difficulty removed
+                if (data.availableDifficulties) {
+                    this.aiGameAvailableDifficulties = data.availableDifficulties.reduce((acc: any, diff: any) => {
+                        acc[diff.key] = diff;
+                        return acc;
+                    }, {});
+                }
                 this.updateAIScore();
-                // difficulty removed
+                if (this.aiGameState.currentDifficulty && this.aiGameAvailableDifficulties[this.aiGameState.currentDifficulty]) {
+                    
+                }
                 break;
                 
-            // difficulty removed
+            case 'difficulty-changed':
+                this.aiGameState.currentDifficulty = data.difficulty;
+                
+                this.logAIGame(data.message);
+                break;
                 
             case 'game-started':
                 this.logAIGame(data.message);
@@ -6508,7 +6532,7 @@ class SimpleAuth {
             aiPaddleY: 250,
             playerScore: 0,
             aiScore: 0,
-            
+            currentDifficulty: 'easy',
             gameStarted: false,
             // Power-ups (similar to 1v1 game)
             powerUps: [] as Array<{
@@ -6601,7 +6625,7 @@ class SimpleAuth {
         }
 
 
-        // Difficulty controls removed in UI; intentionally no bindings
+        // Difficulty UI removed
 
         // Game overlay buttons
         const replayBtn = document.getElementById('replayBtn');
@@ -6654,15 +6678,9 @@ class SimpleAuth {
         }
     }
 
-    private changeAIDifficulty(_difficulty: string): void {
-        // Difficulty feature removed; keep as no-op for backward compatibility
-        return;
-    }
+    // Difficulty feature removed
 
-    private updateAIDifficultyButtons(_activeDifficulty: string): void {
-        // Difficulty UI removed; no-op
-        return;
-    }
+    // Difficulty feature removed
 
     private hideAIGameOverlay(): void {
         const gameOverlay = document.getElementById('aiGameOverlay');
@@ -6806,7 +6824,7 @@ class SimpleAuth {
     }
 
 
-    // Difficulty UI removed
+    // Difficulty feature removed
 
     private logAIGame(message: string): void {
         const logElement = document.getElementById('aiGameLog');
@@ -6835,6 +6853,23 @@ class SimpleAuth {
             this.setupAIGameOverButtons();
 
             modal.classList.remove('hidden');
+
+            // Focus trap for accessibility
+            const container = modal.querySelector('.bg-white.rounded-2xl') as HTMLElement | null;
+            const focusable = modal.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (container) container.focus();
+            const onKeydown = (e: KeyboardEvent) => {
+                if (e.key === 'Tab') {
+                    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+                    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+                } else if (e.key === 'Escape') {
+                    this.hideAIGameOverModal();
+                    modal.removeEventListener('keydown', onKeydown);
+                }
+            };
+            modal.addEventListener('keydown', onKeydown);
         }
     }
 

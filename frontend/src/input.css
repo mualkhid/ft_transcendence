@@ -23,6 +23,23 @@
     z-index: 1 !important;
 }
 
+/* Accessibility: visible focus outlines */
+:focus-visible {
+    outline: 3px solid #FFD700 !important; /* high-contrast gold */
+    outline-offset: 2px !important;
+}
+
+/* Accessibility: text size preferences */
+html.text-size-small {
+    font-size: 14px;
+}
+html.text-size-default {
+    font-size: 16px;
+}
+html.text-size-large {
+    font-size: 18px;
+}
+
 /* Transparent navigation bar with dark shade */
 .main-nav {
     background: rgba(0, 0, 0, 0.3) !important;

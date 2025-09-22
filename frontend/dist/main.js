@@ -2005,8 +2005,22 @@ class SimpleAuth {
             totalGames.textContent = dashboardData.summary.totalGames;
         if (skillLevel)
             skillLevel.textContent = dashboardData.summary.skillLevel.level;
-        if (currentStreak)
-            currentStreak.textContent = '3'; // Would come from actual data
+        if (currentStreak) {
+            try {
+                const games = (dashboardData.recentGames || []);
+                let streak = 0;
+                for (const g of games) {
+                    if ((g.result || '').toUpperCase() === 'WIN')
+                        streak++;
+                    else
+                        break;
+                }
+                currentStreak.textContent = String(streak);
+            }
+            catch {
+                currentStreak.textContent = '0';
+            }
+        }
         // Update AI games stats
         const aiGamesWon = document.getElementById('ai-games-won');
         const aiWinRate = document.getElementById('ai-win-rate');
@@ -5579,12 +5593,10 @@ class SimpleAuth {
                 }
                 this.updateAIScore();
                 if (this.aiGameState.currentDifficulty && this.aiGameAvailableDifficulties[this.aiGameState.currentDifficulty]) {
-                    this.updateAIDifficultyDisplay(this.aiGameState.currentDifficulty, this.aiGameAvailableDifficulties[this.aiGameState.currentDifficulty]);
                 }
                 break;
             case 'difficulty-changed':
                 this.aiGameState.currentDifficulty = data.difficulty;
-                this.updateAIDifficultyDisplay(data.difficulty, data.aiConfig);
                 this.logAIGame(data.message);
                 break;
             case 'game-started':
@@ -5776,23 +5788,7 @@ class SimpleAuth {
         else {
             console.error('AI customize button not found');
         }
-        // Difficulty buttons
-        const easyBtn = document.getElementById('aiEasyBtn');
-        if (easyBtn) {
-            easyBtn.addEventListener('click', () => this.changeAIDifficulty('EASY'));
-        }
-        const mediumBtn = document.getElementById('aiMediumBtn');
-        if (mediumBtn) {
-            mediumBtn.addEventListener('click', () => this.changeAIDifficulty('MEDIUM'));
-        }
-        const hardBtn = document.getElementById('aiHardBtn');
-        if (hardBtn) {
-            hardBtn.addEventListener('click', () => this.changeAIDifficulty('HARD'));
-        }
-        const expertBtn = document.getElementById('aiExpertBtn');
-        if (expertBtn) {
-            expertBtn.addEventListener('click', () => this.changeAIDifficulty('EXPERT'));
-        }
+        // Difficulty UI removed
         // Game overlay buttons
         const replayBtn = document.getElementById('replayBtn');
         if (replayBtn) {
@@ -5836,57 +5832,8 @@ class SimpleAuth {
             this.logAIGame('Disconnecting...');
         }
     }
-    changeAIDifficulty(difficulty) {
-        this.aiGameState.currentDifficulty = difficulty.toLowerCase();
-        this.logAIGame(`Changing difficulty to: ${difficulty}`);
-        // Update difficulty button states immediately for visual feedback
-        this.updateAIDifficultyButtons(difficulty);
-        // Ensure WebSocket connection is established
-        if (!this.aiGameWs || this.aiGameWs.readyState !== WebSocket.OPEN) {
-            this.logAIGame('WebSocket not connected, establishing connection...');
-            this.connectAIGame();
-            // Wait for connection to be established, then send difficulty change
-            setTimeout(() => {
-                if (this.aiGameWs && this.aiGameWs.readyState === WebSocket.OPEN) {
-                    this.aiGameWs.send(JSON.stringify({
-                        type: 'change-difficulty',
-                        difficulty: difficulty
-                    }));
-                    this.logAIGame(`Sent difficulty change to backend: ${difficulty}`);
-                }
-                else {
-                    this.logAIGame('Failed to establish WebSocket connection for difficulty change');
-                }
-            }, 500);
-        }
-        else {
-            // WebSocket is already connected, send difficulty change immediately
-            this.aiGameWs.send(JSON.stringify({
-                type: 'change-difficulty',
-                difficulty: difficulty
-            }));
-            this.logAIGame(`Sent difficulty change to backend: ${difficulty}`);
-        }
-    }
-    updateAIDifficultyButtons(activeDifficulty) {
-        const difficulties = ['EASY', 'MEDIUM', 'HARD', 'EXPERT'];
-        difficulties.forEach(diff => {
-            const btn = document.getElementById(`ai${diff}Btn`);
-            if (btn) {
-                // Remove all active states
-                btn.classList.remove('ring-4', 'ring-white', 'ring-opacity-50', 'border-4', 'border-white', 'scale-110');
-                // Add active state to selected difficulty
-                if (diff === activeDifficulty) {
-                    btn.classList.add('ring-4', 'ring-white', 'ring-opacity-50', 'border-4', 'border-white', 'scale-110');
-                }
-            }
-        });
-        // Update difficulty text display
-        const difficultyText = document.getElementById('currentDifficultyText');
-        if (difficultyText) {
-            difficultyText.textContent = activeDifficulty;
-        }
-    }
+    // Difficulty feature removed
+    // Difficulty feature removed
     hideAIGameOverlay() {
         const gameOverlay = document.getElementById('aiGameOverlay');
         if (gameOverlay) {
@@ -5998,14 +5945,7 @@ class SimpleAuth {
             scoreDisplay.textContent = `Player: ${this.aiGameState.playerScore} - AI: ${this.aiGameState.aiScore}`;
         }
     }
-    updateAIDifficultyDisplay(difficulty, config) {
-        const difficultyDisplay = document.getElementById('aiDifficultyDisplay');
-        if (difficultyDisplay) {
-            difficultyDisplay.textContent = `Difficulty: ${config.name} (${config.speed}x)`;
-        }
-        // Also update the button visual states
-        this.updateAIDifficultyButtons(difficulty);
-    }
+    // Difficulty feature removed
     logAIGame(message) {
         const logElement = document.getElementById('aiGameLog');
         if (logElement) {
@@ -6033,6 +5973,30 @@ class SimpleAuth {
             // Set up button event listeners
             this.setupAIGameOverButtons();
             modal.classList.remove('hidden');
+            // Focus trap for accessibility
+            const container = modal.querySelector('.bg-white.rounded-2xl');
+            const focusable = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (container)
+                container.focus();
+            const onKeydown = (e) => {
+                if (e.key === 'Tab') {
+                    if (e.shiftKey && document.activeElement === first) {
+                        e.preventDefault();
+                        last?.focus();
+                    }
+                    else if (!e.shiftKey && document.activeElement === last) {
+                        e.preventDefault();
+                        first?.focus();
+                    }
+                }
+                else if (e.key === 'Escape') {
+                    this.hideAIGameOverModal();
+                    modal.removeEventListener('keydown', onKeydown);
+                }
+            };
+            modal.addEventListener('keydown', onKeydown);
         }
     }
     setupAIGameOverButtons() {

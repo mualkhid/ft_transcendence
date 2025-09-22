@@ -490,8 +490,9 @@
     </style>
 </head>
 <body>
+    <a href="#mainContent" style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden;" onfocus="this.style.position='fixed';this.style.left='8px';this.style.top='8px';this.style.width='auto';this.style.height='auto';this.style.background='#000';this.style.color='#fff';this.style.padding='8px 12px';this.style.borderRadius='6px'">Skip to content</a>
     <!-- Main Website Navigation -->
-    <nav class="main-nav">
+    <nav class="main-nav" role="navigation" aria-label="Primary">
         <div class="main-nav-content">
             <div class="main-nav-brand">
                 <img src="/imgs/logo.png" alt="Powerpuff Girls Logo" class="main-nav-logo">
@@ -507,7 +508,7 @@
         </div>
     </nav>
 
-    <div class="dashboard-container">
+    <main id="mainContent" role="main" aria-live="polite" class="dashboard-container">
         <!-- Header -->
         <div class="header">
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -727,7 +728,7 @@
         </div>
 
 
-    </div>
+    </main>
 
     <script>
         // Dashboard functionality
@@ -842,7 +843,17 @@
                 document.getElementById('overall-win-rate').textContent = `${data.summary.overallWinRate}%`;
                 document.getElementById('total-games').textContent = data.summary.totalGames;
                 document.getElementById('skill-level').textContent = data.summary.skillLevel.level;
-                document.getElementById('current-streak').textContent = '3'; // Would come from actual data
+                // Compute current streak from recent games (wins until first loss)
+                try {
+                    const recent = (data.recentGames || []);
+                    let streak = 0;
+                    for (const g of recent) {
+                        if ((g.result || '').toUpperCase() === 'WIN') streak++; else break;
+                    }
+                    document.getElementById('current-streak').textContent = String(streak);
+                } catch (e) {
+                    document.getElementById('current-streak').textContent = '0';
+                }
 
                 // Recent games
                 this.renderRecentGames(data.recentGames);
