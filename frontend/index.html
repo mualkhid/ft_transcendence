@@ -1910,7 +1910,7 @@
             // Logging function
             function log(message) {
                 const timestamp = new Date().toLocaleTimeString();
-                console.log(`[${timestamp}] ${message}`);
+
             }
 
             // Update score display
@@ -2000,7 +2000,7 @@
             // Connect to AI game WebSocket
             function connect() {
                 try {
-                    console.log('🔌 Attempting to connect to WebSocket...');
+
                     ws = new WebSocket('wss://localhost/ai-game');
                     
                     ws.onopen = () => {
@@ -2052,25 +2052,16 @@
                                     break;
                                     
                                 case 'game-update':
-                                    console.log('🎮 Received game update:', data.gameState);
-                                    console.log('🎮 Current scores before update:', {
-                                        player: gameState.playerScore,
-                                        ai: gameState.aiScore
-                                    });
-                                    
+
+
                                     gameState = { ...gameState, ...data.gameState };
-                                    
-                                    console.log('🎮 Scores after update:', {
-                                        player: gameState.playerScore,
-                                        ai: gameState.aiScore
-                                    });
-                                    
+
                                     updateScore();
                                     drawGame(); // Redraw with new game state
                                     
                                     // Check if this is the final score update before game over
                                     if (gameState.playerScore >= gameState.winningScore || gameState.aiScore >= gameState.winningScore) {
-                                        console.log('🎮 Final score reached! Player:', gameState.playerScore, 'AI:', gameState.aiScore);
+
                                         // Force a final score display update
                                         setTimeout(() => {
                                             updateScore();
@@ -2094,7 +2085,7 @@
                                     break;
                                     
                                 case 'game-over':
-                                    console.log('🎮 GAME OVER MESSAGE RECEIVED:', data);
+
                                     log(`Game Over! ${data.winner === 'player' ? 'You win!' : 'AI wins!'} (Difficulty: ${data.difficulty})`);
                                     
                                     // Stop the game loop immediately to prevent further updates
@@ -2102,26 +2093,18 @@
                                     
                                     
                                     // Log current game state before updating
-                                    console.log('🎮 Current game state before update:', {
-                                        playerScore: gameState.playerScore,
-                                        aiScore: gameState.aiScore
-                                    });
-                                    
+
                                     // Update the game state with final scores from the game-over message
                                     if (data.playerScore !== undefined && data.aiScore !== undefined) {
                                         gameState.playerScore = data.playerScore;
                                         gameState.aiScore = data.aiScore;
-                                        console.log('🎮 Final score set from game-over message:', data.playerScore, '-', data.aiScore);
+
                                     } else {
-                                        console.log('🎮 No final scores in game-over message, using current state');
+
                                     }
                                     
                                     // Log final game state
-                                    console.log('🎮 Final game state:', {
-                                        playerScore: gameState.playerScore,
-                                        aiScore: gameState.aiScore
-                                    });
-                                    
+
                                     // Ensure final score is displayed
                                     updateScore();
                                     drawGame();
@@ -2153,7 +2136,7 @@
                     };
 
                     ws.onclose = (event) => {
-                        console.log('🔌 WebSocket closed:', event.code, event.reason);
+
                         log(`Connection closed: ${event.reason || 'No reason provided'} (Code: ${event.code})`);
                         connectionStatus.textContent = 'Disconnected';
                         gameStatus.textContent = 'Connection lost';
@@ -2188,10 +2171,10 @@
 
             // Send start game command
             function startGame() {
-                console.log('🎮 Start game button clicked!');
-                console.log('🎮 WebSocket state:', ws ? ws.readyState : 'null');
+
+
                 if (ws && ws.readyState === WebSocket.OPEN) {
-                    console.log('🎮 Sending start-game command...');
+
                     ws.send(JSON.stringify({ type: 'start-game' }));
                     log('Starting game...');
                 } else {
@@ -2217,37 +2200,36 @@
             }
 
             // Event listeners
-            console.log('🎮 Setting up event listeners...');
-            console.log('🎮 Connect button:', connectBtn);
-            console.log('🎮 Start button:', startBtn);
-            
+
+
+
             if (connectBtn) {
                 connectBtn.addEventListener('click', connect);
-                console.log('🎮 Connect button listener added');
+
             } else {
                 console.error('❌ Connect button not found!');
             }
             
             if (disconnectBtn) {
                 disconnectBtn.addEventListener('click', disconnect);
-                console.log('🎮 Disconnect button listener added');
+
             }
             
             if (startBtn) {
                 startBtn.addEventListener('click', startGame);
-                console.log('🎮 Start button listener added');
+
             } else {
                 console.error('❌ Start button not found!');
             }
             
             if (pauseBtn) {
                 pauseBtn.addEventListener('click', pauseGame);
-                console.log('🎮 Pause button listener added');
+
             }
             
             if (restartBtn) {
                 restartBtn.addEventListener('click', restartGame);
-                console.log('🎮 Restart button listener added');
+
             }
 
             // Difficulty button event listeners
@@ -2352,7 +2334,7 @@
                 modal.classList.remove('hidden');
 
                 // Refresh stats after game completion
-                console.log('🎮 Game completed, refreshing stats...');
+
                 if (window.simpleAuth && window.simpleAuth.updateHomeDashboard) {
                     window.simpleAuth.updateHomeDashboard().catch(error => {
                         console.error('Error refreshing home dashboard after AI game:', error);
@@ -2380,17 +2362,16 @@
             log('Click Connect to start playing against the AI!');
             log('Use W and S keys to control your paddle.');
             log('Select your preferred AI difficulty level!');
-            console.log('🎮 AI Pong Game loaded successfully!');
-            console.log('🎮 Keyboard event listeners should be active now!');
+
+
         }
 
         // Make initializeAIGame available globally
         window.initializeAIGame = initializeAIGame;
         
         // Debug: Log that the script has loaded
-        console.log('🎮 AI Game script loaded and ready!');
-        console.log('🎮 initializeAIGame function available:', typeof window.initializeAIGame);
-        
+
+
         // Also make it available on the global scope for easier access
         window.simpleAuth = window.simpleAuth || {};
         window.simpleAuth.initializeAIGame = initializeAIGame;
