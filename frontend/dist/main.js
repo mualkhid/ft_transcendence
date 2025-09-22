@@ -777,7 +777,7 @@ class SimpleAuth {
                 const profileAvatar = document.getElementById('profileAvatar');
                 if (profileAvatar) {
                     // Add timestamp to prevent caching
-                    const avatarSrc = `https://${HOST_IP}${data.avatarUrl}?t=${Date.now()}`;
+                    const avatarSrc = `${data.avatarUrl}?t=${Date.now()}`;
                     profileAvatar.src = avatarSrc;
                 }
                 // Update current user data
@@ -907,7 +907,7 @@ class SimpleAuth {
                 <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
                     <div class="flex items-center space-x-3">
                         <div class="relative">
-                            <img src="${user.avatarUrl && user.avatarUrl !== '/avatars/default.jpg' ? `https://${HOST_IP}${user.avatarUrl}?t=${Date.now()}` : `./imgs/default.jpg`}" 
+                            <img src="${user.avatarUrl && user.avatarUrl !== '/avatars/default.jpg' ? `${user.avatarUrl}?t=${Date.now()}` : `./imgs/default.jpg`}" 
                                  alt="${user.username}" 
                                  class="w-12 h-12 rounded-full object-cover border-2 border-white border-opacity-30">
                         </div>
@@ -941,7 +941,7 @@ class SimpleAuth {
                 <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
                     <div class="flex items-center space-x-3">
                         <div class="relative">
-                            <img src="${friend.avatarUrl && friend.avatarUrl !== '/avatars/default.jpg' ? `https://${HOST_IP}${friend.avatarUrl}?t=${Date.now()}` : `./imgs/default.jpg`}" 
+                            <img src="${friend.avatarUrl && friend.avatarUrl !== '/avatars/default.jpg' ? `${friend.avatarUrl}?t=${Date.now()}` : `./imgs/default.jpg`}" 
                                  alt="${friend.username}" 
                                  class="w-12 h-12 rounded-full object-cover border-2 border-white border-opacity-30">
                             <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${isOnline ? 'bg-green-400' : 'bg-gray-400'}"></div>
@@ -978,7 +978,7 @@ class SimpleAuth {
             <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
                 <div class="flex items-center space-x-3">
                     <div class="relative">
-                        <img src="${request.avatarUrl && request.avatarUrl !== '/avatars/default.jpg' ? `https://${HOST_IP}${request.avatarUrl}?t=${Date.now()}` : `./imgs/default.jpg`}" 
+                        <img src="${request.avatarUrl && request.avatarUrl !== '/avatars/default.jpg' ? `{request.avatarUrl}?t=${Date.now()}` : `./imgs/default.jpg`}" 
                              alt="${request.username}" 
                              class="w-12 h-12 rounded-full object-cover border-2 border-white border-opacity-30">
                     </div>
@@ -3369,7 +3369,7 @@ class SimpleAuth {
         if (profileAvatar) {
             if (this.currentUser.avatarUrl && this.currentUser.avatarUrl !== '/avatars/default.jpg') {
                 // Use the user's custom avatar (not the default one from database)
-                const avatarSrc = `https://${HOST_IP}${this.currentUser.avatarUrl}?t=${Date.now()}`;
+                const avatarSrc = `${this.currentUser.avatarUrl}?t=${Date.now()}`;
                 profileAvatar.src = avatarSrc;
             }
             else {
