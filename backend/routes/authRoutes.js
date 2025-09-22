@@ -5,7 +5,6 @@ import {
   setup2FA,
   refreshToken,
   verify2FA,
-  disable2FA,
   getCurrentUser 
 } from '../controller/authController.js';
 
@@ -41,7 +40,6 @@ export default function authRoutes(fastify, _opts, done) {
   // 2FA Routes
   fastify.post('/auth/setup-2fa', { preHandler: authenticate }, setup2FA);
   fastify.post('/auth/verify-2fa', { preHandler: authenticate }, verify2FA);
-  fastify.post('/auth/disable-2fa', { preHandler: authenticate }, disable2FA);
 
   // Google OAuth endpoints
   fastify.get('/auth/google', handleGoogleAuth);

@@ -1,11 +1,9 @@
 import { prisma } from '../prisma/prisma_lib.js';
-
 import bcrypt from 'bcrypt';
 import { generateToken } from '../services/jwtService.js';
 import sanitizeHtml from 'sanitize-html';
 import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
-import crypto from 'crypto';
 import {notFoundError, AuthenticationError} from '../utils/errors.js'
 import validator from 'validator'
 
@@ -373,28 +371,5 @@ export async function verify2FA(req, reply) {
     } catch (error) {
         console.error('Verify 2FA error:', error);
         reply.status(500).send({ error: 'Failed to verify 2FA' });
-    }
-}
-
-// Disable 2FA
-export async function disable2FA(req, reply) {
-    try {
-        const userId = req.user.id;
-
-        // Disable 2FA and clear secrets
-        await prisma.user.update({
-            where: { id: req.user.id },
-            data: { isTwoFactorEnabled: false }
-        });
-
-        const user = await prisma.user.findUnique({
-            where: { id: req.user.id },
-            select: sanitizedUserSelect // Make sure this includes isTwoFactorEnabled
-        });
-
-        return reply.status(200).send({ user });
-    } catch (error) {
-        console.error('Disable 2FA error:', error);
-        reply.status(500).send({ error: 'Failed to disable 2FA' });
     }
 }

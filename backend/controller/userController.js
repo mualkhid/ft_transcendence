@@ -1,7 +1,5 @@
-import bcrypt from 'bcrypt';
 import sanitizeHtml from 'sanitize-html';
 import { prisma } from '../prisma/prisma_lib.js';
-import crypto from 'crypto';
 
 // GDPR: Anonymize user data
 export async function anonymizeUser(req, reply) {

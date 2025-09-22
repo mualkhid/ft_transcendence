@@ -411,13 +411,8 @@ class SimpleAuth {
                         // Show the enable button
                         if (enable2faBtn) enable2faBtn.style.display = 'block';
                     } else if (!isEnabled && this.currentUser?.isTwoFactorEnabled) {
-                        // Handle disable 2FA
-                        if (confirm('Are you sure you want to disable 2FA?')) {
-                            await this.disable2FA();
-                        } else {
                             // Revert toggle
                             (e.target as HTMLInputElement).checked = true;
-                        }
                     } else {
                         // Hide the enable button
                         if (enable2faBtn) enable2faBtn.style.display = 'none';
@@ -555,32 +550,6 @@ class SimpleAuth {
         } catch (error) {
             console.error('Error verifying 2FA:', error);
             this.showStatus('An error occurred while verifying 2FA.', 'error');
-        }
-    }
-    
-    private async disable2FA(): Promise<void> {
-        try {
-            const response = await fetch(`api/auth/disable-2fa`, {
-                method: 'POST',
-                credentials: 'include',
-            });
-    
-            if (response.ok) {
-                this.showStatus('2FA disabled successfully', 'success');
-                
-                // Update toggle and user state
-                const twoFactorToggle = document.getElementById('twoFactorToggle') as HTMLInputElement;
-                if (twoFactorToggle) twoFactorToggle.checked = false;
-    
-                await this.loadUserProfile();
-                this.updateProfileDisplay();
-            } else {
-                const errorData = await response.json();
-                this.showStatus(errorData.error || 'Failed to disable 2FA', 'error');
-            }
-        } catch (error) {
-            console.error('Error disabling 2FA:', error);
-            this.showStatus('An error occurred while disabling 2FA.', 'error');
         }
     }
 
