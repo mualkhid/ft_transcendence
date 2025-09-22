@@ -1065,7 +1065,7 @@ class SimpleAuth {
             <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
                 <div class="flex items-center space-x-3">
                     <div class="relative">
-                        <img src="${request.avatarUrl && request.avatarUrl !== '/avatars/default.jpg' ? `{request.avatarUrl}?t=${Date.now()}` : `./imgs/default.jpg`}" 
+                        <img src="${request.avatarUrl && request.avatarUrl !== '/avatars/default.jpg' ? `${request.avatarUrl}?t=${Date.now()}` : `./imgs/default.jpg`}" 
                              alt="${request.username}" 
                              class="w-12 h-12 rounded-full object-cover border-2 border-white border-opacity-30">
                     </div>
@@ -1172,7 +1172,10 @@ class SimpleAuth {
                 const data = await response.json();
 
                 this.showStatus('Friend request accepted!', 'success');
-                this.loadFriendsData(); // Refresh friends data
+                setTimeout(() => {
+                    this.loadFriendsData();
+                }, 100);
+                // this.loadFriendsData(); // Refresh friends data
             } else if (response.status === 401) {
                 this.showStatus('Session expired. Please login again.', 'error');
                 localStorage.removeItem('user');
