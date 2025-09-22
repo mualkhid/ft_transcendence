@@ -23,7 +23,7 @@ export const GAME_CONFIG = {
     PADDLE: {
         WIDTH: 15,
         HEIGHT: 100,
-        SPEED: 4,
+        SPEED: 8,
         COLOR: {
             PLAYER: '#60a5fa',  // Blue
             AI: '#f87171'        // Red
@@ -42,8 +42,7 @@ export const GAME_CONFIG = {
     AI_DIFFICULTY: {
         EASY: {
             name: 'Easy',
-            description: 'AI makes mistakes and moves slowly',
-            speed: 2,
+            description: 'AI makes more mistakes and has slower reactions',
             tolerance: 25,
             predictionAccuracy: 0.7,
             reactionDelay: 100,
@@ -52,7 +51,6 @@ export const GAME_CONFIG = {
         MEDIUM: {
             name: 'Medium',
             description: 'Balanced AI performance',
-            speed: 4,
             tolerance: 10,
             predictionAccuracy: 0.9,
             reactionDelay: 50,
@@ -60,8 +58,7 @@ export const GAME_CONFIG = {
         },
         HARD: {
             name: 'Hard',
-            description: 'AI is very accurate and fast',
-            speed: 6,
+            description: 'AI is very accurate with quick reactions',
             tolerance: 5,
             predictionAccuracy: 0.95,
             reactionDelay: 25,
@@ -69,8 +66,7 @@ export const GAME_CONFIG = {
         },
         EXPERT: {
             name: 'Expert',
-            description: 'AI is nearly perfect',
-            speed: 8,
+            description: 'AI is nearly perfect with instant reactions',
             tolerance: 2,
             predictionAccuracy: 0.98,
             reactionDelay: 16,
