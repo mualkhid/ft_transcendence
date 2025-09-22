@@ -158,7 +158,7 @@ export async function login(req, reply) {
         sameSite: 'lax',
         path: '/',
         maxAge: 3600,
-        ...(isLocalhost ? { domain: 'localhost' } : {})
+        ...(isLocalhost ? { domain: req.headers.host?.split(':')[0] } : {})
     });
 
     console.log('✅ Cookie set, sending response');
@@ -241,7 +241,7 @@ export async function refreshToken(req, reply) {
         sameSite: 'lax',
         path: '/',
         maxAge: 3600,
-        ...(isLocalhost ?  { domain: 'localhost' }: {})
+        ...(isLocalhost ?  { domain: req.hostname }: {})
     });
     
     // Update last seen

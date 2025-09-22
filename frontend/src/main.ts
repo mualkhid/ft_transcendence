@@ -1357,7 +1357,19 @@ class SimpleAuth {
                 this.showStatus('Login successful!', 'success');
                 
                 this.showPage('mainApp');
-                this.showSection('homeSection');
+                
+                // Check for URL section or saved section first
+                const savedSection = localStorage.getItem("lastActiveSection");
+                const urlSection = this.getUrlSection();
+                
+                if (savedSection) {
+                    this.showSection(savedSection, false);
+                } else if (urlSection) {
+                    this.showSection(urlSection, false);
+                } else {
+                    this.showSection('homeSection');
+                }
+                
                 this.loadUserProfile();
             } else if (response.status === 401 && data.require2FA) {
                 // Show 2FA form
@@ -1425,7 +1437,6 @@ class SimpleAuth {
 
               // Show the main app with cached data even without cookie
               this.showPage("mainApp");
-              this.showSection('homeSection');
               this.updateHomeDashboard();
               this.updateProfileDisplay();
               
@@ -1446,16 +1457,11 @@ class SimpleAuth {
               const urlSection = this.getUrlSection();
       
               if (savedSection) {
-
                 this.showSection(savedSection, false); // Don't update history on initial load
               } else if (urlSection) {
-
                 this.showSection(urlSection, false); // Don't update history on initial load
               } else {
-
-                setTimeout(() => {
-                    this.showSection("homeSection", false); // Don't update history on initial load
-                }, 100);
+                this.showSection("homeSection", false); // Don't update history on initial load
               }
       
               return;
@@ -1463,7 +1469,6 @@ class SimpleAuth {
 
             // Show the main app with cached data
             this.showPage("mainApp");
-            this.showSection('homeSection');
             this.updateHomeDashboard();
             this.updateProfileDisplay();
             
@@ -1484,16 +1489,11 @@ class SimpleAuth {
             const urlSection = this.getUrlSection();
       
             if (savedSection) {
-
               this.showSection(savedSection, false); // Don't update history on initial load
             } else if (urlSection) {
-
               this.showSection(urlSection, false); // Don't update history on initial load
             } else {
-
-              setTimeout(() => {
-                  this.showSection("homeSection", false); // Don't update history on initial load
-              }, 100);
+              this.showSection("homeSection", false); // Don't update history on initial load
             }
       
             return;
@@ -1529,18 +1529,24 @@ class SimpleAuth {
             localStorage.setItem("user", JSON.stringify(data.user));
             
             this.showPage("mainApp");
-            this.showSection('homeSection');
-            this.loadUserProfile();
-            this.updateHomeDashboard();
             
             // Initialize history state after main app is shown
             this.initializeHistoryState();
             
-            // Show home section by default after Google login
-            // Use setTimeout to ensure DOM is ready and background is applied properly
-            setTimeout(() => {
-                this.showSection("homeSection", false); // Don't update history on initial load
-            }, 100);
+            // Check for URL section or saved section first
+            const savedSection = localStorage.getItem("lastActiveSection");
+            const urlSection = this.getUrlSection();
+            
+            if (savedSection) {
+                this.showSection(savedSection, false);
+            } else if (urlSection) {
+                this.showSection(urlSection, false);
+            } else {
+                this.showSection('homeSection');
+            }
+            
+            this.loadUserProfile();
+            this.updateHomeDashboard();
           } else {
 
             // For Google OAuth, we should try to handle this more gracefully
@@ -1591,7 +1597,6 @@ class SimpleAuth {
 
               // Show the main app with cached data
               this.showPage("mainApp");
-              this.showSection('homeSection');
               this.updateHomeDashboard();
               this.updateProfileDisplay();
               
@@ -1603,16 +1608,11 @@ class SimpleAuth {
               const urlSection = this.getUrlSection();
       
               if (savedSection) {
-
                 this.showSection(savedSection, false); // Don't update history on initial load
               } else if (urlSection) {
-
                 this.showSection(urlSection, false); // Don't update history on initial load
               } else {
-
-                setTimeout(() => {
-                    this.showSection("homeSection", false); // Don't update history on initial load
-                }, 100);
+                this.showSection("homeSection", false); // Don't update history on initial load
               }
             } else {
 
@@ -1628,7 +1628,6 @@ class SimpleAuth {
 
             // Show the main app with cached data as a fallback
             this.showPage("mainApp");
-            this.showSection('homeSection');
             this.updateHomeDashboard();
             this.updateProfileDisplay();
             
@@ -1640,16 +1639,11 @@ class SimpleAuth {
             const urlSection = this.getUrlSection();
       
             if (savedSection) {
-
               this.showSection(savedSection, false); // Don't update history on initial load
             } else if (urlSection) {
-
               this.showSection(urlSection, false); // Don't update history on initial load
             } else {
-
-              setTimeout(() => {
-                  this.showSection("homeSection", false); // Don't update history on initial load
-              }, 100);
+              this.showSection("homeSection", false); // Don't update history on initial load
             }
           }
         }
@@ -1762,8 +1756,17 @@ class SimpleAuth {
                     return 'profileSection';
                 case 'home':
                     return 'homeSection';
+                case 'dashboard':
+                    return 'dashboardSection';
+                case 'game':
+                    return 'gameSection';
+                case 'online-game':
+                    return 'onlineGameSection';
+                case 'ai-game':
+                    return 'aiPongSection';
+                case 'tournament':
+                    return 'localTournamentSection';
                 default:
-
                     return null;
             }
         }
