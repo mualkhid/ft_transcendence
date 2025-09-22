@@ -792,7 +792,13 @@ class SimpleAuth {
             } else {
                 const errorData = await response.json();
                 console.error('Password update error:', errorData);
-                this.showStatus(errorData.message || errorData.error || 'Failed to update password', 'error');
+                
+                // Check if it's a password validation error and show custom message
+                if (errorData.message && errorData.message.includes('password')) {
+                    this.showStatus('Enter valid characters, check password requirements', 'error');
+                } else {
+                    this.showStatus(errorData.message || errorData.error || 'Failed to update password', 'error');
+                }
             }
         } catch (error) {
             console.error('Password update error:', error);
@@ -1302,8 +1308,12 @@ class SimpleAuth {
                     this.showPage('loginPage');
                 }, 2000);
             } else {
-
-                this.showStatus(data.error || 'Registration failed', 'error');
+                // Check if it's a password validation error and show custom message
+                if (data.error && data.error.includes('password')) {
+                    this.showStatus('Enter valid characters, check password requirements', 'error');
+                } else {
+                    this.showStatus(data.error || 'Registration failed', 'error');
+                }
             }
         } catch (error) {
             console.error('Registration error:', error);
