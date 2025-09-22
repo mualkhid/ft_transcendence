@@ -4,7 +4,7 @@ import { generateToken } from '../services/jwtService.js';
 import sanitizeHtml from 'sanitize-html';
 import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
-import {notFoundError, AuthenticationError} from '../utils/errors.js'
+import {notFoundError, AuthenticationError, ValidationError} from '../utils/errors.js'
 import validator from 'validator'
 
 const sanitizedUserSelect = { id: true, username: true, email: true, createdAt: true, lastSeen: true, updatedAt: true, isTwoFactorEnabled: true};
