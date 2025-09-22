@@ -727,7 +727,7 @@ class SimpleAuth {
         }
         const requiresCurrent = !!this.currentUser.hasPassword;
         if ((requiresCurrent && (!currentPassword || !newPassword)) || (!requiresCurrent && !newPassword)) {
-            this.showStatus('Please enter ' + (requiresCurrent ? 'both curreent and new passwords' : 'a new password'), 'error');
+            this.showStatus('Please enter ' + (requiresCurrent ? 'both current and new passwords' : 'a new password'), 'error');
             return;
         }
 
