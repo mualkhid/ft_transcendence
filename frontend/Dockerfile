@@ -4,7 +4,7 @@ FROM node:20-alpine AS build
 WORKDIR /app
 ARG HOST_IP=localhost
 COPY package*.json ./
-RUN npm ci || npm install
+RUN npm install
 RUN echo ">>> HOST_IP during build = ${HOST_IP}"
 COPY . .
 RUN npm run build        # must produce /app/dist
