@@ -6,8 +6,6 @@ export async function createMatch(player1Alias, player2Alias, customId = null)
 {
     const matchData = {
         tournamentId: null,
-        roundNumber: 1,
-        matchNumber: 1,
         status: 'PENDING',
         player1Alias,
         player2Alias,

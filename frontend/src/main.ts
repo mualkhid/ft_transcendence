@@ -3887,7 +3887,7 @@ class SimpleAuth {
         }
     }
 
-    private async updateTournamentStats(userWon: boolean, player1Score: number, player2Score: number, opponentName: string, gameDuration?: number): Promise<void> {
+    private async updateTournamentStats(tournamentId: number | undefined, userWon: boolean, player1Score: number, player2Score: number, opponentName: string, gameDuration?: number): Promise<void> {
         // Update stats specifically for tournament games with complete game data
         if (!this.currentUser) {
 
@@ -3905,10 +3905,11 @@ class SimpleAuth {
                     userId: this.currentUser.id,
                     won: userWon,
                     gameType: 'TOURNAMENT',
+                    tournamentId: tournamentId,
                     player1Score: player1Score,
                     player2Score: player2Score,
                     opponentName: opponentName,
-                    gameDuration: gameDuration
+                    gameDuration: gameDuration,
                 })
             });
 
@@ -4150,10 +4151,7 @@ class SimpleAuth {
     private tournamentMatchStartTime: Date | null = null;
     private originalEndGame: ((winner: number) => Promise<void>) | null = null;
 
-    private async recordTournamentResult(winner: string, loser: string): Promise<void> {
-
-
-
+    private async recordTournamentResult(winner: string, loser: string, winnerScore: number, loserScore: number): Promise<void> {
         if (!this.currentUser) {
 
             return;
@@ -4164,7 +4162,8 @@ class SimpleAuth {
             const requestBody = {
                 winner,
                 loser,
-                tournamentName: 'Local Tournament',
+                winnerScore: winnerScore,
+                loserScore: loserScore,
                 tournamentId: this.tournamentState.tournamentId,
                 round: this.tournamentState.currentRound + 1 // Add round info
             };
@@ -4611,8 +4610,10 @@ class SimpleAuth {
         const winnerName = winner === 1 ? currentMatch.player1 : currentMatch.player2;
         const loserName = winner === 1 ? currentMatch.player2 : currentMatch.player1;
         currentMatch.winner = winnerName;
+        const winnerScore = winner == 1 ? this.gameState.scorePlayer1 : this.gameState.scorePlayer2;
+        const loserScore = winner == 1 ? this.gameState.scorePlayer2 : this.gameState.scorePlayer1;
 
-        await this.recordTournamentResult(winnerName, loserName);
+        await this.recordTournamentResult(winnerName, loserName, winnerScore, loserScore);
         
         // Calculate tournament match duration
         const gameDuration = this.tournamentMatchStartTime ? new Date().getTime() - this.tournamentMatchStartTime.getTime() : 60000; // Default to 1 minute if no start time
@@ -4621,7 +4622,7 @@ class SimpleAuth {
         if (this.currentUser && (currentMatch.player1 === this.currentUser.username || currentMatch.player2 === this.currentUser.username)) {
             const userWon = winnerName === this.currentUser.username;
 
-            await this.updateTournamentStats(userWon, this.gameState.scorePlayer1, this.gameState.scorePlayer2, currentMatch.player1 === this.currentUser.username ? currentMatch.player2 : currentMatch.player1, gameDuration);
+            await this.updateTournamentStats(this.tournamentState.tournamentId, userWon, this.gameState.scorePlayer1, this.gameState.scorePlayer2, currentMatch.player1 === this.currentUser.username ? currentMatch.player2 : currentMatch.player1, gameDuration);
         } else {
 
         }

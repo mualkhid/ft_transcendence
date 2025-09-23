@@ -498,6 +498,16 @@ export class DashboardService {
                         { player1Alias: user.username },
                         { player2Alias: user.username }
                     ],
+                    AND: [
+                        { status: 'FINISHED' },
+                        { startedAt: { not: null } },
+                        { 
+                            OR: [
+                                { winnerAlias: { not: null } },
+                                { finishedAt: { not: null } } 
+                            ]
+                        }
+                    ]
                 },
                 include: {
                     players: true,
