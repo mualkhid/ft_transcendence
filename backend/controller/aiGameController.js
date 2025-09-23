@@ -2,7 +2,6 @@ import { prisma } from '../prisma/prisma_lib.js';
 import { GAME_CONFIG, getCanvasCenter, getPaddleStartPositions, getPaddleBounds } from '../config/gameConfig.js';
 
 export async function handleAIGame(socket, request) {
-    console.log('AI Game WebSocket connection established');
     
     // Send initial connection success
     socket.send(JSON.stringify({
@@ -169,7 +168,6 @@ export async function handleAIGame(socket, request) {
             gameState.gameOver = true;
             
             // Game result will be saved by the frontend through the authenticated endpoint
-            console.log('AI game finished - result will be saved by frontend');
             
             socket.send(JSON.stringify({
                 type: 'game-over',
@@ -202,13 +200,10 @@ export async function handleAIGame(socket, request) {
 
     // Start the game
     function startGame() {
-        console.log('🎯 startGame() called, gameState.gameStarted:', gameState.gameStarted);
         if (gameState.gameStarted) {
-            console.log('⚠️ Game already started, returning');
             return;
         }
         
-        console.log('✅ Starting new AI game...');
         gameState.gameStarted = true;
         gameState.gameOver = false;
         gameState.playerScore = 0;
@@ -220,7 +215,6 @@ export async function handleAIGame(socket, request) {
         gameLoop = setInterval(updateBall, GAME_CONFIG.GAME.GAME_LOOP_INTERVAL);
         aiMoveInterval = setInterval(moveAI, aiConfig.reactionDelay);
         
-        console.log('📤 Sending game-started message to frontend');
         socket.send(JSON.stringify({
             type: 'game-started',
             message: 'AI Pong Game Started!',
@@ -274,11 +268,9 @@ export async function handleAIGame(socket, request) {
     socket.onmessage = (event) => {
         try {
             const data = JSON.parse(event.data);
-            console.log('🎮 AI Game received message:', data.type, data);
             
             switch (data.type) {
                 case 'start-game':
-                    console.log('🚀 Starting AI game...');
                     startGame();
                     break;
                     
@@ -345,7 +337,6 @@ export async function handleAIGame(socket, request) {
                     break;
                     
                 default:
-                    console.log('Unknown message type:', data.type);
             }
         } catch (error) {
             console.error('Error parsing message:', error);
@@ -354,7 +345,6 @@ export async function handleAIGame(socket, request) {
 
     // Handle connection close
     socket.onclose = () => {
-        console.log('AI Game WebSocket connection closed');
         stopGame();
     };
 

@@ -19,9 +19,7 @@ async function dashboardRoutes(fastify, options) {
     }, async (request, reply) => {
         try {
             const userId = request.user.id;
-            console.log('Getting user dashboard for userId:', userId);
             const dashboardData = await DashboardService.getUserDashboard(userId);
-            console.log('Dashboard data retrieved successfully');
             return reply.send(dashboardData);
         } catch (error) {
             console.error('Error getting user dashboard:', error);

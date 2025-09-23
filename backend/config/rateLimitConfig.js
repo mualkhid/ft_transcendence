@@ -18,7 +18,6 @@ const generateKeyFromRequest = (request, prefix) => {
   };
   
   const createErrorResponse = (message, context) => {
-	console.log(`🚨 ${message} rate limit exceeded`);
 	return {
 	  statusCode: 429,
 	  error: 'Too Many Requests',
@@ -33,7 +32,6 @@ const generateKeyFromRequest = (request, prefix) => {
 	keyGenerator: (request) => generateKeyFromRequest(request, 'login'),
 	errorResponseBuilder: (request, context) => createErrorResponse('Login', context),
 	onExceeding: (request, key) => {
-	  console.log(`⚠️  Login rate limit exceeded for key: ${key}`);
 	}
   };
   
