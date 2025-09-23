@@ -58,7 +58,6 @@ class SimpleAuth {
         aiPaddleY: 250,
         playerScore: 0,
         aiScore: 0,
-        currentDifficulty: 'easy',
         gameStarted: false,
         // Power-ups (similar to 1v1 game)
         powerUps: [] as Array<{
@@ -88,7 +87,6 @@ class SimpleAuth {
     private endGameAudio: HTMLAudioElement | null = null;
     private aiGameAnimationId: number | null = null;
     private aiGameKeys = { w: false, s: false };
-    private aiGameAvailableDifficulties: any = {};
     
     // AI Game Audio Properties
     private aiPaddleHitAudio: HTMLAudioElement | null = null;
@@ -6277,13 +6275,18 @@ class SimpleAuth {
 
     private connectAIGame(): void {
         try {
+            console.log('🔌 Attempting to connect to AI game WebSocket...');
+            console.log('🔌 WebSocket URL:', `wss://${HOST_IP}/api/ai-game`);
+            
             this.aiGameWs = new WebSocket(`wss://${HOST_IP}/api/ai-game`);
             
             this.aiGameWs.onopen = () => {
+                console.log('✅ AI Game WebSocket connected successfully!');
                 this.logAIGame('Connected to AI Pong Game!');
             };
 
             this.aiGameWs.onmessage = (event) => {
+                console.log('📨 AI Game message received:', event.data);
                 try {
                     const data = JSON.parse(event.data);
                     this.handleAIGameMessage(data);
@@ -6292,16 +6295,17 @@ class SimpleAuth {
                 }
             };
 
-            this.aiGameWs.onclose = () => {
+            this.aiGameWs.onclose = (event) => {
+                console.log('❌ AI Game WebSocket closed:', event.code, event.reason);
                 this.logAIGame('Disconnected from AI Pong Game');
             };
 
             this.aiGameWs.onerror = (error) => {
-                console.error('AI Game WebSocket error:', error);
+                console.error('❌ AI Game WebSocket error:', error);
                 this.logAIGame('Connection error occurred');
             };
         } catch (error) {
-            console.error('Error connecting to AI game:', error);
+            console.error('❌ Error connecting to AI game:', error);
             this.logAIGame('Failed to connect to AI game');
         }
     }
@@ -6311,6 +6315,20 @@ class SimpleAuth {
             this.aiGameWs.send(JSON.stringify({ type: 'start-game' }));
             this.logAIGame('Starting game...');
         }
+    }
+
+    private startAIGameImmediately(): void {
+        // Start the AI game immediately (like local games)
+        this.aiGameState.gameStarted = true;
+        this.aiGameStartTime = new Date();
+        
+        // Start the game loop immediately
+        this.startAIGameLoop();
+        
+        // Also send start message to backend for synchronization
+        this.startAIGame();
+        
+        this.logAIGame('AI Game started!');
     }
 
     private pauseAIGame(): void {
@@ -6335,40 +6353,14 @@ class SimpleAuth {
                 break;
                 
             case 'game-state':
-                // Only update non-ball related state before game starts
+                // Update game state (initial state or during gameplay)
                 if (data.gameState) {
-                    // Update only non-ball properties before game starts
-                    if (data.gameState.currentDifficulty) {
-                        this.aiGameState.currentDifficulty = data.gameState.currentDifficulty;
-                    }
-                    if (data.gameState.playerScore !== undefined) {
-                        this.aiGameState.playerScore = data.gameState.playerScore;
-                    }
-                    if (data.gameState.aiScore !== undefined) {
-                        this.aiGameState.aiScore = data.gameState.aiScore;
-                    }
-                    // Only update ball and paddle positions if game is started
-                    if (this.aiGameState.gameStarted) {
-                        this.aiGameState = { ...this.aiGameState, ...data.gameState };
-                    }
-                }
-                if (data.availableDifficulties) {
-                    this.aiGameAvailableDifficulties = data.availableDifficulties.reduce((acc: any, diff: any) => {
-                        acc[diff.key] = diff;
-                        return acc;
-                    }, {});
+                    this.aiGameState = { ...this.aiGameState, ...data.gameState };
                 }
                 this.updateAIScore();
-                if (this.aiGameState.currentDifficulty && this.aiGameAvailableDifficulties[this.aiGameState.currentDifficulty]) {
-                    
-                }
                 break;
                 
-            case 'difficulty-changed':
-                this.aiGameState.currentDifficulty = data.difficulty;
-                
-                this.logAIGame(data.message);
-                break;
+            
                 
             case 'game-started':
                 this.logAIGame(data.message);
@@ -6524,7 +6516,6 @@ class SimpleAuth {
             aiPaddleY: 250,
             playerScore: 0,
             aiScore: 0,
-            currentDifficulty: 'easy',
             gameStarted: false,
             // Power-ups (similar to 1v1 game)
             powerUps: [] as Array<{
@@ -6554,31 +6545,17 @@ class SimpleAuth {
         
         if (aiStartButton) {
             aiStartButton.style.display = 'none';
-
         }
         
         if (aiGameOverlay) {
             aiGameOverlay.style.display = 'none';
-
         }
 
         // Hide power-ups toggle when AI game starts
         this.hidePowerupsToggle('ai');
 
-        // Set powerupsEnabled based on AI toggle state
-        const toggleAI = document.getElementById('powerupsToggle') as HTMLInputElement;
-        const enabled = toggleAI ? toggleAI.checked : true; // Default to true if toggle not found
-
-        // Connect to AI game WebSocket and start the game
-        this.connectAIGame();
-        
-        // Send start-game message after a short delay to ensure connection is established
-        setTimeout(() => {
-            if (this.aiGameWs && this.aiGameWs.readyState === WebSocket.OPEN) {
-                this.aiGameWs.send(JSON.stringify({ type: 'start-game' }));
-                this.logAIGame('Starting game...');
-            }
-        }, 100);
+        // Start the AI game immediately (like local games)
+        this.startAIGameImmediately();
 
     }
 
@@ -6617,7 +6594,6 @@ class SimpleAuth {
         }
 
 
-        // Difficulty UI removed
 
         // Game overlay buttons
         const replayBtn = document.getElementById('replayBtn');
@@ -6670,9 +6646,7 @@ class SimpleAuth {
         }
     }
 
-    // Difficulty feature removed
 
-    // Difficulty feature removed
 
     private hideAIGameOverlay(): void {
         const gameOverlay = document.getElementById('aiGameOverlay');
@@ -6816,7 +6790,6 @@ class SimpleAuth {
     }
 
 
-    // Difficulty feature removed
 
     private logAIGame(message: string): void {
         const logElement = document.getElementById('aiGameLog');

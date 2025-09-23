@@ -1,5 +1,5 @@
 import { prisma } from '../prisma/prisma_lib.js';
-import { GAME_CONFIG, getCanvasCenter, getPaddleStartPositions, getPaddleBounds, getAIDifficulty } from '../config/gameConfig.js';
+import { GAME_CONFIG, getCanvasCenter, getPaddleStartPositions, getPaddleBounds } from '../config/gameConfig.js';
 
 export async function handleAIGame(socket, request) {
     console.log('AI Game WebSocket connection established');
@@ -14,9 +14,12 @@ export async function handleAIGame(socket, request) {
     const canvasCenter = getCanvasCenter();
     const paddlePositions = getPaddleStartPositions();
 
-    // Initialize with medium difficulty
-    let currentDifficulty = 'MEDIUM';
-    let aiConfig = getAIDifficulty(currentDifficulty);
+    // Fixed AI configuration (no difficulty selection)
+    const aiConfig = {
+        tolerance: 10,           // Fixed tolerance
+        predictionAccuracy: 0.9, // Fixed prediction accuracy
+        reactionDelay: 50        // Fixed reaction delay
+    };
 
     let gameState = {
         ballX: canvasCenter.x,
@@ -35,7 +38,6 @@ export async function handleAIGame(socket, request) {
         gameStarted: false,
         gameOver: false,
         winningScore: GAME_CONFIG.GAME.WINNING_SCORE,
-        currentDifficulty: currentDifficulty,
         aiConfig: aiConfig
     };
 
@@ -44,17 +46,14 @@ export async function handleAIGame(socket, request) {
     let gameLoop = null;
     let aiMoveInterval = null;
 
-    // AI paddle movement logic with difficulty-based behavior
+    // AI paddle movement logic with fixed parameters
     function moveAI() {
         if (!gameState.gameStarted || gameState.gameOver) return;
-
-        // Get current AI configuration
-        aiConfig = getAIDifficulty(currentDifficulty);
 
         // Predict where the ball will be when it reaches the AI paddle
         const targetY = predictBallY();
         
-        // Add difficulty-based prediction errors
+        // Add fixed prediction errors (simulates human fallibility)
         const predictionError = (1 - aiConfig.predictionAccuracy) * 100;
         const adjustedTargetY = targetY + (Math.random() - 0.5) * predictionError;
         
@@ -177,7 +176,6 @@ export async function handleAIGame(socket, request) {
                 winner: gameState.playerScore > gameState.aiScore ? 'player' : 'ai',
                 playerScore: gameState.playerScore,
                 aiScore: gameState.aiScore,
-                difficulty: currentDifficulty
             }));
             stopGame();
             return;
@@ -188,7 +186,6 @@ export async function handleAIGame(socket, request) {
             type: 'game-update',
             gameState: {
                 ...gameState,
-                currentDifficulty: currentDifficulty,
                 aiConfig: aiConfig
             }
         }));
@@ -205,8 +202,13 @@ export async function handleAIGame(socket, request) {
 
     // Start the game
     function startGame() {
-        if (gameState.gameStarted) return;
+        console.log('🎯 startGame() called, gameState.gameStarted:', gameState.gameStarted);
+        if (gameState.gameStarted) {
+            console.log('⚠️ Game already started, returning');
+            return;
+        }
         
+        console.log('✅ Starting new AI game...');
         gameState.gameStarted = true;
         gameState.gameOver = false;
         gameState.playerScore = 0;
@@ -218,10 +220,10 @@ export async function handleAIGame(socket, request) {
         gameLoop = setInterval(updateBall, GAME_CONFIG.GAME.GAME_LOOP_INTERVAL);
         aiMoveInterval = setInterval(moveAI, aiConfig.reactionDelay);
         
+        console.log('📤 Sending game-started message to frontend');
         socket.send(JSON.stringify({
             type: 'game-started',
-            message: `AI Pong Game Started! Difficulty: ${aiConfig.name}`,
-            difficulty: currentDifficulty,
+            message: 'AI Pong Game Started!',
             aiConfig: aiConfig
         }));
     }
@@ -266,49 +268,21 @@ export async function handleAIGame(socket, request) {
         // Don't set gameState.gameStarted = false for pause
     }
 
-    // Change AI difficulty
-    function changeDifficulty(newDifficulty) {
-        if (gameState.gameStarted) {
-            socket.send(JSON.stringify({
-                type: 'error',
-                message: 'Cannot change difficulty during gameplay'
-            }));
-            return;
-        }
 
-        if (GAME_CONFIG.AI_DIFFICULTY[newDifficulty]) {
-            currentDifficulty = newDifficulty;
-            aiConfig = getAIDifficulty(currentDifficulty);
-            gameState.currentDifficulty = currentDifficulty;
-            gameState.aiConfig = aiConfig;
-
-            socket.send(JSON.stringify({
-                type: 'difficulty-changed',
-                difficulty: currentDifficulty,
-                aiConfig: aiConfig,
-                message: `AI difficulty changed to ${aiConfig.name}`
-            }));
-        } else {
-            socket.send(JSON.stringify({
-                type: 'error',
-                message: 'Invalid difficulty level'
-            }));
-        }
-    }
 
     // Handle incoming messages
-    socket.on('message', (message) => {
+    socket.onmessage = (event) => {
         try {
-            const data = JSON.parse(message);
+            const data = JSON.parse(event.data);
+            console.log('🎮 AI Game received message:', data.type, data);
             
             switch (data.type) {
                 case 'start-game':
+                    console.log('🚀 Starting AI game...');
                     startGame();
                     break;
                     
-                case 'change-difficulty':
-                    changeDifficulty(data.difficulty);
-                    break;
+
                     
                 case 'player-input':
                     if (data.action === 'up') {
@@ -343,26 +317,21 @@ export async function handleAIGame(socket, request) {
         } catch (error) {
             console.error('Error parsing message:', error);
         }
-    });
+    };
 
     // Handle connection close
-    socket.on('close', () => {
+    socket.onclose = () => {
         console.log('AI Game WebSocket connection closed');
         stopGame();
-    });
+    };
 
-    // Send initial game state with difficulty options
+    // Send initial game state
     socket.send(JSON.stringify({
         type: 'game-state',
         gameState: {
             ...gameState,
-            currentDifficulty: currentDifficulty,
             aiConfig: aiConfig
-        },
-        availableDifficulties: Object.keys(GAME_CONFIG.AI_DIFFICULTY).map(key => ({
-            key: key,
-            ...GAME_CONFIG.AI_DIFFICULTY[key]
-        }))
+        }
     }));
 }
 
