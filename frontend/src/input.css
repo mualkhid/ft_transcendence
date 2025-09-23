@@ -74,11 +74,11 @@ html.text-size-large {
 }
 
 .bg-friends {
-    background-image: url('../imgs/untitled-design.png') !important;
+    background-image: url('../imgs/friends.png') !important;
 }
 
 .bg-profile {
-    background-image: url('../imgs/friends.png') !important;
+    background-image: url('../imgs/profile.png') !important;
 }
 
 .bg-game-options {
@@ -86,7 +86,7 @@ html.text-size-large {
 }
 
 .bg-dashboard {
-    background-image: url('../imgs/profile.png') !important;
+    background-image: url('../imgs/dashboard.png') !important;
 }
 
 
