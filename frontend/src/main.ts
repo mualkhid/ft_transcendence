@@ -1702,7 +1702,6 @@ class SimpleAuth {
         this.applyColorblindMode();
 
         this.currentUser = null;
-        this.
         localStorage.removeItem('user');
         localStorage.clear();
         
