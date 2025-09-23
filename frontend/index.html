@@ -1816,9 +1816,6 @@
                                     <p id="aiGameOverAIScore" class="text-2xl font-bold text-gray-800">0</p>
                                 </div>
                             </div>
-                            <div class="text-center mt-2">
-                                <p class="text-sm text-gray-500" id="aiGameOverDifficulty">Difficulty: Medium</p>
-                            </div>
                         </div>
                     </div>
                     
@@ -1882,12 +1879,10 @@
                 gameStarted: false,
                 gameOver: false,
                 winningScore: GAME_CONFIG.GAME.WINNING_SCORE,
-                currentDifficulty: 'MEDIUM'
             };
 
             let keys = { w: false, s: false };
             let animationId = null;
-            let availableDifficulties = {};
 
             // DOM elements
             const canvas = document.getElementById('aiGameCanvas');
@@ -1904,10 +1899,6 @@
             const gameOverMessage = document.getElementById('gameOverMessage');
 
             // Difficulty buttons
-            const easyBtn = document.getElementById('aiEasyBtn');
-            const mediumBtn = document.getElementById('aiMediumBtn');
-            const hardBtn = document.getElementById('aiHardBtn');
-            const expertBtn = document.getElementById('aiExpertBtn');
 
             // Logging function
             function log(message) {
@@ -1920,32 +1911,6 @@
                 scoreDisplay.textContent = `Player: ${gameState.playerScore} - AI: ${gameState.aiScore}`;
             }
 
-            // Update difficulty display
-            function updateDifficultyDisplay(difficulty, aiConfig) {
-                // Update active button visual state
-                document.querySelectorAll('#aiEasyBtn, #aiMediumBtn, #aiHardBtn, #aiExpertBtn').forEach(btn => {
-                    btn.classList.remove('ring-4', 'ring-white', 'ring-opacity-50', 'border-4', 'border-white', 'scale-110');
-                });
-                
-                const activeBtn = document.getElementById(`ai${difficulty.charAt(0).toUpperCase() + difficulty.slice(1).toLowerCase()}Btn`);
-                if (activeBtn) {
-                    activeBtn.classList.add('ring-4', 'ring-white', 'ring-opacity-50', 'border-4', 'border-white', 'scale-110');
-                }
-                
-                // Update text indicator
-                const difficultyText = document.getElementById('currentDifficultyText');
-                if (difficultyText) {
-                    difficultyText.textContent = difficulty;
-                }
-            }
-
-            // Change difficulty
-            function changeDifficulty(difficulty) {
-                if (ws && ws.readyState === WebSocket.OPEN) {
-                    ws.send(JSON.stringify({ type: 'change-difficulty', difficulty: difficulty }));
-                    log(`Changing difficulty to ${difficulty}...`);
-                }
-            }
 
             // Draw game elements
             function drawGame() {
@@ -1966,9 +1931,8 @@
                 ctx.fillStyle = '#60a5fa';
                 ctx.fillRect(GAME_CONFIG.PADDLE.WIDTH, gameState.playerPaddleY, GAME_CONFIG.PADDLE.WIDTH, GAME_CONFIG.PADDLE.HEIGHT);
 
-                // Draw AI paddle (right) with difficulty-based color
-                const aiColor = availableDifficulties[gameState.currentDifficulty]?.color || '#f87171';
-                ctx.fillStyle = aiColor;
+                // Draw AI paddle (right)
+                ctx.fillStyle = '#f87171';
                 ctx.fillRect(GAME_CONFIG.CANVAS.WIDTH - GAME_CONFIG.PADDLE.WIDTH * 2, gameState.aiPaddleY, GAME_CONFIG.PADDLE.WIDTH, GAME_CONFIG.PADDLE.HEIGHT);
 
                 // Draw ball
@@ -2024,23 +1988,9 @@
                                     
                                 case 'game-state':
                                     gameState = { ...gameState, ...data.gameState };
-                                    if (data.availableDifficulties) {
-                                        availableDifficulties = data.availableDifficulties.reduce((acc, diff) => {
-                                            acc[diff.key] = diff;
-                                            return acc;
-                                        }, {});
-                                    }
                                     updateScore();
-                                    if (gameState.currentDifficulty && availableDifficulties[gameState.currentDifficulty]) {
-                                        updateDifficultyDisplay(gameState.currentDifficulty, availableDifficulties[gameState.currentDifficulty]);
-                                    }
                                     break;
                                     
-                                case 'difficulty-changed':
-                                    gameState.currentDifficulty = data.difficulty;
-                                    updateDifficultyDisplay(data.difficulty, data.aiConfig);
-                                    log(data.message);
-                                    break;
                                     
                                 case 'game-started':
                                     log(data.message);
@@ -2120,7 +2070,7 @@
                                     
                                     // Show game over modal after a brief delay to ensure score is visible
                                     setTimeout(() => {
-                                        showAIGameOverModal(data.winner, data.difficulty);
+                                        showAIGameOverModal(data.winner);
                                         log('Game result will be saved automatically');
                                     }, 500);
                                     break;
@@ -2234,11 +2184,6 @@
 
             }
 
-            // Difficulty button event listeners
-            easyBtn.addEventListener('click', () => changeDifficulty('EASY'));
-            mediumBtn.addEventListener('click', () => changeDifficulty('MEDIUM'));
-            hardBtn.addEventListener('click', () => changeDifficulty('HARD'));
-            expertBtn.addEventListener('click', () => changeDifficulty('EXPERT'));
 
             // Game overlay buttons
             const replayBtn = document.getElementById('replayBtn');
@@ -2307,14 +2252,13 @@
             }
 
             // Show AI Game Over Modal
-            function showAIGameOverModal(winner, difficulty) {
+            function showAIGameOverModal(winner) {
                 const modal = document.getElementById('aiGameOverModal');
                 const icon = document.getElementById('aiGameOverIcon');
                 const title = document.getElementById('aiGameOverTitle');
                 const message = document.getElementById('aiGameOverMessage');
                 const playerScore = document.getElementById('aiGameOverPlayerScore');
                 const aiScore = document.getElementById('aiGameOverAIScore');
-                const difficultyText = document.getElementById('aiGameOverDifficulty');
 
                 // Set the content based on winner
                 if (winner === 'player') {
@@ -2330,7 +2274,6 @@
                 // Set the scores
                 playerScore.textContent = gameState.playerScore;
                 aiScore.textContent = gameState.aiScore;
-                difficultyText.textContent = `Difficulty: ${difficulty}`;
 
                 // Show the modal
                 modal.classList.remove('hidden');
@@ -2363,7 +2306,6 @@
             log('AI Pong Game loaded with enhanced professional standards!');
             log('Click Connect to start playing against the AI!');
             log('Use W and S keys to control your paddle.');
-            log('Select your preferred AI difficulty level!');
 
 
         }
