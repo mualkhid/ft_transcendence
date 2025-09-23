@@ -42,7 +42,6 @@ export async function getGoogleTokens(code) {
     });
     
     const data = await res.json();
-    console.log('Google tokens response:', data);
     
     if (!res.ok) {
       throw new Error(`Google token error: ${data.error_description || data.error}`);
@@ -63,7 +62,6 @@ export async function getGoogleUser(id_token, access_token) {
     );
     
     const user = await res.json();
-    console.log('Google user data:', user);
     
     if (!res.ok) {
       throw new Error(`Google user info error: ${user.error_description || user.error}`);
@@ -79,7 +77,6 @@ export async function getGoogleUser(id_token, access_token) {
 export async function handleGoogleAuth(req, reply) {
   try {
     const url = await getGoogleOAuthUrl();
-    console.log('Redirecting to Google OAuth URL:', url);
     reply.redirect(url);
   } catch (error) {
     console.error('Google auth error:', error);
@@ -89,8 +86,7 @@ export async function handleGoogleAuth(req, reply) {
 
 export async function handleGoogleCallback(req, reply) {
   try {
-    console.log('=== GOOGLE OAUTH CALLBACK ===');
-    console.log('Query params:', req.query);
+
     
     const code = req.query.code;
     const error = req.query.error;
@@ -105,7 +101,6 @@ export async function handleGoogleCallback(req, reply) {
       return reply.redirect('/?auth=error&message=' + encodeURIComponent('No authorization code'));
     }
     
-    console.log('Getting Google tokens...');
     const tokenData = await getGoogleTokens(code);
     
     if (!tokenData.access_token) {
@@ -113,7 +108,6 @@ export async function handleGoogleCallback(req, reply) {
       return reply.redirect('/?auth=error&message=' + encodeURIComponent('No access token'));
     }
     
-    console.log('Getting Google user info...');
     const googleUser = await getGoogleUser(tokenData.id_token, tokenData.access_token);
     
     if (!googleUser.email) {
@@ -121,7 +115,6 @@ export async function handleGoogleCallback(req, reply) {
       return reply.redirect('/?auth=error&message=' + encodeURIComponent('No email from Google'));
     }
     
-    console.log('Google user email:', googleUser.email);
 
     // Find or create user
     let user = await prisma.user.findUnique({ 
@@ -129,7 +122,6 @@ export async function handleGoogleCallback(req, reply) {
     });
     
     if (!user) {
-      console.log('Creating new user for Google OAuth');
       // Generate a unique username if needed
       let username = googleUser.email.split('@')[0];
       const existingUser = await prisma.user.findUnique({
@@ -149,9 +141,7 @@ export async function handleGoogleCallback(req, reply) {
           isEmailVerified: true, // Google emails are verified
         },
       });
-      console.log('New user created:', user.id);
     } else {
-      console.log('Existing user found:', user.id);
       // Update avatar if Google has a newer one
       if (googleUser.picture && googleUser.picture !== user.avatarUrl) {
         user = await prisma.user.update({
@@ -161,7 +151,6 @@ export async function handleGoogleCallback(req, reply) {
       }
     }
     
-    console.log('Generating JWT token...');
     const token = generateToken(user);
     
     // Set cookie with proper settings for your domain
@@ -181,9 +170,7 @@ export async function handleGoogleCallback(req, reply) {
     
     reply.setCookie('token', token, cookieOptions);
     
-    console.log('🍪 Cookie set for Google OAuth user:', user.email);
-    console.log('🔗 Redirecting to: /?auth=success');
-    
+
     // Redirect to frontend with success parameter
     reply.redirect('/?auth=success');
     

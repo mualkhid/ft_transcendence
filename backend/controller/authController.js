@@ -65,36 +65,28 @@ export async function registerUser(req, reply) {
 }
 
 export async function login(req, reply) {
-    console.log('=== LOGIN REQUEST DEBUG ===');
     const { email, password, twoFactorCode } = req.body;
-    console.log('Request body:', { email, hasPassword: !!password, twoFactorCode });
 
     const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
     if (!user) {
-        console.log('❌ User not found for email:', email);
         throw new AuthenticationError("User not found for email. Register first");
     }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
-        console.log('❌ Invalid password for user:', email);
         throw new AuthenticationError("Invalid email or password.");
     }
 
-    console.log('✅ Email/password valid. User 2FA status:', user.isTwoFactorEnabled);
 
     // Check if 2FA is enabled
     if (user.isTwoFactorEnabled) {
         if (!twoFactorCode) {
-            console.log('🔐 2FA required, no code provided - showing 2FA form');
             return reply.status(401).send({
                 require2FA: true,
                 message: 'Two-factor authentication required'
             });
         }
 
-        console.log('🔍 Verifying 2FA code:', twoFactorCode);
-        console.log('🔑 User 2FA secret exists:', !!user.twoFactorSecret);
         
         let verified = false;
         let backupCodesArray = [];
@@ -102,9 +94,7 @@ export async function login(req, reply) {
         if (user.twoFactorBackupCodes) {
             try {
                 backupCodesArray = JSON.parse(user.twoFactorBackupCodes);
-                console.log('📱 Available backup codes count:', backupCodesArray.length);
             } catch (e) {
-                console.log('⚠️ Error parsing backup codes:', e.message);
                 backupCodesArray = [];
             }
         }
@@ -116,8 +106,6 @@ export async function login(req, reply) {
             token: twoFactorCode,
             window: 2
         });
-
-        console.log('🔐 TOTP verification result:', verified);
 
         // Check backup codes if TOTP failed
         let backupCodeVerified = false;
@@ -138,16 +126,12 @@ export async function login(req, reply) {
         }
 
         if (!verified) {
-            console.log('❌ 2FA verification failed for code:', twoFactorCode);
-            console.log('Available backup codes:', backupCodesArray);
             throw new AuthenticationError("Invalid 2FA code or backup code.");
         }
         
-        console.log('✅ 2FA verification successful');
-    }
+            }
 
     // Continue with normal login flow...
-    console.log('🎉 Login successful, generating token');
     const token = generateToken(user);
     
     const isLocalhost = req.headers.host?.includes('localhost') || req.headers.host?.includes('127.0.0.1');
@@ -161,7 +145,6 @@ export async function login(req, reply) {
         ...(isLocalhost ? { domain: req.headers.host?.split(':')[0] } : {})
     });
 
-    console.log('✅ Cookie set, sending response');
     reply.send({
         message: 'Login successful',
         user: {
@@ -175,7 +158,6 @@ export async function login(req, reply) {
             losses: user.losses
         }
     });
-    console.log('=== LOGIN REQUEST COMPLETE ===');
 }
 export async function getCurrentUser(req, reply) {
     const userId = req.user.id;

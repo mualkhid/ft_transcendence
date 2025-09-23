@@ -214,7 +214,6 @@ export async function removePlayerFromMatch(matchId, websocket)
 
         if (remainingPlayer && remainingPlayer.readyState === 1)
         {
-            console.log('🔍 Processing disconnection:');
             const abandonMessage = {
                 type: 'game-abandoned',
                 message: `Opponent disconnected. You win!`,

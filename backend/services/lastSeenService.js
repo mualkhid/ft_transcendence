@@ -21,7 +21,6 @@ export function trackUserActivity(request, reply, done) {
         updateLastSeenIfNeeded(request.user.id);
     }
     else
-        console.log("no user is sent")
     done();
 }
 

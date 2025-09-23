@@ -62,7 +62,6 @@ export async function createTournament(request, reply)
 export async function recordLocalTournamentResult(request, reply)
 {
     const { winner, loser, winnerScore, loserScore, tournamentId, round = 1} = request.body;
-    console.log(" 1: ", winnerScore, " ", "2: ", loserScore)
 
     if (!winner || !loser)
         return reply.status(400).send({ error: 'Winner and loser are required' });

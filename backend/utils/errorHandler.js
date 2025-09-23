@@ -75,9 +75,7 @@ function handleGeneralErrors(e, reply) {
 	return reply.status(500).send({ error: e.message });
 }
 
-export function globalErrorHandler(error, request, reply) {
-	console.log('Global error caught:', error);
-	
+export function globalErrorHandler(error, request, reply) {	
 	// Prisma errors
 	if (error.code?.startsWith('P')) {
 		return handlePrismaErrors(error, reply);
