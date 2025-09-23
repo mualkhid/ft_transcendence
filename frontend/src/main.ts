@@ -1386,6 +1386,9 @@ class SimpleAuth {
                 // Success - handle login
                 this.currentUser = data.user;
                 
+                // Update localStorage with new user data
+                localStorage.setItem('user', JSON.stringify(data.user));
+                
                 // Reset contrast mode on login
                 this.colorblindMode = false;
                 localStorage.removeItem('colorblindMode');
@@ -1884,14 +1887,14 @@ class SimpleAuth {
                         mainApp.style.backgroundAttachment = "";
                         break;
                     case 'dashboardSection':
-                        // Use the same background class as home to ensure perfect match
-                        mainApp.classList.add('bg-home');
-                        // Match home page background
-                        mainApp.style.backgroundImage = "url('/imgs/PPG_20th_Still_Xiya_01-1200x675.webp')";
-                        mainApp.style.backgroundSize = "cover";
-                        mainApp.style.backgroundPosition = "center";
-                        mainApp.style.backgroundRepeat = "no-repeat";
-                        mainApp.style.backgroundAttachment = "fixed";
+                        // Use the dashboard background class
+                        mainApp.classList.add('bg-dashboard');
+                        // Clear any inline styles to let CSS take precedence
+                        mainApp.style.backgroundImage = "";
+                        mainApp.style.backgroundSize = "";
+                        mainApp.style.backgroundPosition = "";
+                        mainApp.style.backgroundRepeat = "";
+                        mainApp.style.backgroundAttachment = "";
                         break;
                     case 'gameSection':
                     case 'onlineGameSection':
