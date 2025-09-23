@@ -4,9 +4,10 @@ import {
     getMatch, 
     handlePlayerInput, 
     updateBall,
+    updatePlayerPowerupsPreference
 } from '../services/matchStateService.js';
 
-export async function handleRemoteGame(socket, matchId, username = null)
+export async function handleRemoteGame(socket, matchId, username = null, powerupsEnabled = true)
 {
     if (!socket)
     {
@@ -34,7 +35,8 @@ export async function handleRemoteGame(socket, matchId, username = null)
         socket.close(1011, 'Match initialization failed');
         return;
     }
-    
+    const preferenceResult = updatePlayerPowerupsPreference(parseInt(matchId), playerNumber, powerupsEnabled);
+
     const successMessage = JSON.stringify({
         type: 'success',
         playerNumber: playerNumber,
@@ -43,6 +45,24 @@ export async function handleRemoteGame(socket, matchId, username = null)
         player2Username: match.state.player2Username || 'Player 2'
     });
     socket.send(successMessage);
+
+    if (preferenceResult && preferenceResult.player1Preference !== null && preferenceResult.player2Preference !== null)
+    {
+        const powerupsMessage = JSON.stringify({
+            type: 'powerups-finalized',
+            enabled: preferenceResult.finalSetting,
+            player1Preference: preferenceResult.player1Preference,
+            player2Preference: preferenceResult.player2Preference
+        });
+        
+        // Send to both players
+        if (match.player1 && match.player1.readyState === 1) {
+            match.player1.send(powerupsMessage);
+        }
+        if (match.player2 && match.player2.readyState === 1) {
+            match.player2.send(powerupsMessage);
+        }
+    }
 
     if (match.state.connectedPlayers === 2)
     {
@@ -82,6 +102,63 @@ export async function handleRemoteGame(socket, matchId, username = null)
             
             if (data.type === 'input')
                 handlePlayerInputMessage(socket, data, parseInt(matchId), playerNumber);
+            else if (data.type === 'powerups-preference-change')
+            {
+                const preferenceResult = updatePlayerPowerupsPreference(
+                    parseInt(matchId), 
+                    playerNumber, 
+                    data.enabled
+                );
+                if (preferenceResult) {
+                    // Always send status update to both players when preference changes
+                    const powerupsStatusMessage = JSON.stringify({
+                        type: 'powerups-status',
+                        player1Preference: preferenceResult.player1Preference,
+                        player2Preference: preferenceResult.player2Preference,
+                        finalSetting: preferenceResult.finalSetting,
+                        message: preferenceResult.finalSetting ? 
+                            'Power-ups enabled - both players agreed!' : 
+                            'Power-ups disabled - at least one player opted out'
+                    });
+                    
+                    const currentMatch = getMatch(parseInt(matchId));
+                    if (currentMatch) {
+                        // Send to both players
+                        if (currentMatch.player1 && currentMatch.player1.readyState === 1) {
+                            currentMatch.player1.send(powerupsStatusMessage);
+                        }
+                        if (currentMatch.player2 && currentMatch.player2.readyState === 1) {
+                            currentMatch.player2.send(powerupsStatusMessage);
+                        }
+                    }
+                    
+                    // If both preferences are set, send finalized message
+                    if (preferenceResult.player1Preference !== null && 
+                        preferenceResult.player2Preference !== null)
+                    {
+                        
+                        const powerupsMessage = JSON.stringify({
+                            type: 'powerups-finalized',
+                            enabled: preferenceResult.finalSetting,
+                            message: preferenceResult.finalSetting ? 
+                                'Power-ups enabled - both players agreed!' : 
+                                'Power-ups disabled - at least one player opted out',
+                            player1Preference: preferenceResult.player1Preference,
+                            player2Preference: preferenceResult.player2Preference
+                        });
+                        
+                    
+                    // Send to both players
+                    const match = getMatch(parseInt(matchId));
+                    if (match?.player1?.readyState === 1) {
+                        match.player1.send(powerupsMessage);
+                    }
+                    if (match?.player2?.readyState === 1) {
+                        match.player2.send(powerupsMessage);
+                    }
+                }
+            }
+            }
         } catch (error) {
             console.error('Error parsing message from client:', error);
             socket.send(JSON.stringify({

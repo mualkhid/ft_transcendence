@@ -153,7 +153,7 @@ export async function updateAvatar(req, reply)
 
 export async function updateStats(req, reply) {
     const userId = req.user.id; // Get user ID from JWT token
-    const { won, gameType = 'LOCAL', player1Score, player2Score, opponentName, gameDuration } = req.body;
+    const { won, gameType = 'LOCAL', player1Score, player2Score, opponentName, gameDuration, tournamentId } = req.body;
 
     if (typeof won !== 'boolean') {
         return reply.status(400).send({ error: 'won field must be a boolean' });
@@ -199,7 +199,7 @@ export async function updateStats(req, reply) {
 
                 const match = await prisma.match.create({
                     data: {
-                        tournamentId: gameType === 'TOURNAMENT' ? 1 : null, // Set tournament ID for tournament games
+                        tournamentId: gameType === 'TOURNAMENT' ? (tournamentId || 1) : null, // Use provided tournamentId if available
                         roundNumber: 1,
                         matchNumber: 1,
                         status: 'FINISHED',
@@ -230,7 +230,7 @@ export async function updateStats(req, reply) {
                 });
 
             } catch (error) {
-                console.error(`Failed to save ${gameType} game result:`, error);
+                // Failed to save game result
                 // Continue with stats update even if match saving fails
             }
         }
@@ -262,7 +262,7 @@ export async function updateStats(req, reply) {
             gameResult: won ? 'won' : 'lost'
         });
     } catch (error) {
-        console.error('Error updating user stats:', error);
+        // Error updating user stats
         return reply.status(500).send({ error: 'Failed to update user stats' });
     }
 }

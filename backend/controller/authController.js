@@ -4,7 +4,7 @@ import { generateToken } from '../services/jwtService.js';
 import sanitizeHtml from 'sanitize-html';
 import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
-import {notFoundError, AuthenticationError} from '../utils/errors.js'
+import {notFoundError, AuthenticationError, ValidationError} from '../utils/errors.js'
 import validator from 'validator'
 
 const sanitizedUserSelect = { id: true, username: true, email: true, createdAt: true, lastSeen: true, updatedAt: true, isTwoFactorEnabled: true};
@@ -72,7 +72,7 @@ export async function login(req, reply) {
     const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
     if (!user) {
         console.log('❌ User not found for email:', email);
-        throw new AuthenticationError("Invalid email or password.");
+        throw new AuthenticationError("User not found for email. Register first");
     }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
@@ -158,7 +158,7 @@ export async function login(req, reply) {
         sameSite: 'lax',
         path: '/',
         maxAge: 3600,
-        ...(isLocalhost ? { domain: 'localhost' } : {})
+        ...(isLocalhost ? { domain: req.headers.host?.split(':')[0] } : {})
     });
 
     console.log('✅ Cookie set, sending response');
@@ -241,7 +241,7 @@ export async function refreshToken(req, reply) {
         sameSite: 'lax',
         path: '/',
         maxAge: 3600,
-        ...(isLocalhost ?  { domain: 'localhost' }: {})
+        ...(isLocalhost ?  { domain: req.hostname }: {})
     });
     
     // Update last seen

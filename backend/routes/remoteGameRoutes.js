@@ -4,36 +4,18 @@ import { authenticate } from '../services/jwtService.js';
 import { trackUserActivity } from '../services/lastSeenService.js';
 
 async function remoteGameRoutes(fastify, options) {
-    const extractUsername = (request) => {
-        try
-        {
+    
+    fastify.get('/find-match', { websocket: true }, async (connection, request) => {
+        const extractUsername = (request) => {
             if (request.query?.username)
                 return request.query.username;
-            
-            const authHeader = request.headers.authorization;
-            if (authHeader && authHeader.startsWith('Bearer '))
-            {
-                const token = authHeader.substring(7);
-                const decoded = authenticate(token);
-                return decoded.username;
+        };
+        const extractPowerupsPreference = (request) => {
+            if (request.query?.powerups !== undefined) {
+                return request.query.powerups === 'true';
             }
-            
-            if (request.cookies?.token)
-            {
-                const decoded = authenticate(request.cookies.token);
-                return decoded.username;
-            }
-            
-            return 'Anonymous';
-        }
-        catch (error)
-        {
-            console.error('Error extracting username:', error);
-            return 'Anonymous';
-        }
-    };
-
-    fastify.get('/find-match', { websocket: true }, async (connection, request) => {
+            return true;
+        };
         let socket = connection.socket || connection;
         
         if (!socket)
@@ -45,21 +27,20 @@ async function remoteGameRoutes(fastify, options) {
         try
         {
             const username = extractUsername(request);
-            if (username !== 'Anonymous') {
-                try
-                {
-                    await trackUserActivity(username);
-                }
-                catch (activityError)
-                {
-                    console.error('Failed to track user activity:', activityError.message);
-                }
+            const powerupsEnabled = extractPowerupsPreference(request);
+            try
+            {
+                await trackUserActivity(username);
+            }
+            catch (activityError)
+            {
+                console.error('Failed to track user activity:', activityError.message);
             }
 
             let matchResult;
             try
             {
-                matchResult = await findorCreateMatch(socket, username);
+                matchResult = await findorCreateMatch(socket, username, powerupsEnabled);
             }
             catch (matchError)
             {
@@ -102,7 +83,7 @@ async function remoteGameRoutes(fastify, options) {
 
             try
             {
-                await handleRemoteGame(socket, matchId, username);
+                await handleRemoteGame(socket, matchId, username, powerupsEnabled);
             }
             catch (gameError)
             {

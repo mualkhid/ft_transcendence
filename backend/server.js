@@ -20,7 +20,6 @@ import aiGameRoutes from './routes/aiGameRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 
 import { globalErrorHandler } from './utils/errorHandler.js';
-import { setupWebSocketServer } from './services/webSocketService.js';
 import { prisma } from './prisma/prisma_lib.js';
 import { setupGracefulShutdown } from './utils/gracefulShutdown.js';
 
@@ -47,11 +46,15 @@ const __dirname = path.dirname(__filename);
 
 await fastify.register(cookie);
 
-// 2) CORS (allow 10.11.* + localhost; works with credentials)
+// 2) CORS (allow 10.1*.*.* + localhost; works with credentials)
 await fastify.register(cors, {
-  origin: '*',
+  origin: [
+    'https://localhost:3000',
+    'https://127.0.0.1:3000',
+    /^https:\/\/10\.1\d{1,2}\.\d+\.\d+(:\d+)?$/
+  ],
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  // credentials: true,
+  credentials: true,
   allowedHeaders: ['Content-Type','Authorization','X-Requested-With'],
 });
 
@@ -105,8 +108,5 @@ setupGracefulShutdown(fastify, prisma);
 console.log('Attempting to start server...');
 const address = await fastify.listen({ port: 3000, host: '0.0.0.0' });
 console.log(`Server running at ${address}`);
-
-// Set up the separate WebSocket server
-setupWebSocketServer();
 
 console.log('✅ Server started successfully');
