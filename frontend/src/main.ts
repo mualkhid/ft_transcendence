@@ -1397,19 +1397,15 @@ class SimpleAuth {
                 // Show success message
                 this.showStatus('Login successful!', 'success');
                 
+                this.loadDashboardData()
+                this.loadFriendsData();
                 this.showPage('mainApp');
                 
                 // Check for URL section or saved section first
                 const savedSection = localStorage.getItem("lastActiveSection");
                 const urlSection = this.getUrlSection();
                 
-                if (savedSection) {
-                    this.showSection(savedSection, false);
-                } else if (urlSection) {
-                    this.showSection(urlSection, false);
-                } else {
                     this.showSection('homeSection');
-                }
                 
                 this.loadUserProfile();
             } else if (response.status === 401 && data.require2FA) {
@@ -1706,7 +1702,9 @@ class SimpleAuth {
         this.applyColorblindMode();
 
         this.currentUser = null;
+        this.
         localStorage.removeItem('user');
+        localStorage.clear();
         
         this.showStatus('Logged out successfully', 'success');
         setTimeout(() => {
@@ -3872,6 +3870,7 @@ class SimpleAuth {
         }
 
         // Update main stats
+        this.loadDashboardData()
         const homeTotalGames = document.getElementById('homeTotalGames');
         const homeTotalWins = document.getElementById('homeTotalWins');
         const homeWinRate = document.getElementById('homeWinRate');
