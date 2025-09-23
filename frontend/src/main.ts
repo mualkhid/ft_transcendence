@@ -93,20 +93,21 @@ class SimpleAuth {
     private aiScoreAudio: HTMLAudioElement | null = null;
     private aiEndGameAudio: HTMLAudioElement | null = null;
 
+    private currentGameMode: 'local' | 'ai' | 'remote' | 'none' = 'none';
+    private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
+    private keyupHandler: ((e: KeyboardEvent) => void) | null = null;
+
     constructor() {
         this.init();
         this.initializeAudio();
         this.initializeColorblindMode();
+        this.currentGameMode = 'none';
+        this.keydownHandler = null;
+        this.keyupHandler = null;
         
         // Add global test function for debugging
         (window as any).testPowerUps = () => {
-
-
             if (this.gameState) {
-
-
-
-
                 // Force spawn a power-up
                 this.spawnPowerUp();
 
@@ -162,6 +163,17 @@ class SimpleAuth {
             colorblindToggle.textContent = this.colorblindMode ? '☀️ Normal' : '☀️ Contrast';
             colorblindToggle.title = this.colorblindMode ? 'Switch to Normal Mode' : 'Switch to Contrast Mode';
 
+        }
+    }
+
+    private cleanupKeyboardHandlers(): void {
+        if (this.keydownHandler) {
+            document.removeEventListener('keydown', this.keydownHandler);
+            this.keydownHandler = null;
+        }
+        if (this.keyupHandler) {
+            document.removeEventListener('keyup', this.keyupHandler);
+            this.keyupHandler = null;
         }
     }
 
@@ -1933,6 +1945,11 @@ class SimpleAuth {
                 }, 100);
             }
             
+            if (sectionId !== 'gameSection' && sectionId !== 'aiPongSection' && sectionId !== 'onlineGameSection') {
+                this.cleanupKeyboardHandlers();
+                this.currentGameMode = 'none';
+            }
+            
             // If showing home section, update the dashboard
             if (sectionId === 'homeSection' && this.currentUser) {
 
@@ -2722,7 +2739,6 @@ class SimpleAuth {
         } catch (e) {
 
         }
-
         // Reset game state completely
         this.resetGameState();
 
@@ -2763,9 +2779,6 @@ class SimpleAuth {
 
         // Start button handler
         newStartButton.addEventListener('click', () => {
-
-
-
             gameOverlay.style.display = 'none';
             this.startLocalGame();
         });
@@ -2831,16 +2844,78 @@ class SimpleAuth {
     }
 
     private setupGameControls(): void {
-        // Remove existing listeners to prevent duplicates
-        document.removeEventListener('keydown', this.handleGameKeyDown);
-        document.removeEventListener('keyup', this.handleGameKeyUp);
-
-        // Add new listeners
-        document.addEventListener('keydown', this.handleGameKeyDown.bind(this));
-        document.addEventListener('keyup', this.handleGameKeyUp.bind(this));
-
-        // Add tournament leave detection
-        this.setupTournamentLeaveDetection();
+       this.cleanupKeyboardHandlers();
+        this.currentGameMode = 'local';
+        
+        this.keydownHandler = (event: KeyboardEvent) => {
+            if (this.currentGameMode !== 'local' || !this.gameState) return;
+            
+            switch (event.key.toLowerCase()) {
+                case 'w':
+                    this.gameState.player1Keys.up = true;
+                    event.preventDefault();
+                    break;
+                case 's':
+                    this.gameState.player1Keys.down = true;
+                    event.preventDefault();
+                    break;
+                case 'arrowup':
+                    this.gameState.player2Keys.up = true;
+                    event.preventDefault();
+                    break;
+                case 'arrowdown':
+                    this.gameState.player2Keys.down = true;
+                    event.preventDefault();
+                    break;
+            }
+        }
+        this.keyupHandler = (event: KeyboardEvent) => {
+            if (this.currentGameMode !== 'local' || !this.gameState) return;
+            
+            switch (event.key.toLowerCase()) {
+                case 'w':
+                    this.gameState.player1Keys.up = false;
+                    event.preventDefault();
+                    break;
+                case 's':
+                    this.gameState.player1Keys.down = false;
+                    event.preventDefault();
+                    break;
+                case 'arrowup':
+                    this.gameState.player2Keys.up = false;
+                    event.preventDefault();
+                    break;
+                case 'arrowdown':
+                    this.gameState.player2Keys.down = false;
+                    event.preventDefault();
+                    break;
+            }
+        };
+        
+        this.keyupHandler = (event: KeyboardEvent) => {
+            if (this.currentGameMode !== 'local' || !this.gameState) return;
+            
+            switch (event.key.toLowerCase()) {
+                case 'w':
+                    this.gameState.player1Keys.up = false;
+                    event.preventDefault();
+                    break;
+                case 's':
+                    this.gameState.player1Keys.down = false;
+                    event.preventDefault();
+                    break;
+                case 'arrowup':
+                    this.gameState.player2Keys.up = false;
+                    event.preventDefault();
+                    break;
+                case 'arrowdown':
+                    this.gameState.player2Keys.down = false;
+                    event.preventDefault();
+                    break;
+            }
+        }
+        document.addEventListener('keydown', this.keydownHandler);
+        document.addEventListener('keyup', this.keyupHandler);
     }
 
     private setupTournamentLeaveDetection(): void {
@@ -5571,7 +5646,11 @@ class SimpleAuth {
     }
 
     private setupRemoteGameInput(): void {
-        const handleKeyDown = (event: KeyboardEvent) => {
+        this.cleanupKeyboardHandlers();
+        this.currentGameMode = 'remote';
+        
+        this.keydownHandler = (event: KeyboardEvent) => {
+            if (this.currentGameMode !== 'remote') return;
             if (!this.onlineGameState.gameSocket || this.onlineGameState.gameSocket.readyState !== WebSocket.OPEN) return;
             
             switch(event.key) {
@@ -5590,7 +5669,8 @@ class SimpleAuth {
             }
         };
 
-        const handleKeyUp = (event: KeyboardEvent) => {
+        this.keyupHandler = (event: KeyboardEvent) => {
+            if (this.currentGameMode !== 'remote') return;
             if (!this.onlineGameState.gameSocket || this.onlineGameState.gameSocket.readyState !== WebSocket.OPEN) return;
             
             switch(event.key) {
@@ -5608,9 +5688,9 @@ class SimpleAuth {
                     break;
             }
         };
-
-        document.addEventListener('keydown', handleKeyDown);
-        document.addEventListener('keyup', handleKeyUp);
+    
+        document.addEventListener('keydown', this.keydownHandler);
+        document.addEventListener('keyup', this.keyupHandler);
     }
 
     private sendRemoteInput(inputType: string, key: string): void {
@@ -5814,6 +5894,9 @@ class SimpleAuth {
         if (this.onlineGameState.gameSocket)
             this.onlineGameState.gameSocket.close();
         
+        this.cleanupKeyboardHandlers();
+        this.currentGameMode = 'none';
+
         // Reset remote game state
         this.onlineGameState = {
             matchmakingSocket: null,
@@ -5899,11 +5982,17 @@ class SimpleAuth {
         
         // Setup keyboard controls
         this.setupAIKeyboardControls();
+        this.setupGameControls();
     }
 
 
     private setupAIKeyboardControls(): void {
-        document.addEventListener('keydown', (e) => {
+        this.cleanupKeyboardHandlers();
+        this.currentGameMode = 'ai';
+        
+        this.keydownHandler = (e: KeyboardEvent) => {
+            if (this.currentGameMode !== 'ai') return;
+            
             if (e.key === 'w' || e.key === 'W') {
                 this.aiGameKeys.w = true;
                 e.preventDefault();
@@ -5912,9 +6001,11 @@ class SimpleAuth {
                 this.aiGameKeys.s = true;
                 e.preventDefault();
             }
-        });
+        };
 
-        document.addEventListener('keyup', (e) => {
+        this.keyupHandler = (e: KeyboardEvent) => {
+            if (this.currentGameMode !== 'ai') return;
+            
             if (e.key === 'w' || e.key === 'W') {
                 this.aiGameKeys.w = false;
                 e.preventDefault();
@@ -5923,7 +6014,10 @@ class SimpleAuth {
                 this.aiGameKeys.s = false;
                 e.preventDefault();
             }
-        });
+        };
+
+        document.addEventListener('keydown', this.keydownHandler);
+        document.addEventListener('keyup', this.keyupHandler);
     }
 
     private setupPowerupsToggle(): void {
