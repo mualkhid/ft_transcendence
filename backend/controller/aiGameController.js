@@ -291,6 +291,39 @@ export async function handleAIGame(socket, request) {
                         gameState.playerPaddleY = Math.min(GAME_CONFIG.CANVAS.HEIGHT - GAME_CONFIG.PADDLE.HEIGHT, gameState.playerPaddleY + GAME_CONFIG.PADDLE.SPEED);
                     }
                     break;
+                
+                case 'powerup-score': {
+                    // Frontend detected power-up collision and requests score attribution
+                    if (!gameState.gameStarted || gameState.gameOver) break;
+                    if (data.scorer === 'player') {
+                        gameState.playerScore++;
+                    } else if (data.scorer === 'ai') {
+                        gameState.aiScore++;
+                    }
+
+                    // Check for game over
+                    if (gameState.playerScore >= gameState.winningScore || gameState.aiScore >= gameState.winningScore) {
+                        gameState.gameOver = true;
+                        socket.send(JSON.stringify({
+                            type: 'game-over',
+                            winner: gameState.playerScore > gameState.aiScore ? 'player' : 'ai',
+                            playerScore: gameState.playerScore,
+                            aiScore: gameState.aiScore,
+                        }));
+                        stopGame();
+                        break;
+                    }
+
+                    // Broadcast updated scores immediately
+                    socket.send(JSON.stringify({
+                        type: 'game-update',
+                        gameState: {
+                            ...gameState,
+                            aiConfig: aiConfig
+                        }
+                    }));
+                    break;
+                }
                     
                 case 'pause-game':
                     if (gameState.gameStarted && !gameState.gameOver) {

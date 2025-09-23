@@ -2485,8 +2485,8 @@ class SimpleAuth {
                 </div>
                 <div class="text-right">
                     <div class="text-white font-bold">${game.score}</div>
-                    <div class="text-gray-400 text-sm">${game.date ? new Date(game.date).toLocaleDateString() : 'Unknown'}</div>
-                    <div class="text-gray-500 text-xs">Game Duration: ${game.duration || 'N/A'}</div>
+                    <div class="text-white text-sm">${game.date ? new Date(game.date).toLocaleDateString() : 'Unknown'}</div>
+                    <div class="text-white text-xs">Game Duration: ${game.duration || 'N/A'}</div>
                 </div>
             </div>
         `).join('');
@@ -3405,24 +3405,22 @@ class SimpleAuth {
                 ballX - ballRadius < powerUp.x + powerUp.width &&
                 ballY + ballRadius > powerUp.y && 
                 ballY - ballRadius < powerUp.y + powerUp.height) {
-                
                 // Determine which player gets the point (closest to ball)
                 const playerDistance = Math.abs(ballX - 50); // Distance to player paddle
                 const aiDistance = Math.abs(ballX - 735); // Distance to AI paddle
                 const playerGetsPoint = playerDistance < aiDistance;
-                
-                if (playerGetsPoint) {
-                    this.aiGameState.playerScore++;
 
-                } else {
-                    this.aiGameState.aiScore++;
+                // Ask backend to update the authoritative score
+                const scorer = playerGetsPoint ? 'player' : 'ai';
+                try {
+                    if (this.aiGameWs && this.aiGameWs.readyState === WebSocket.OPEN) {
+                        this.aiGameWs.send(JSON.stringify({ type: 'powerup-score', scorer }));
+                    }
+                } catch {}
 
-                }
-                
+                // Optimistic UI sound and removal
                 this.playAIScoreSound();
-                this.updateAIScore();
-                
-                // Remove power-up
+                // Remove power-up locally to prevent duplicate collisions
                 this.aiGameState.powerUps.splice(index, 1);
 
             }
@@ -6373,18 +6371,13 @@ class SimpleAuth {
 
     private connectAIGame(): void {
         try {
-            console.log('🔌 Attempting to connect to AI game WebSocket...');
-            console.log('🔌 WebSocket URL:', `wss://${HOST_IP}/api/ai-game`);
-            
             this.aiGameWs = new WebSocket(`wss://${HOST_IP}/api/ai-game`);
             
             this.aiGameWs.onopen = () => {
-                console.log('✅ AI Game WebSocket connected successfully!');
                 this.logAIGame('Connected to AI Pong Game!');
             };
 
             this.aiGameWs.onmessage = (event) => {
-                console.log('📨 AI Game message received:', event.data);
                 try {
                     const data = JSON.parse(event.data);
                     this.handleAIGameMessage(data);
@@ -6394,16 +6387,15 @@ class SimpleAuth {
             };
 
             this.aiGameWs.onclose = (event) => {
-                console.log('❌ AI Game WebSocket closed:', event.code, event.reason);
                 this.logAIGame('Disconnected from AI Pong Game');
             };
 
             this.aiGameWs.onerror = (error) => {
-                console.error('❌ AI Game WebSocket error:', error);
+                console.error('AI Game WebSocket error:', error);
                 this.logAIGame('Connection error occurred');
             };
         } catch (error) {
-            console.error('❌ Error connecting to AI game:', error);
+            console.error('Error connecting to AI game:', error);
             this.logAIGame('Failed to connect to AI game');
         }
     }
