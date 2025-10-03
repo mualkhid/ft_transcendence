@@ -93,20 +93,21 @@ class SimpleAuth {
     private aiScoreAudio: HTMLAudioElement | null = null;
     private aiEndGameAudio: HTMLAudioElement | null = null;
 
+    private currentGameMode: 'local' | 'ai' | 'remote' | 'none' = 'none';
+    private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
+    private keyupHandler: ((e: KeyboardEvent) => void) | null = null;
+
     constructor() {
         this.init();
         this.initializeAudio();
         this.initializeColorblindMode();
+        this.currentGameMode = 'none';
+        this.keydownHandler = null;
+        this.keyupHandler = null;
         
         // Add global test function for debugging
         (window as any).testPowerUps = () => {
-
-
             if (this.gameState) {
-
-
-
-
                 // Force spawn a power-up
                 this.spawnPowerUp();
 
@@ -162,6 +163,17 @@ class SimpleAuth {
             colorblindToggle.textContent = this.colorblindMode ? '☀️ Normal' : '☀️ Contrast';
             colorblindToggle.title = this.colorblindMode ? 'Switch to Normal Mode' : 'Switch to Contrast Mode';
 
+        }
+    }
+
+    private cleanupKeyboardHandlers(): void {
+        if (this.keydownHandler) {
+            document.removeEventListener('keydown', this.keydownHandler);
+            this.keydownHandler = null;
+        }
+        if (this.keyupHandler) {
+            document.removeEventListener('keyup', this.keyupHandler);
+            this.keyupHandler = null;
         }
     }
 
@@ -1374,6 +1386,9 @@ class SimpleAuth {
                 // Success - handle login
                 this.currentUser = data.user;
                 
+                // Update localStorage with new user data
+                localStorage.setItem('user', JSON.stringify(data.user));
+                
                 // Reset contrast mode on login
                 this.colorblindMode = false;
                 localStorage.removeItem('colorblindMode');
@@ -1382,19 +1397,15 @@ class SimpleAuth {
                 // Show success message
                 this.showStatus('Login successful!', 'success');
                 
+                this.loadDashboardData()
+                this.loadFriendsData();
                 this.showPage('mainApp');
                 
                 // Check for URL section or saved section first
                 const savedSection = localStorage.getItem("lastActiveSection");
                 const urlSection = this.getUrlSection();
                 
-                if (savedSection) {
-                    this.showSection(savedSection, false);
-                } else if (urlSection) {
-                    this.showSection(urlSection, false);
-                } else {
                     this.showSection('homeSection');
-                }
                 
                 this.loadUserProfile();
             } else if (response.status === 401 && data.require2FA) {
@@ -1692,6 +1703,7 @@ class SimpleAuth {
 
         this.currentUser = null;
         localStorage.removeItem('user');
+        localStorage.clear();
         
         this.showStatus('Logged out successfully', 'success');
         setTimeout(() => {
@@ -1872,14 +1884,14 @@ class SimpleAuth {
                         mainApp.style.backgroundAttachment = "";
                         break;
                     case 'dashboardSection':
-                        // Use the same background class as home to ensure perfect match
-                        mainApp.classList.add('bg-home');
-                        // Match home page background
-                        mainApp.style.backgroundImage = "url('/imgs/PPG_20th_Still_Xiya_01-1200x675.webp')";
-                        mainApp.style.backgroundSize = "cover";
-                        mainApp.style.backgroundPosition = "center";
-                        mainApp.style.backgroundRepeat = "no-repeat";
-                        mainApp.style.backgroundAttachment = "fixed";
+                        // Use the dashboard background class
+                        mainApp.classList.add('bg-dashboard');
+                        // Clear any inline styles to let CSS take precedence
+                        mainApp.style.backgroundImage = "";
+                        mainApp.style.backgroundSize = "";
+                        mainApp.style.backgroundPosition = "";
+                        mainApp.style.backgroundRepeat = "";
+                        mainApp.style.backgroundAttachment = "";
                         break;
                     case 'gameSection':
                     case 'onlineGameSection':
@@ -1931,6 +1943,11 @@ class SimpleAuth {
                 setTimeout(() => {
                     this.loadUserProfile();
                 }, 100);
+            }
+            
+            if (sectionId !== 'gameSection' && sectionId !== 'aiPongSection' && sectionId !== 'onlineGameSection') {
+                this.cleanupKeyboardHandlers();
+                this.currentGameMode = 'none';
             }
             
             // If showing home section, update the dashboard
@@ -2465,8 +2482,8 @@ class SimpleAuth {
                 </div>
                 <div class="text-right">
                     <div class="text-white font-bold">${game.score}</div>
-                    <div class="text-gray-400 text-sm">${game.date ? new Date(game.date).toLocaleDateString() : 'Unknown'}</div>
-                    <div class="text-gray-500 text-xs">Game Duration: ${game.duration || 'N/A'}</div>
+                    <div class="text-white text-sm">${game.date ? new Date(game.date).toLocaleDateString() : 'Unknown'}</div>
+                    <div class="text-white text-xs">Game Duration: ${game.duration || 'N/A'}</div>
                 </div>
             </div>
         `).join('');
@@ -2722,7 +2739,6 @@ class SimpleAuth {
         } catch (e) {
 
         }
-
         // Reset game state completely
         this.resetGameState();
 
@@ -2763,9 +2779,6 @@ class SimpleAuth {
 
         // Start button handler
         newStartButton.addEventListener('click', () => {
-
-
-
             gameOverlay.style.display = 'none';
             this.startLocalGame();
         });
@@ -2831,16 +2844,78 @@ class SimpleAuth {
     }
 
     private setupGameControls(): void {
-        // Remove existing listeners to prevent duplicates
-        document.removeEventListener('keydown', this.handleGameKeyDown);
-        document.removeEventListener('keyup', this.handleGameKeyUp);
-
-        // Add new listeners
-        document.addEventListener('keydown', this.handleGameKeyDown.bind(this));
-        document.addEventListener('keyup', this.handleGameKeyUp.bind(this));
-
-        // Add tournament leave detection
-        this.setupTournamentLeaveDetection();
+       this.cleanupKeyboardHandlers();
+        this.currentGameMode = 'local';
+        
+        this.keydownHandler = (event: KeyboardEvent) => {
+            if (this.currentGameMode !== 'local' || !this.gameState) return;
+            
+            switch (event.key.toLowerCase()) {
+                case 'w':
+                    this.gameState.player1Keys.up = true;
+                    event.preventDefault();
+                    break;
+                case 's':
+                    this.gameState.player1Keys.down = true;
+                    event.preventDefault();
+                    break;
+                case 'arrowup':
+                    this.gameState.player2Keys.up = true;
+                    event.preventDefault();
+                    break;
+                case 'arrowdown':
+                    this.gameState.player2Keys.down = true;
+                    event.preventDefault();
+                    break;
+            }
+        }
+        this.keyupHandler = (event: KeyboardEvent) => {
+            if (this.currentGameMode !== 'local' || !this.gameState) return;
+            
+            switch (event.key.toLowerCase()) {
+                case 'w':
+                    this.gameState.player1Keys.up = false;
+                    event.preventDefault();
+                    break;
+                case 's':
+                    this.gameState.player1Keys.down = false;
+                    event.preventDefault();
+                    break;
+                case 'arrowup':
+                    this.gameState.player2Keys.up = false;
+                    event.preventDefault();
+                    break;
+                case 'arrowdown':
+                    this.gameState.player2Keys.down = false;
+                    event.preventDefault();
+                    break;
+            }
+        };
+        
+        this.keyupHandler = (event: KeyboardEvent) => {
+            if (this.currentGameMode !== 'local' || !this.gameState) return;
+            
+            switch (event.key.toLowerCase()) {
+                case 'w':
+                    this.gameState.player1Keys.up = false;
+                    event.preventDefault();
+                    break;
+                case 's':
+                    this.gameState.player1Keys.down = false;
+                    event.preventDefault();
+                    break;
+                case 'arrowup':
+                    this.gameState.player2Keys.up = false;
+                    event.preventDefault();
+                    break;
+                case 'arrowdown':
+                    this.gameState.player2Keys.down = false;
+                    event.preventDefault();
+                    break;
+            }
+        }
+        document.addEventListener('keydown', this.keydownHandler);
+        document.addEventListener('keyup', this.keyupHandler);
     }
 
     private setupTournamentLeaveDetection(): void {
@@ -3327,24 +3402,22 @@ class SimpleAuth {
                 ballX - ballRadius < powerUp.x + powerUp.width &&
                 ballY + ballRadius > powerUp.y && 
                 ballY - ballRadius < powerUp.y + powerUp.height) {
-                
                 // Determine which player gets the point (closest to ball)
                 const playerDistance = Math.abs(ballX - 50); // Distance to player paddle
                 const aiDistance = Math.abs(ballX - 735); // Distance to AI paddle
                 const playerGetsPoint = playerDistance < aiDistance;
-                
-                if (playerGetsPoint) {
-                    this.aiGameState.playerScore++;
 
-                } else {
-                    this.aiGameState.aiScore++;
+                // Ask backend to update the authoritative score
+                const scorer = playerGetsPoint ? 'player' : 'ai';
+                try {
+                    if (this.aiGameWs && this.aiGameWs.readyState === WebSocket.OPEN) {
+                        this.aiGameWs.send(JSON.stringify({ type: 'powerup-score', scorer }));
+                    }
+                } catch {}
 
-                }
-                
+                // Optimistic UI sound and removal
                 this.playAIScoreSound();
-                this.updateAIScore();
-                
-                // Remove power-up
+                // Remove power-up locally to prevent duplicate collisions
                 this.aiGameState.powerUps.splice(index, 1);
 
             }
@@ -3794,6 +3867,7 @@ class SimpleAuth {
         }
 
         // Update main stats
+        this.loadDashboardData()
         const homeTotalGames = document.getElementById('homeTotalGames');
         const homeTotalWins = document.getElementById('homeTotalWins');
         const homeWinRate = document.getElementById('homeWinRate');
@@ -3885,7 +3959,7 @@ class SimpleAuth {
         }
     }
 
-    private async updateTournamentStats(userWon: boolean, player1Score: number, player2Score: number, opponentName: string, gameDuration?: number): Promise<void> {
+    private async updateTournamentStats(tournamentId: number | undefined, userWon: boolean, player1Score: number, player2Score: number, opponentName: string, gameDuration?: number): Promise<void> {
         // Update stats specifically for tournament games with complete game data
         if (!this.currentUser) {
 
@@ -3903,10 +3977,11 @@ class SimpleAuth {
                     userId: this.currentUser.id,
                     won: userWon,
                     gameType: 'TOURNAMENT',
+                    tournamentId: tournamentId,
                     player1Score: player1Score,
                     player2Score: player2Score,
                     opponentName: opponentName,
-                    gameDuration: gameDuration
+                    gameDuration: gameDuration,
                 })
             });
 
@@ -4148,10 +4223,7 @@ class SimpleAuth {
     private tournamentMatchStartTime: Date | null = null;
     private originalEndGame: ((winner: number) => Promise<void>) | null = null;
 
-    private async recordTournamentResult(winner: string, loser: string): Promise<void> {
-
-
-
+    private async recordTournamentResult(winner: string, loser: string, winnerScore: number, loserScore: number): Promise<void> {
         if (!this.currentUser) {
 
             return;
@@ -4162,7 +4234,8 @@ class SimpleAuth {
             const requestBody = {
                 winner,
                 loser,
-                tournamentName: 'Local Tournament',
+                winnerScore: winnerScore,
+                loserScore: loserScore,
                 tournamentId: this.tournamentState.tournamentId,
                 round: this.tournamentState.currentRound + 1 // Add round info
             };
@@ -4609,8 +4682,10 @@ class SimpleAuth {
         const winnerName = winner === 1 ? currentMatch.player1 : currentMatch.player2;
         const loserName = winner === 1 ? currentMatch.player2 : currentMatch.player1;
         currentMatch.winner = winnerName;
+        const winnerScore = winner == 1 ? this.gameState.scorePlayer1 : this.gameState.scorePlayer2;
+        const loserScore = winner == 1 ? this.gameState.scorePlayer2 : this.gameState.scorePlayer1;
 
-        await this.recordTournamentResult(winnerName, loserName);
+        await this.recordTournamentResult(winnerName, loserName, winnerScore, loserScore);
         
         // Calculate tournament match duration
         const gameDuration = this.tournamentMatchStartTime ? new Date().getTime() - this.tournamentMatchStartTime.getTime() : 60000; // Default to 1 minute if no start time
@@ -4619,7 +4694,7 @@ class SimpleAuth {
         if (this.currentUser && (currentMatch.player1 === this.currentUser.username || currentMatch.player2 === this.currentUser.username)) {
             const userWon = winnerName === this.currentUser.username;
 
-            await this.updateTournamentStats(userWon, this.gameState.scorePlayer1, this.gameState.scorePlayer2, currentMatch.player1 === this.currentUser.username ? currentMatch.player2 : currentMatch.player1, gameDuration);
+            await this.updateTournamentStats(this.tournamentState.tournamentId, userWon, this.gameState.scorePlayer1, this.gameState.scorePlayer2, currentMatch.player1 === this.currentUser.username ? currentMatch.player2 : currentMatch.player1, gameDuration);
         } else {
 
         }
@@ -5570,7 +5645,11 @@ class SimpleAuth {
     }
 
     private setupRemoteGameInput(): void {
-        const handleKeyDown = (event: KeyboardEvent) => {
+        this.cleanupKeyboardHandlers();
+        this.currentGameMode = 'remote';
+        
+        this.keydownHandler = (event: KeyboardEvent) => {
+            if (this.currentGameMode !== 'remote') return;
             if (!this.onlineGameState.gameSocket || this.onlineGameState.gameSocket.readyState !== WebSocket.OPEN) return;
             
             switch(event.key) {
@@ -5589,7 +5668,8 @@ class SimpleAuth {
             }
         };
 
-        const handleKeyUp = (event: KeyboardEvent) => {
+        this.keyupHandler = (event: KeyboardEvent) => {
+            if (this.currentGameMode !== 'remote') return;
             if (!this.onlineGameState.gameSocket || this.onlineGameState.gameSocket.readyState !== WebSocket.OPEN) return;
             
             switch(event.key) {
@@ -5607,9 +5687,9 @@ class SimpleAuth {
                     break;
             }
         };
-
-        document.addEventListener('keydown', handleKeyDown);
-        document.addEventListener('keyup', handleKeyUp);
+    
+        document.addEventListener('keydown', this.keydownHandler);
+        document.addEventListener('keyup', this.keyupHandler);
     }
 
     private sendRemoteInput(inputType: string, key: string): void {
@@ -5813,6 +5893,9 @@ class SimpleAuth {
         if (this.onlineGameState.gameSocket)
             this.onlineGameState.gameSocket.close();
         
+        this.cleanupKeyboardHandlers();
+        this.currentGameMode = 'none';
+
         // Reset remote game state
         this.onlineGameState = {
             matchmakingSocket: null,
@@ -5898,11 +5981,17 @@ class SimpleAuth {
         
         // Setup keyboard controls
         this.setupAIKeyboardControls();
+        this.setupGameControls();
     }
 
 
     private setupAIKeyboardControls(): void {
-        document.addEventListener('keydown', (e) => {
+        this.cleanupKeyboardHandlers();
+        this.currentGameMode = 'ai';
+        
+        this.keydownHandler = (e: KeyboardEvent) => {
+            if (this.currentGameMode !== 'ai') return;
+            
             if (e.key === 'w' || e.key === 'W') {
                 this.aiGameKeys.w = true;
                 e.preventDefault();
@@ -5911,9 +6000,11 @@ class SimpleAuth {
                 this.aiGameKeys.s = true;
                 e.preventDefault();
             }
-        });
+        };
 
-        document.addEventListener('keyup', (e) => {
+        this.keyupHandler = (e: KeyboardEvent) => {
+            if (this.currentGameMode !== 'ai') return;
+            
             if (e.key === 'w' || e.key === 'W') {
                 this.aiGameKeys.w = false;
                 e.preventDefault();
@@ -5922,7 +6013,10 @@ class SimpleAuth {
                 this.aiGameKeys.s = false;
                 e.preventDefault();
             }
-        });
+        };
+
+        document.addEventListener('keydown', this.keydownHandler);
+        document.addEventListener('keyup', this.keyupHandler);
     }
 
     private setupPowerupsToggle(): void {
@@ -6275,18 +6369,13 @@ class SimpleAuth {
 
     private connectAIGame(): void {
         try {
-            console.log('🔌 Attempting to connect to AI game WebSocket...');
-            console.log('🔌 WebSocket URL:', `wss://${HOST_IP}/api/ai-game`);
-            
             this.aiGameWs = new WebSocket(`wss://${HOST_IP}/api/ai-game`);
             
             this.aiGameWs.onopen = () => {
-                console.log('✅ AI Game WebSocket connected successfully!');
                 this.logAIGame('Connected to AI Pong Game!');
             };
 
             this.aiGameWs.onmessage = (event) => {
-                console.log('📨 AI Game message received:', event.data);
                 try {
                     const data = JSON.parse(event.data);
                     this.handleAIGameMessage(data);
@@ -6296,16 +6385,15 @@ class SimpleAuth {
             };
 
             this.aiGameWs.onclose = (event) => {
-                console.log('❌ AI Game WebSocket closed:', event.code, event.reason);
                 this.logAIGame('Disconnected from AI Pong Game');
             };
 
             this.aiGameWs.onerror = (error) => {
-                console.error('❌ AI Game WebSocket error:', error);
+                console.error('AI Game WebSocket error:', error);
                 this.logAIGame('Connection error occurred');
             };
         } catch (error) {
-            console.error('❌ Error connecting to AI game:', error);
+            console.error('Error connecting to AI game:', error);
             this.logAIGame('Failed to connect to AI game');
         }
     }

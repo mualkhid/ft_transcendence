@@ -4,24 +4,21 @@
 const generateKeyFromRequest = (request, prefix) => {
 	const email = request.body?.email?.toLowerCase()?.trim();
 	if (email) {
-	  console.log(`🔑 Rate limit key: ${prefix}:${email}`);
 	  return `${prefix}:${email}`;
 	}
 	
 	const cid = request.headers['x-client-id'] || request.cookies?.client_id;
 	if (cid) {
-	  console.log(`🔑 Rate limit key: ${prefix}cid:${cid}`);
 	  return `${prefix}cid:${cid}`;
 	}
 	
 	const xff = request.headers['x-forwarded-for'];
 	const ip = Array.isArray(xff) ? xff[0] : (xff ? xff.split(',')[0].trim() : request.ip);
-	console.log(`🔑 Rate limit key: ${prefix}ip:${ip}`);
 	return `${prefix}ip:${ip}`;
   };
   
   const createErrorResponse = (message, context) => {
-	console.log(`🚨 ${message} rate limit exceeded`);
+	(`🚨 ${message} rate limit exceeded`);
 	return {
 	  statusCode: 429,
 	  error: 'Too Many Requests',
@@ -36,7 +33,7 @@ const generateKeyFromRequest = (request, prefix) => {
 	keyGenerator: (request) => generateKeyFromRequest(request, 'login'),
 	errorResponseBuilder: (request, context) => createErrorResponse('Login', context),
 	onExceeding: (request, key) => {
-	  console.log(`⚠️  Login rate limit exceeded for key: ${key}`);
+	  (`⚠️  Login rate limit exceeded for key: ${key}`);
 	}
   };
   

@@ -2,12 +2,10 @@ import {
     createMatch, 
     startMatch, 
     completeMatch,
-    updatePlayer2
+    // updatePlayer2
 } from './matchDatabaseService.js';
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../prisma/prisma_lib.js';
 
 const activeMatches = new Map();
 const waitingPlayers = new Map(); 
@@ -24,12 +22,10 @@ export async function createMatchState(matchId, player1Username = 'Player1', pla
 
     if(!activeMatches.has(numericMatchId))
     {
-        let dbMatch = await createMatch(player1Username, player2Username, numericMatchId);
-
         const matchState = {
             player1: null,
             player2: null,
-            matchId: dbMatch.id,
+            matchId: null,
             state: {
                 status: 'waiting',
                 connectedPlayers: 0,
@@ -171,6 +167,12 @@ export async function addPlayerToMatch(matchId, websocket, username = null)
         match.state.connectedPlayers++;
         if (username)
             match.state.player2Username = username;
+        const dbMatch = await createMatch(
+            match.state.player1Username, 
+            match.state.player2Username, 
+            matchId
+        );
+        match.matchId = dbMatch.id;
         return (2);
     }
     return (null);
@@ -212,7 +214,7 @@ export async function removePlayerFromMatch(matchId, websocket)
 
         if (remainingPlayer && remainingPlayer.readyState === 1)
         {
-            console.log('🔍 Processing disconnection:');
+            ('🔍 Processing disconnection:');
             const abandonMessage = {
                 type: 'game-abandoned',
                 message: `Opponent disconnected. You win!`,
@@ -575,7 +577,6 @@ export async function findorCreateMatch(websocket, username, powerupsEnabled = t
             if (match.state.player1Username === username || match.state.player2Username === username)
                 continue;
             match.state.player2Username = username;
-            await updatePlayer2(match.matchId, username);
             updatePlayerPowerupsPreference(waitingMatchId, 2, powerupsEnabled);
             waitingPlayers.delete(waitingMatchId);
             return { matchId: waitingMatchId, created: false };

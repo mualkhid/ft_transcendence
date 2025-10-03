@@ -6,8 +6,6 @@ export async function createMatch(player1Alias, player2Alias, customId = null)
 {
     const matchData = {
         tournamentId: null,
-        roundNumber: 1,
-        matchNumber: 1,
         status: 'PENDING',
         player1Alias,
         player2Alias,
@@ -27,21 +25,21 @@ export async function createMatch(player1Alias, player2Alias, customId = null)
     return (match);
 }
 
-export async function updatePlayer2(matchId, player2Alias)
-{
-    await prisma.match.update({
-            where: { id: matchId },
-            data: { player2Alias }
-        });
+// export async function updatePlayer2(matchId, player2Alias)
+// {
+//     await prisma.match.update({
+//             where: { id: matchId },
+//             data: { player2Alias }
+//         });
 
-    await prisma.matchPlayer.updateMany({
-        where: {
-            matchId: matchId,
-            alias: { in: ['Player2', 'Waiting for Player 2'] }
-        },
-        data: { alias: player2Alias }
-    });
-}
+//     await prisma.matchPlayer.updateMany({
+//         where: {
+//             matchId: matchId,
+//             alias: { in: ['Player2', 'Waiting for Player 2'] }
+//         },
+//         data: { alias: player2Alias }
+//     });
+// }
 
 export async function startMatch(matchId)
 {

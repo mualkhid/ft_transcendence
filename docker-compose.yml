@@ -6,7 +6,6 @@ volumes:
   avatar_data: {}
 
 services:
-  # Nginx with SSL
   nginx:
     build: ./security
     ports:
@@ -18,8 +17,6 @@ services:
     networks: [webapp]
     restart: unless-stopped
 
-
-  # Backend service
   frontend:
     build:
       context: ./frontend
@@ -35,8 +32,6 @@ services:
     networks: [webapp]
     restart: unless-stopped
     
-  
-  # frontend service
   backend:
     build: ./backend
     env_file:

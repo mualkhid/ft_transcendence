@@ -1,4 +1,3 @@
-
 GET_IP := $(shell node get_ip.js 2>/dev/null || echo 'localhost')
 
 

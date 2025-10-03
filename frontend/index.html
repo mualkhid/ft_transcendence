@@ -48,9 +48,9 @@
         .page.active {
             display: block !important;
         }
-        .section {
-            display: none !important;
-        }
+        .static {
+		position: static;
+		}
         .section.active {
             display: block !important;
         }
@@ -203,9 +203,9 @@
         }
 
         .main-nav-logo {
-            width: 40px;
+            width: 125px;
             height: 40px;
-            border-radius: 50%;
+            border-radius: 8%;
         }
 
         .main-nav-title {
@@ -663,7 +663,7 @@
                     </form>
                        <!-- Google Sign-In Button -->
                     <button id="googleSignInBtn" type="button" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg text-xl transition-colors flex items-center justify-center">
-                      <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" class="w-6 h-6 mr-2"> Sign in with Google
+                      Sign in with Google
                     </button>
                     
                     <div class="text-center mt-6">
@@ -713,23 +713,6 @@
                         
                         <!-- Game Statistics -->
                         <div class="bg-gray-700/60 rounded-2xl p-12 border border-white/20 shadow-xl max-w-6xl mx-auto mb-8">
-                            <h3 class="text-3xl font-bold text-white mb-6 text-center">Your Gaming Stats</h3>
-                            
-                            <!-- Overall Stats -->
-                            <div class="flex justify-center space-x-8 mb-8">
-                                <div class="text-center">
-                                    <div class="text-4xl font-bold text-powerpuff-pink" id="homeTotalGames">0</div>
-                                    <div class="text-white text-lg">Total Games</div>
-                                </div>
-                                <div class="text-center">
-                                    <div class="text-4xl font-bold text-powerpuff-green" id="homeTotalWins">0</div>
-                                    <div class="text-white text-lg">Total Wins</div>
-                                </div>
-                                <div class="text-center">
-                                    <div class="text-4xl font-bold text-powerpuff-blue" id="homeWinRate">0%</div>
-                                    <div class="text-white text-lg">Win Rate</div>
-                                </div>
-                            </div>
 
                             <!-- Game Type Breakdown -->
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -1275,10 +1258,10 @@
                     <div class="max-w-6xl mx-auto">
                         <!-- Dashboard Header -->
                         <div class="text-center mb-8">
-                            <h1 class="text-6xl font-logo text-white mb-4">
+                            <h1 class="text-powerpuff-blue">
                                 🎮 Gaming <span class="text-powerpuff-pink">Dashboard</span>
                             </h1>
-                            <p class="text-xl text-white opacity-90 mb-8">Track your performance across all games and climb the leaderboards</p>
+                            <p class="text-powerpuff-pink">Track your performance across all games and climb the leaderboards</p>
                         </div>
 
                         <!-- Dashboard Navigation -->
@@ -1347,7 +1330,7 @@
                                 <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl text-center">
                                     <div class="text-4xl mb-2">📊</div>
                                     <div class="text-3xl font-bold text-powerpuff-blue mb-2" id="ai-win-rate">--</div>
-                                    <div class="text-white text-sm">AI Win Rate</div>
+                                    <div class="text-white text-sm">Win Rate vs AI</div>
                                 </div>
                                 <div class="bg-gray-600/50 rounded-2xl p-6 border border-white/30 shadow-xl text-center">
                                     <div class="text-4xl mb-2">🎯</div>

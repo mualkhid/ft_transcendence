@@ -76,7 +76,7 @@ function handleGeneralErrors(e, reply) {
 }
 
 export function globalErrorHandler(error, request, reply) {
-	console.log('Global error caught:', error);
+	('Global error caught:', error);
 	
 	// Prisma errors
 	if (error.code?.startsWith('P')) {
