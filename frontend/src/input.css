@@ -1,0 +1,272 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Hearts GIF Background for login/registration only */
+#loginPage, #registrationPage {
+    background-image: url('../imgs/reg+login.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    min-height: 100vh;
+}
+
+/* Powerpuff Girls Background for main app (after login) */
+#mainApp {
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    background-attachment: fixed !important;
+    min-height: 100vh !important;
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+/* Accessibility: visible focus outlines */
+:focus-visible {
+    outline: 3px solid #FFD700 !important; /* high-contrast gold */
+    outline-offset: 2px !important;
+}
+
+/* Accessibility: text size preferences */
+html.text-size-small {
+    font-size: 14px;
+}
+html.text-size-default {
+    font-size: 16px;
+}
+html.text-size-large {
+    font-size: 18px;
+}
+
+/* Transparent navigation bar with dark shade */
+.main-nav {
+    background: rgba(0, 0, 0, 0.3) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.2) !important;
+    padding: 1rem 0 !important;
+    margin-bottom: 2rem !important;
+    border-radius: 0 0 20px 20px !important;
+}
+
+/* Enhanced navigation link visibility */
+.main-nav-link {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8) !important;
+    font-weight: bold !important;
+}
+
+.main-nav-link:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    backdrop-filter: blur(5px) !important;
+    -webkit-backdrop-filter: blur(5px) !important;
+}
+
+.main-nav-title {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Background image classes */
+.bg-home {
+    background-image: url('/imgs/powerpuff-bg.png') !important;
+}
+
+.bg-friends {
+    background-image: url('../imgs/friends.png') !important;
+}
+
+.bg-profile {
+    background-image: url('../imgs/profile.png') !important;
+}
+
+.bg-game-options {
+    background-image: url('../imgs/bg.md') !important;
+}
+
+.bg-dashboard {
+    background-image: url('../imgs/dashboard.png') !important;
+}
+
+
+/* Medium-dark backgrounds for all containers */
+.bg-gray-600\/50 {
+    background-color: rgba(0, 0, 0, 0.4) !important;
+}
+
+.bg-gray-700\/60 {
+    background-color: rgba(0, 0, 0, 0.45) !important;
+}
+
+.bg-white\/20 {
+    background-color: rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Custom CSS for page navigation */
+.page {
+    display: none;
+}
+
+.page.active {
+    display: block;
+}
+
+.section {
+    display: none;
+}
+
+.section.active {
+    display: block;
+}
+
+
+/* Status message styles */
+.status {
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    margin: 1rem 0;
+    font-weight: bold;
+    font-size: 1.1rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    border: 2px solid transparent;
+    min-width: 300px;
+    text-align: center;
+}
+
+.status.success {
+    background-color: #10b981;
+    color: white;
+}
+
+.status.error {
+    background-color: #ef4444;
+    color: white;
+}
+
+.status.info {
+    background-color: #3b82f6;
+    color: white;
+}
+
+/* Notification system styles */
+#notificationOverlay {
+    position: fixed !important;
+    z-index: 9999 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
+    transform: none !important;
+    isolation: isolate !important;
+}
+
+#notificationCard {
+    position: relative !important;
+    z-index: 10000 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
+    transform: none !important;
+    isolation: isolate !important;
+    background: white !important;
+    color: black !important;
+}
+
+#notificationCard * {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
+} 
+
+#onlineScoreDisplay {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    z-index: 10 !important;
+    text-align: center !important;
+}
+
+#onlineScoreDisplay .flex {
+    display: flex !important;
+    justify-content: center !important;
+}
+
+#onlineScoreDisplay .bg-powerpuff-pink {
+    display: block !important;
+    visibility: visible !important;
+}
+
+
+/* GDPR Section Styles */
+#gdprSection {
+    margin-top: 0; /* Remove extra margin */
+    padding-top: 0; /* Remove extra padding */
+    background-color: rgba(0, 0, 0, 0.4); /* Match the Powerpuff theme */
+}
+
+/* Remove white gap above GDPR section */
+#gdprSection + * {
+    margin-top: 0;
+}
+
+#twoFactorCodeContainer {
+    transition: all 0.3s ease;
+    border-left: 4px solid #7209b7;
+    padding-left: 1rem;
+    background: rgba(114, 9, 183, 0.1);
+    border-radius: 0.5rem;
+}
+
+#twoFactorCodeContainer.show {
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 2FA Setup section styling */
+#twofa-setup {
+    background: rgba(16, 185, 129, 0.1);
+    border: 2px solid rgba(16, 185, 129, 0.3);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-top: 1rem;
+}
+
+#qrImage {
+    max-width: 200px;
+    margin: 0 auto;
+    display: block;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    background: white;
+}
+
+#backupCodes {
+    max-height: 200px;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+#backupCodes li {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 0.25rem;
+    border-left: 3px solid #10b981;
+}
